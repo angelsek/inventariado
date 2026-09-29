@@ -1,4 +1,4 @@
-import type { SQLiteDatabase } from 'expo-sqlite';
+import type { BaseLocal } from './tipos';
 
 export const NOMBRE_BASE_DE_DATOS = 'inventariado.db';
 
@@ -13,10 +13,49 @@ export const migraciones: string[] = [
      clave TEXT PRIMARY KEY NOT NULL,
      valor TEXT NOT NULL
    );`,
+
+  // 2 (fase 1): negocio, perfiles y dispositivos sincronizados con Supabase.
+  // `pendiente` > 0 indica cambios locales aún no subidos (ver src/sync/motor.ts).
+  `CREATE TABLE negocios (
+     id TEXT PRIMARY KEY NOT NULL,
+     nombre TEXT NOT NULL,
+     rut TEXT,
+     direccion TEXT,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE TABLE perfiles (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     nombre TEXT NOT NULL,
+     rol TEXT NOT NULL,
+     pin_hash TEXT NOT NULL,
+     activo INTEGER NOT NULL DEFAULT 1,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE TABLE dispositivos (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     nombre TEXT NOT NULL,
+     ultimo_sync TEXT,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE TABLE sync_cursores (
+     tabla TEXT PRIMARY KEY NOT NULL,
+     cursor TEXT NOT NULL
+   );`,
 ];
 
 /** Aplica las migraciones pendientes usando PRAGMA user_version. */
-export async function migrarBaseDeDatos(db: SQLiteDatabase): Promise<void> {
+export async function migrarBaseDeDatos(db: BaseLocal): Promise<void> {
   await db.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
 
   const fila = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');

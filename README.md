@@ -3,10 +3,12 @@
 App móvil (Android) de inventario y punto de venta para pequeños almacenes y botillerías.
 
 - [Plan de desarrollo por fases](docs/PLAN_DESARROLLO.md)
+- [Configurar Supabase](docs/SUPABASE.md) (servidor: cuentas y sincronización)
 
 ## Tecnología
 
-React Native + Expo (TypeScript), Expo Router, SQLite local. Ver el plan para el detalle.
+React Native + Expo (TypeScript), Expo Router, SQLite local y Supabase para sincronizar
+entre teléfonos. Ver el plan para el detalle.
 
 ## Estructura
 
@@ -15,9 +17,15 @@ src/
   app/          Pantallas (cada archivo es una ruta de Expo Router)
     (tabs)/     Pestañas: Vender, Inventario, Caja, Más
   components/   Componentes reutilizables
-  db/           Base de datos local y migraciones
-  lib/          Utilidades (formato de pesos, fechas...)
+  db/           Base de datos local, migraciones y consultas
+  features/     Piezas de pantallas agrupadas por función
+  lib/          Utilidades (formato de pesos, RUT, PIN, cliente Supabase)
+  sesion/       Cuenta, negocio vinculado y usuario activo
+  sync/         Sincronización con el servidor
   theme/        Colores
+supabase/
+  migrations/   Tablas y reglas de seguridad del servidor
+  tests/        Pruebas SQL (./scripts/probar-sql.sh)
 ```
 
 ## Desarrollo
@@ -28,7 +36,10 @@ Requisitos: Node.js 22.
 npm install
 npm start          # abre el servidor de desarrollo; escanear el QR con Expo Go en Android
 npm run check      # lint + formato + tipos + pruebas
+./scripts/probar-sql.sh   # pruebas de la base del servidor (requiere Postgres)
 ```
+
+Para conectarse al servidor, copiar `.env.example` a `.env.local` con los datos de Supabase.
 
 ## Obtener el APK
 

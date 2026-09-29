@@ -65,21 +65,29 @@ debe ser **multi-negocio** (cada negocio ve solo sus datos).
 
 **Entregable:** APK que se instala, abre y navega entre pestañas vacías.
 
+**Estado:** ✅ completada. El APK se genera en GitHub Actions (ver README).
+
 ## Fase 1 — Cuentas, negocios y sincronización base
 
 **Meta:** varios teléfonos del mismo local conectados a la misma cuenta.
 
 - Proyecto Supabase con tablas multi-negocio y reglas de seguridad (RLS) por `negocio_id`.
-- Registro del negocio (nombre, RUT, dirección) y del dueño.
+- Registro del negocio (nombre, RUT validado, dirección) y del dueño.
 - Inicio de sesión; la sesión queda guardada para trabajar sin internet.
-- Roles: **dueño/administrador** y **cajero**. El cajero no ve costos ni puede anular ventas
-  o ajustar stock sin autorización.
-- Invitar cajeros al negocio (código o enlace).
-- PIN rápido para cambiar de cajero en un mismo teléfono.
+- **Cuenta por negocio + perfiles con PIN:** todos los teléfonos del local inician sesión con la
+  cuenta del negocio (correo y contraseña del dueño). Cada persona (dueño o cajero) es un
+  **perfil** que entra con su PIN de 4 dígitos. Los cajeros no necesitan correo.
+- Roles: **dueño** y **cajero**. Solo el dueño administra usuarios y cierra la sesión del
+  teléfono. (Costos, anulaciones y ajustes se restringirán en las fases 2–4.)
+- El dueño puede recuperar su PIN confirmando la contraseña de la cuenta.
 - Motor de sincronización: guardar local → subir cambios → bajar cambios de otros teléfonos.
-- Indicador de estado: sincronizado / pendiente / sin conexión.
+  Sincroniza al abrir, al volver a la app y cada minuto.
+- Indicador de estado en "Más": sincronizado / cambios por subir / sin conexión.
 
 **Entregable:** dos teléfonos inician sesión en el mismo negocio y ven los mismos datos.
+
+**Estado:** 🚧 código listo; falta crear el proyecto Supabase (ver `docs/SUPABASE.md`) y probar
+con teléfonos reales.
 
 ## Fase 2 — Catálogo de productos
 
@@ -178,7 +186,8 @@ Todas las tablas de datos del negocio incluyen además `negocio_id`, `actualizad
 
 ```
 Negocio(id, nombre, rut, direccion, creado_en)
-Usuario(id, negocio_id, nombre, email, rol[dueno|cajero], pin_hash, activo)
+NegocioUsuario(negocio_id, usuario_id)   -- cuentas de Supabase Auth con acceso al negocio
+Perfil(id, negocio_id, nombre, rol[dueno|cajero], pin_hash, activo)
 Dispositivo(id, negocio_id, nombre, ultimo_sync)
 Suscripcion(id, negocio_id, plan, estado[prueba|activa|vencida|suspendida],
             vence_en, proveedor_pago, referencia_externa)
@@ -186,7 +195,7 @@ Suscripcion(id, negocio_id, plan, estado[prueba|activa|vencida|suspendida],
 Categoria(id, nombre)
 Producto(id, nombre, codigo_barras, categoria_id, precio_venta, costo,
          stock_minimo, unidad, activo, foto)
-Venta(id, fecha, total, descuento, estado[completada|anulada], usuario_id,
+Venta(id, fecha, total, descuento, estado[completada|anulada], perfil_id,
       dispositivo_id, caja_id)
 VentaItem(id, venta_id, producto_id, cantidad, precio_unitario, descuento)
 Pago(id, venta_id, medio[efectivo|debito|credito|transferencia], monto)
@@ -194,8 +203,8 @@ Proveedor(id, nombre, rut, telefono)
 Compra(id, proveedor_id, fecha, total)
 CompraItem(id, compra_id, producto_id, cantidad, costo_unitario)
 MovimientoStock(id, producto_id, tipo[venta|compra|ajuste|anulacion|conteo],
-                cantidad, motivo, referencia_id, fecha, usuario_id, dispositivo_id)
-Caja(id, dispositivo_id, usuario_id, apertura, cierre, monto_inicial, monto_contado)
+                cantidad, motivo, referencia_id, fecha, perfil_id, dispositivo_id)
+Caja(id, dispositivo_id, perfil_id, apertura, cierre, monto_inicial, monto_contado)
 MovimientoCaja(id, caja_id, tipo[ingreso|retiro], monto, motivo)
 ```
 

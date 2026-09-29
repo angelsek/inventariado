@@ -48,3 +48,5 @@ Docs: https://docs.expo.dev/eas/index.md
 - Importar desde `src` con el alias `@/` (ej. `@/lib/formato`).
 - Antes de terminar una tarea: `npm run check` (lint + formato + tipos + pruebas).
 - Si `npx expo install` falla por red, usar `EXPO_OFFLINE=1 npx expo install <paquete>`.
+- Nunca poner pruebas dentro de `src/app/` (Expo Router trataría cada archivo como pantalla); van en `src/__tests__/` o junto al módulo en `__tests__/`.
+- Base de datos del servidor: migraciones SQL en `supabase/migrations/`, pruebas en `supabase/tests/` (`./scripts/probar-sql.sh`).

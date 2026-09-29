@@ -35,6 +35,11 @@ jobs:
 
       - name: Compilar APK
         working-directory: android
+        # Datos del proyecto Supabase (Settings → Secrets and variables → Actions → Variables).
+        # Son públicos por diseño: la seguridad la dan las reglas RLS de la base.
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
         # Solo arquitecturas de teléfonos reales: APK más liviano y compilación más rápida.
         run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
 

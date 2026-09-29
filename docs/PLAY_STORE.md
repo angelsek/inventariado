@@ -36,20 +36,16 @@ Para regenerar el ícono: `python3 scripts/generar-iconos.py`.
 Para regenerar las páginas con tu correo:
 `CONTACTO_CORREO=tu@correo.cl node --experimental-strip-types scripts/generar-legal.mjs`.
 
-## Paso 1: publicar las páginas legales
+## Paso 1: páginas legales (publicadas)
 
-Google pide una **URL pública** de la política de privacidad y otra para solicitar la
-eliminación de la cuenta. La forma gratuita más simple:
+Están en el repositorio público `angelsek/inventariado-legal`, con GitHub Pages:
 
-1. Genera las páginas con tu correo (comando de arriba) o pídemelo y lo hago yo.
-2. En GitHub crea un repositorio **público** nuevo, por ejemplo `inventariado-legal`.
-3. Sube los 4 archivos de `docs/legal-web/` (botón _Add file → Upload files_).
-4. En ese repositorio: **Settings → Pages → Branch: main → Save**.
-5. En unos minutos quedan en `https://<tu-usuario>.github.io/inventariado-legal/`:
-   - Privacidad: `.../privacidad.html`
-   - Eliminar cuenta: `.../eliminar-cuenta.html`
+- Política de privacidad: https://angelsek.github.io/inventariado-legal/privacidad.html
+- Eliminar cuenta y datos: https://angelsek.github.io/inventariado-legal/eliminar-cuenta.html
+- Términos: https://angelsek.github.io/inventariado-legal/terminos.html
 
-(Alternativa: Google Sites, copiando y pegando el texto.)
+Para actualizarlas: regenera con el comando de arriba y copia los archivos de
+`docs/legal-web/` a ese repositorio.
 
 ## Paso 2: crear la app en Play Console
 

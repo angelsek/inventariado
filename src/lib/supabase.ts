@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import { AppState } from 'react-native';
 import AsyncStorage from 'expo-sqlite/kv-store';
 
@@ -8,11 +8,18 @@ const clave = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '';
 /** false si el APK se construyó sin los datos del proyecto Supabase. */
 export const supabaseConfigurado = url !== '' && clave !== '';
 
+/**
+ * Esquema de Postgres con las tablas de la app. Permite compartir el proyecto de
+ * Supabase con otras aplicaciones (ver docs/SUPABASE.md).
+ */
+export const ESQUEMA = 'inventariado';
+
 /** Cliente de Supabase. La sesión se guarda en el teléfono y sirve sin internet. */
-export const supabase: SupabaseClient = createClient(
+export const supabase = createClient(
   supabaseConfigurado ? url : 'https://sin-configurar.supabase.co',
   supabaseConfigurado ? clave : 'sin-configurar',
   {
+    db: { schema: ESQUEMA },
     auth: {
       storage: AsyncStorage,
       autoRefreshToken: true,
@@ -40,6 +47,8 @@ export function mensajeDeError(error: unknown): string {
     return 'Debes confirmar tu correo antes de iniciar sesión.';
   if (/invalid.*email|email.*invalid/i.test(mensaje)) return 'El correo no es válido.';
   if (/ya tiene un negocio/i.test(mensaje)) return 'Esta cuenta ya tiene un negocio.';
+  if (/invalid schema|schema must be one of/i.test(mensaje))
+    return 'El servidor no está configurado: falta exponer el esquema "inventariado" en Supabase.';
   if (/network|fetch|timeout/i.test(mensaje))
     return 'No hay conexión a internet. Inténtalo de nuevo.';
   return mensaje;

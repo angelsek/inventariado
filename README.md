@@ -5,6 +5,7 @@ App móvil (Android) de inventario y punto de venta para pequeños almacenes y b
 - [Plan de desarrollo por fases](docs/PLAN_DESARROLLO.md)
 - [Configurar Supabase](docs/SUPABASE.md) (servidor: cuentas y sincronización)
 - [Piloto con locales reales](docs/PILOTO.md) (firma, publicar versiones, respaldos)
+- [Publicar en Google Play](docs/PLAY_STORE.md) (ficha, formularios y App Bundle)
 
 ## Tecnología
 

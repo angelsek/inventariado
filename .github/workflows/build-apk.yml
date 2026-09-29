@@ -82,6 +82,8 @@ jobs:
           EXPO_PUBLIC_CONTACTO_WHATSAPP: ${{ vars.CONTACTO_WHATSAPP }}
           EXPO_PUBLIC_CONTACTO_CORREO: ${{ vars.CONTACTO_CORREO }}
           EXPO_PUBLIC_DATOS_TRANSFERENCIA: ${{ vars.DATOS_TRANSFERENCIA }}
+          # Instalación directa: la app avisa de versiones nuevas publicadas en Supabase.
+          EXPO_PUBLIC_CANAL: apk
         # Solo arquitecturas de teléfonos reales: APK más liviano y compilación más rápida.
         run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
 

@@ -196,7 +196,7 @@ compartido) y negocio creado desde el teléfono.
 - **Respaldo semanal** de la base de datos con GitHub Actions (pg_dump, 90 días).
 - Pendiente del dueño del proyecto: crear la clave de firma, los secretos y elegir los locales.
 
-**Estado:** 🚧 código listo; falta ejecutar el SQL de la fase 6 y configurar los secretos.
+**Estado:** ✅ código completado (SQL ejecutado). Falta crear la clave de firma y los secretos.
 
 ## Fase 7 — Reportes
 
@@ -216,12 +216,15 @@ compartido) y negocio creado desde el teléfono.
 
 ## Fase 9 — Play Store y crecimiento
 
-- Publicación en Google Play (revisar su política para suscripciones cobradas fuera de la app).
-- Panel web para el dueño (ventas y stock desde el computador).
-- Soporte multi-local (una cuenta, varias sucursales).
-- Más adelante: boleta electrónica SII, terminales de pago, impresora térmica, iOS.
-
----
+- **Preparación para Google Play (hecha):** eliminación de cuenta y datos desde la app (y
+  página web), App Bundle firmado con workflow propio (subida opcional automática a Play),
+  permisos mínimos (cámara e internet), ícono e imagen destacada propios, páginas legales
+  públicas generadas desde la app, canal "play" que oculta pagos externos (política de pagos)
+  y deja las actualizaciones a Play. Guía completa: `docs/PLAY_STORE.md`.
+- Pendiente: verificación de la cuenta de Play, clave de firma, prueba cerrada (12 personas,
+  14 días si la cuenta es personal), capturas de pantalla y publicación.
+- Más adelante: conexión con terminales POS (Transbank, Getnet, etc.), panel web para el
+  dueño, multi-local, boleta electrónica SII, iOS.
 
 ## Modelo de datos inicial
 

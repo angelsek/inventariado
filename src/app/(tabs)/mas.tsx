@@ -83,6 +83,14 @@ export default function MasScreen() {
         {esDueno ? (
           <Opcion icono="log-out-outline" texto="Cerrar sesión" peligro onPress={confirmarCierre} />
         ) : null}
+        {esDueno ? (
+          <Opcion
+            icono="trash-outline"
+            texto="Eliminar cuenta y datos"
+            peligro
+            onPress={() => router.push('/eliminar-cuenta')}
+          />
+        ) : null}
       </View>
 
       <Text style={estilos.seccion}>Servicio</Text>

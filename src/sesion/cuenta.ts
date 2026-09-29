@@ -100,6 +100,30 @@ export async function cerrarSesion(db: BaseLocal): Promise<void> {
   useSesion.getState().desvincular();
 }
 
+/**
+ * Elimina el negocio y todos sus datos (servidor y teléfono). Pide la contraseña
+ * de la cuenta para confirmar que es el dueño. Requiere internet.
+ */
+export async function eliminarNegocio(db: BaseLocal, contrasena: string): Promise<void> {
+  const negocioId = useSesion.getState().negocioId;
+  const { data } = await supabase.auth.getSession();
+  const correo = data.session?.user.email;
+  if (!negocioId || !correo)
+    throw new Error('La sesión expiró. Cierra sesión y vuelve a ingresar.');
+
+  const { error: errorAuth } = await supabase.auth.signInWithPassword({
+    email: correo,
+    password: contrasena,
+  });
+  if (errorAuth) throw errorAuth;
+
+  const { error } = await supabase.rpc('eliminar_mi_negocio', { p_negocio_id: negocioId });
+  if (error) throw new Error(error.message);
+
+  await cerrarSesion(db);
+  useSesion.getState().fijarAvisoSalida('Tu negocio y todos sus datos fueron eliminados.');
+}
+
 async function vincularTelefono(db: BaseLocal, negocioId: string): Promise<void> {
   await borrarDatosLocales(db);
 

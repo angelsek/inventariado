@@ -4,7 +4,7 @@ import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Formulario } from '@/components/Formulario';
-import { CONTACTO } from '@/config';
+import { CANAL, CONTACTO } from '@/config';
 import { AJUSTE_DISPOSITIVO, leerAjuste } from '@/db/ajustes';
 import { obtenerNegocio } from '@/db/negocio';
 import { type Estado, NOMBRE_PLAN } from '@/features/suscripcion/estado';
@@ -150,7 +150,20 @@ export default function SuscripcionScreen() {
         <Text style={estilos.nota}>Sincroniza para ver el estado de la suscripción.</Text>
       )}
 
-      {planes.length ? (
+      {/*
+        En la versión de Google Play no se muestran precios ni formas de pago externas
+        (política de pagos de Play): la suscripción se gestiona fuera de la app.
+      */}
+      {CANAL === 'play' ? (
+        <View style={estilos.tarjeta}>
+          <Text style={estilos.nota}>
+            La suscripción de tu negocio se gestiona directamente con Inventariado, fuera de esta
+            app.
+          </Text>
+        </View>
+      ) : null}
+
+      {CANAL !== 'play' && planes.length ? (
         <>
           <Text style={estilos.seccion}>Planes</Text>
           {planes.map((p) => (
@@ -171,7 +184,7 @@ export default function SuscripcionScreen() {
         </>
       ) : null}
 
-      {esDueno ? (
+      {esDueno && CANAL !== 'play' ? (
         <View style={estilos.tarjeta}>
           <Text style={estilos.plan}>¿Cómo pagar?</Text>
           <Text style={estilos.nota}>

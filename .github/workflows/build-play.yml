@@ -1,0 +1,112 @@
+name: Construir para Google Play
+
+# Genera el Android App Bundle (.aab) que se sube a Google Play Console.
+# Debe firmarse con la clave propia (secretos ANDROID_KEYSTORE_*, ver docs/PILOTO.md):
+# Google Play rechaza archivos firmados con la clave de desarrollo.
+#
+# Si existe el secreto PLAY_SERVICE_ACCOUNT_JSON, además lo sube a la pista
+# elegida de Play Console (ver docs/PLAY_STORE.md). La primera subida de la app
+# siempre debe hacerse a mano desde Play Console.
+on:
+  workflow_dispatch:
+    inputs:
+      pista:
+        description: 'Pista de Play Console donde subirlo (si está configurada la cuenta de servicio)'
+        type: choice
+        options: [internal, alpha, beta, production]
+        default: internal
+      notas:
+        description: 'Novedades de esta versión (se muestran en Play Store)'
+        type: string
+        default: ''
+
+jobs:
+  aab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - run: npm ci
+
+      # Los números de versión de Play parten en 1001 para no confundirse con los APK directos.
+      - name: Generar proyecto Android
+        run: |
+          echo "VERSION_CODE=$((1000 + ${{ github.run_number }}))" >> "$GITHUB_ENV"
+          ANDROID_VERSION_CODE=$((1000 + ${{ github.run_number }})) npx expo prebuild --platform android --no-install --clean
+
+      - name: Preparar clave de firma
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::Falta la clave de firma (secreto ANDROID_KEYSTORE_BASE64). Ver docs/PILOTO.md."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+          {
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore"
+            echo "ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+            echo "ANDROID_KEY_ALIAS=$KEY_ALIAS"
+            echo "ANDROID_KEY_PASSWORD=${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+          } >> "$GITHUB_ENV"
+
+      - name: Compilar App Bundle
+        working-directory: android
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          EXPO_PUBLIC_CONTACTO_WHATSAPP: ${{ vars.CONTACTO_WHATSAPP }}
+          EXPO_PUBLIC_CONTACTO_CORREO: ${{ vars.CONTACTO_CORREO }}
+          EXPO_PUBLIC_DATOS_TRANSFERENCIA: ${{ vars.DATOS_TRANSFERENCIA }}
+          # Instalada desde Play: las actualizaciones las entrega Play, no el aviso de APK.
+          EXPO_PUBLIC_CANAL: play
+        run: ./gradlew bundleRelease --no-daemon
+
+      - name: Nombrar AAB
+        id: nombre
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          ARCHIVO="inventariado-v${VERSION}-${VERSION_CODE}.aab"
+          mv android/app/build/outputs/bundle/release/app-release.aab "$ARCHIVO"
+          echo "archivo=$ARCHIVO" >> "$GITHUB_OUTPUT"
+          mkdir -p notas
+          printf '%s' "${{ inputs.notas }}" > notas/whatsnew-es-419
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.nombre.outputs.archivo }}
+          path: ${{ steps.nombre.outputs.archivo }}
+          retention-days: 90
+
+      - name: Revisar cuenta de servicio de Play
+        id: play
+        env:
+          CUENTA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: echo "configurada=$([ -n "$CUENTA" ] && echo si || echo no)" >> "$GITHUB_OUTPUT"
+
+      - name: Subir a Google Play
+        if: steps.play.outputs.configurada == 'si'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: cl.inventariado.app
+          releaseFiles: ${{ steps.nombre.outputs.archivo }}
+          track: ${{ inputs.pista }}
+          status: ${{ inputs.pista == 'production' && 'draft' || 'completed' }}
+          whatsNewDirectory: ${{ inputs.notas != '' && 'notas' || '' }}

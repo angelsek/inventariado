@@ -131,6 +131,7 @@ function Navegacion() {
         <Stack.Screen name="reportes" options={conEncabezado('Reportes')} />
         <Stack.Screen name="exportar" options={conEncabezado('Exportar datos')} />
         <Stack.Screen name="comentario" options={conEncabezado('Enviar comentario')} />
+        <Stack.Screen name="eliminar-cuenta" options={conEncabezado('Eliminar cuenta')} />
       </Stack.Protected>
 
       {/*

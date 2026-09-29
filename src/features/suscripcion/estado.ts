@@ -70,7 +70,7 @@ export function avisoSuscripcion(e: EstadoSuscripcion): { texto: string; grave: 
   switch (e.estado) {
     case 'suspendida':
       return {
-        texto: 'Suscripción suspendida: la app quedó en solo lectura. Toca para ver cómo pagar.',
+        texto: 'Suscripción suspendida: la app quedó en solo lectura. Toca para ver el detalle.',
         grave: true,
       };
     case 'vencida':

@@ -86,21 +86,29 @@ debe ser **multi-negocio** (cada negocio ve solo sus datos).
 
 **Entregable:** dos teléfonos inician sesión en el mismo negocio y ven los mismos datos.
 
-**Estado:** 🚧 código listo; falta crear el proyecto Supabase (ver `docs/SUPABASE.md`) y probar
-con teléfonos reales.
+**Estado:** ✅ completada. Supabase configurado (esquema `inventariado` en un proyecto
+compartido) y negocio creado desde el teléfono.
 
 ## Fase 2 — Catálogo de productos
 
 **Meta:** tener los productos cargados.
 
-- Crear, editar, desactivar y buscar productos.
-- Campos: nombre, código de barras, categoría, precio de venta, costo, stock mínimo, unidad
-  (unidad / pack / kg), foto opcional.
-- **Escáner con la cámara** para crear y buscar productos (EAN-13, EAN-8, UPC, Code 128).
-- Categorías (bebidas, cervezas, destilados, snacks, abarrotes, cigarros...).
-- Importación masiva desde Excel/CSV para la carga inicial.
+- Crear, editar, desactivar y buscar productos (por palabras en cualquier orden o por código).
+- Campos: nombre, código de barras, categoría, precio de venta, costo (con ganancia y margen),
+  stock inicial, aviso de stock mínimo, unidad (unidad / pack / kilo).
+- **Escáner con la cámara**: desde el inventario abre el producto; si no existe, abre el
+  formulario de producto nuevo con el código ya puesto (EAN-13/8, UPC, Code 128/39, ITF-14).
+- Categorías, con un botón para agregar las sugeridas (bebidas, cervezas, vinos, destilados...).
+- Importación desde Excel guardado como CSV; si el código ya existe, actualiza el producto.
+- El stock es la suma de movimientos (`movimientos_stock`); el stock inicial es el primero.
+- El cajero ve precio y stock, pero no el costo, y no puede crear ni editar.
+- Aviso local de código de barras duplicado (sin restricción en el servidor, para no trabar la
+  sincronización si dos teléfonos sin conexión usan el mismo código).
+- Pendiente para más adelante: fotos de productos (usan almacenamiento del plan gratuito).
 
 **Entregable:** el dueño carga su catálogo y aparece en todos los teléfonos del local.
+
+**Estado:** 🚧 código listo; falta ejecutar el SQL de la fase 2 en Supabase y probar.
 
 ## Fase 3 — Ventas (fin del MVP)
 

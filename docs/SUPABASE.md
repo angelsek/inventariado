@@ -23,6 +23,9 @@ Se puede usar un proyecto **nuevo** o uno **existente** que ya tenga otra aplica
 
 Los archivos se pueden ejecutar de nuevo sin problema: completan lo que falte y no borran datos.
 
+Se ejecutan **en orden** (el nombre empieza con la fecha). Si un archivo ya ejecutado cambia en
+una actualización, basta con volver a ejecutarlo.
+
 ## 3. Exponer el esquema
 
 En **Project Settings → Data API → Exposed schemas**, agregar `inventariado` a la lista
@@ -32,6 +35,7 @@ En **Project Settings → Data API → Exposed schemas**, agregar `inventariado`
 En la misma página, si aparecen **Exposed tables** y **Exposed functions**, activar:
 
 - Tablas de `inventariado`: `negocios`, `negocio_usuarios`, `perfiles`, `dispositivos`.
+- Tablas de la fase 2: `categorias`, `productos`, `movimientos_stock`.
 - Funciones de `inventariado`: `crear_negocio`, `sincronizar_descarga`.
 
 (`es_miembro` y `marcar_cambio_sync` las usa la base internamente; no hace falta exponerlas.)

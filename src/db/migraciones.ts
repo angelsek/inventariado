@@ -52,6 +52,50 @@ export const migraciones: string[] = [
      tabla TEXT PRIMARY KEY NOT NULL,
      cursor TEXT NOT NULL
    );`,
+
+  // 3 (fase 2): catálogo. El stock es la suma de movimientos_stock.
+  `CREATE TABLE categorias (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     nombre TEXT NOT NULL,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE TABLE productos (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     nombre TEXT NOT NULL,
+     codigo_barras TEXT,
+     categoria_id TEXT,
+     precio_venta INTEGER NOT NULL DEFAULT 0,
+     costo INTEGER NOT NULL DEFAULT 0,
+     stock_minimo REAL NOT NULL DEFAULT 0,
+     unidad TEXT NOT NULL DEFAULT 'unidad',
+     activo INTEGER NOT NULL DEFAULT 1,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE INDEX productos_codigo ON productos (negocio_id, codigo_barras);
+   CREATE TABLE movimientos_stock (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     producto_id TEXT NOT NULL,
+     tipo TEXT NOT NULL,
+     cantidad REAL NOT NULL,
+     motivo TEXT,
+     referencia_id TEXT,
+     perfil_id TEXT,
+     dispositivo_id TEXT,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE INDEX movimientos_producto ON movimientos_stock (producto_id);`,
 ];
 
 /** Aplica las migraciones pendientes usando PRAGMA user_version. */

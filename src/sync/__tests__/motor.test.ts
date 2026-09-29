@@ -1,5 +1,6 @@
 import { migrarBaseDeDatos } from '@/db/migraciones';
 import { cambiarActivo, crearPerfil, listarPerfiles } from '@/db/perfiles';
+import { crearProducto, listarProductos, registrarMovimiento } from '@/db/productos';
 import type { BaseLocal } from '@/db/tipos';
 import { crearBaseEnMemoria } from '@/test/baseEnMemoria';
 import { crearRemotoFalso } from '@/test/remotoFalso';
@@ -94,5 +95,46 @@ describe('sincronizar', () => {
     await sincronizar(a, remoto, NEGOCIO);
 
     expect(await listarPerfiles(a, 'otro')).toEqual([]);
+  });
+
+  it('sincroniza productos y su stock (movimientos) entre teléfonos', async () => {
+    const remoto = crearRemotoFalso();
+    const a = await nuevoTelefono();
+    const b = await nuevoTelefono();
+    const autor = { perfilId: 'p1', dispositivoId: 'd1' };
+
+    const id = await crearProducto(
+      a,
+      NEGOCIO,
+      {
+        nombre: 'Queso gauda',
+        codigoBarras: null,
+        categoriaId: null,
+        precioVenta: 9990,
+        costo: 7000,
+        stockMinimo: 0.5,
+        unidad: 'kg',
+      },
+      2.5,
+      autor,
+    );
+    await sincronizar(a, remoto, NEGOCIO);
+    expect(remoto.filas('productos')[0]).toMatchObject({ activo: true, stock_minimo: 0.5 });
+
+    await sincronizar(b, remoto, NEGOCIO);
+    await registrarMovimiento(b, {
+      negocioId: NEGOCIO,
+      productoId: id,
+      tipo: 'venta',
+      cantidad: -0.75,
+      autor,
+    });
+    await sincronizar(b, remoto, NEGOCIO);
+    await sincronizar(a, remoto, NEGOCIO);
+
+    for (const telefono of [a, b]) {
+      const [producto] = await listarProductos(telefono, NEGOCIO);
+      expect(producto).toMatchObject({ nombre: 'Queso gauda', unidad: 'kg', stock: 1.75 });
+    }
   });
 });

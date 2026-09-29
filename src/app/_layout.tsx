@@ -63,6 +63,9 @@ function Navegacion() {
       <Stack.Protected guard={!!negocioId && !!perfil}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="usuarios" options={conEncabezado('Usuarios')} />
+        <Stack.Screen name="producto/[id]" options={conEncabezado('Producto')} />
+        <Stack.Screen name="categorias" options={conEncabezado('Categorías')} />
+        <Stack.Screen name="importar" options={conEncabezado('Importar productos')} />
       </Stack.Protected>
     </Stack>
   );

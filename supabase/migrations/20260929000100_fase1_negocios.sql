@@ -238,7 +238,12 @@ declare
   v_cursor xid8 := pg_snapshot_xmin(pg_current_snapshot());
   v_filas jsonb;
 begin
-  if p_tabla not in ('negocios', 'perfiles', 'dispositivos') then
+  -- Sincronizable = tabla del esquema con columna sync_xid (negocio_usuarios no la tiene).
+  -- Así las migraciones de fases siguientes no necesitan redefinir esta función.
+  if not exists (
+    select 1 from information_schema.columns
+     where table_schema = 'inventariado' and table_name = p_tabla and column_name = 'sync_xid'
+  ) then
     raise exception 'Tabla no sincronizable: %', p_tabla using errcode = '22023';
   end if;
 

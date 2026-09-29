@@ -1,12 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Constants from 'expo-constants';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { obtenerNegocio } from '@/db/negocio';
 import { formatearFechaHora } from '@/lib/formato';
+import { supabase } from '@/lib/supabase';
 import { cerrarSesion } from '@/sesion/cuenta';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
@@ -18,9 +19,22 @@ export default function MasScreen() {
   const [negocio, setNegocio] = useState('');
   const esDueno = perfil?.rol === 'dueno';
 
+  const [esAdmin, setEsAdmin] = useState(false);
+
   useEffect(() => {
     if (negocioId) obtenerNegocio(db, negocioId).then((n) => setNegocio(n?.nombre ?? ''));
   }, [db, negocioId, versionDatos]);
+
+  // Solo las cuentas administradoras de la app ven el panel (requiere internet).
+  useFocusEffect(
+    useCallback(() => {
+      if (!esDueno) return;
+      supabase
+        .rpc('es_admin')
+        .then(({ data }) => setEsAdmin(data === true))
+        .then(undefined, () => {});
+    }, [esDueno]),
+  );
 
   const confirmarCierre = () => {
     const advertencia =
@@ -67,6 +81,32 @@ export default function MasScreen() {
         {esDueno ? (
           <Opcion icono="log-out-outline" texto="Cerrar sesión" peligro onPress={confirmarCierre} />
         ) : null}
+      </View>
+
+      <Text style={estilos.seccion}>Servicio</Text>
+      <View style={estilos.tarjeta}>
+        <Opcion
+          icono="card-outline"
+          texto="Suscripción"
+          onPress={() => router.push('/suscripcion')}
+        />
+        {esAdmin ? (
+          <Opcion
+            icono="shield-checkmark-outline"
+            texto="Administración"
+            onPress={() => router.push('/admin')}
+          />
+        ) : null}
+        <Opcion
+          icono="document-text-outline"
+          texto="Términos y condiciones"
+          onPress={() => router.push('/legal/terminos')}
+        />
+        <Opcion
+          icono="lock-closed-outline"
+          texto="Política de privacidad"
+          onPress={() => router.push('/legal/privacidad')}
+        />
       </View>
 
       <Text style={estilos.version}>Versión {Constants.expoConfig?.version ?? '-'}</Text>

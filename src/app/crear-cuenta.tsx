@@ -1,6 +1,7 @@
-import { router } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
+import { StyleSheet, Text } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Campo } from '@/components/Campo';
@@ -15,6 +16,7 @@ import {
 import { mensajeDeError } from '@/lib/supabase';
 import { esCorreoValido } from '@/lib/validacion';
 import { crearCuentaYNegocio } from '@/sesion/cuenta';
+import { colores } from '@/theme/colores';
 
 type Form = FormNegocio & { correo: string; contrasena: string };
 
@@ -73,7 +75,23 @@ export default function CrearCuentaScreen() {
         error={errores.contrasena}
       />
       <CamposNegocio form={form} errores={errores} onCambio={cambiar} />
+      <Text style={estilos.legal}>
+        Tienes 14 días de prueba gratis. Al crear la cuenta aceptas los{' '}
+        <Link href="/legal/terminos" style={estilos.enlace}>
+          Términos y condiciones
+        </Link>{' '}
+        y la{' '}
+        <Link href="/legal/privacidad" style={estilos.enlace}>
+          Política de privacidad
+        </Link>
+        .
+      </Text>
       <Boton titulo="Crear cuenta" onPress={enviar} cargando={cargando} />
     </Formulario>
   );
 }
+
+const estilos = StyleSheet.create({
+  legal: { marginBottom: 16, fontSize: 14, color: colores.textoSecundario },
+  enlace: { color: colores.primario },
+});

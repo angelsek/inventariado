@@ -17,6 +17,7 @@ import { obtenerAutor } from '@/sesion/autor';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
+import { bloqueadoPorSuscripcion } from '@/features/suscripcion/useSoloLectura';
 
 type Linea = { producto: Producto; cantidad: string; costo: string };
 
@@ -75,6 +76,7 @@ export default function CompraScreen() {
   const total = items.reduce((suma, item) => suma + totalItemCompra(item), 0);
 
   const guardar = async () => {
+    if (bloqueadoPorSuscripcion()) return;
     if (items.length === 0) return setError('Agrega al menos un producto.');
     if (items.some((i) => i.cantidad <= 0))
       return setError('Revisa las cantidades: deben ser mayores que cero.');

@@ -23,6 +23,7 @@ import { obtenerAutor } from '@/sesion/autor';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
+import { bloqueadoPorSuscripcion } from '@/features/suscripcion/useSoloLectura';
 
 const soloDigitos = (v: string) => v.replace(/\D/g, '');
 
@@ -70,6 +71,7 @@ export default function CobrarScreen() {
   }
 
   const confirmar = async () => {
+    if (bloqueadoPorSuscripcion()) return;
     if (!revision.ok) return setError(revision.error);
     setGuardando(true);
     setError(null);

@@ -38,6 +38,9 @@ En la misma página, si aparecen **Exposed tables** y **Exposed functions**, act
 - Tablas de la fase 2: `categorias`, `productos`, `movimientos_stock`.
 - Tablas de la fase 3: `ventas`, `venta_items`, `pagos`.
 - Tablas de la fase 4: `proveedores`, `compras`, `compra_items`, `cajas`, `movimientos_caja`.
+- Tablas de la fase 5: `planes`, `suscripciones`, `pagos_suscripcion`.
+- Funciones de la fase 5: `registrar_dispositivo`, `mis_dispositivos`, `desvincular_dispositivo`,
+  `es_admin`, `admin_listar_negocios`, `admin_registrar_pago`, `admin_actualizar_suscripcion`.
 - Funciones de `inventariado`: `crear_negocio`, `sincronizar_descarga`.
 
 (`es_miembro` y `marcar_cambio_sync` las usa la base internamente; no hace falta exponerlas.)
@@ -96,3 +99,35 @@ Funciona sin problemas mientras el uso sea bajo. A tener en cuenta:
   app lo usa a diario, no pasa.
 - **Al vender la app** (fase 5) conviene pasar a un proyecto propio. Como todo está en el
   esquema `inventariado`, se puede exportar y mover sin tocar la otra aplicación.
+
+## Suscripciones y panel de administración (fase 5)
+
+### Hacerte administrador
+
+El panel **Más → Administración** solo aparece para las cuentas registradas como
+administradoras. Para agregar la tuya, ejecuta en el SQL Editor (con tu correo):
+
+```sql
+insert into inventariado.administradores (usuario_id)
+select id from auth.users where email = 'tu-correo@ejemplo.cl';
+```
+
+### Cambiar precios o límites de los planes
+
+```sql
+update inventariado.planes set precio_mensual = 12990, max_dispositivos = 3 where id = 'basico';
+```
+
+Volver a ejecutar el SQL de la fase 5 no pisa estos cambios.
+
+### Datos para pagar (opcional)
+
+En GitHub (Settings → Secrets and variables → Actions → Variables) puedes crear:
+
+| Nombre                | Ejemplo                                          |
+| --------------------- | ------------------------------------------------ |
+| `CONTACTO_WHATSAPP`   | `+56912345678`                                   |
+| `CONTACTO_CORREO`     | `contacto@tu-dominio.cl`                         |
+| `DATOS_TRANSFERENCIA` | `Banco X, cuenta vista 123456, RUT 11.111.111-1` |
+
+Aparecen en la pantalla Suscripción de tus clientes, con un botón "Avisar que pagué".

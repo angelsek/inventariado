@@ -51,6 +51,8 @@ export function mensajeDeError(error: unknown): string {
     return 'Debes confirmar tu correo antes de iniciar sesión.';
   if (/invalid.*email|email.*invalid/i.test(mensaje)) return 'El correo no es válido.';
   if (/ya tiene un negocio/i.test(mensaje)) return 'Esta cuenta ya tiene un negocio.';
+  if (/LIMITE_DISPOSITIVOS/.test(mensaje))
+    return 'Tu plan no permite más teléfonos. Desvincula uno desde otro teléfono (Más → Suscripción) o cambia al plan Pro.';
   if (/could not find the (function|table)|schema cache/i.test(mensaje))
     return 'El servidor no está actualizado: falta ejecutar el SQL de la app en Supabase o recargar su esquema.';
   if (/invalid schema|schema must be one of/i.test(mensaje))

@@ -27,6 +27,7 @@ import { obtenerAutor } from '@/sesion/autor';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
+import { bloqueadoPorSuscripcion } from '@/features/suscripcion/useSoloLectura';
 
 type Form = {
   nombre: string;
@@ -117,6 +118,7 @@ export default function ProductoScreen() {
   };
 
   const guardar = async () => {
+    if (bloqueadoPorSuscripcion()) return;
     const nuevos: Errores = {};
     const precioVenta = parsearMonto(form.precioVenta || '0');
     const costo = parsearMonto(form.costo || '0');

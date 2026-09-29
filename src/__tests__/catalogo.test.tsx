@@ -46,11 +46,7 @@ jest.mock('expo-camera', () => {
   };
 });
 
-jest.mock('@/lib/supabase', () => ({
-  supabaseConfigurado: true,
-  supabase: {},
-  mensajeDeError: (e: unknown) => String(e),
-}));
+jest.mock('@/lib/supabase', () => require('@/test/mockSupabase'));
 jest.mock('@/sync/useSincronizacionAutomatica', () => ({ useSincronizacionAutomatica: () => {} }));
 jest.mock('@/sync/ejecutar', () => ({ sincronizarAhora: jest.fn() }));
 

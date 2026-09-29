@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 
 import { AJUSTE_NEGOCIO, leerAjuste } from '@/db/ajustes';
 import { migrarBaseDeDatos, NOMBRE_BASE_DE_DATOS } from '@/db/migraciones';
+import { obtenerEstadoSuscripcion } from '@/db/suscripcion';
 import { useSesion } from '@/sesion/store';
 import { useSincronizacionAutomatica } from '@/sync/useSincronizacionAutomatica';
 import { colores } from '@/theme/colores';
@@ -29,11 +30,14 @@ export default function RootLayout() {
  */
 function Navegacion() {
   const db = useSQLiteContext();
-  const { cargada, negocioId, perfil, cargar } = useSesion();
+  const { cargada, negocioId, perfil, cargar, fijarSuscripcion } = useSesion();
 
   useEffect(() => {
-    leerAjuste(db, AJUSTE_NEGOCIO).then(cargar);
-  }, [db, cargar]);
+    leerAjuste(db, AJUSTE_NEGOCIO).then(async (id) => {
+      if (id) fijarSuscripcion(await obtenerEstadoSuscripcion(db, id));
+      cargar(id);
+    });
+  }, [db, cargar, fijarSuscripcion]);
 
   useEffect(() => {
     if (cargada) SplashScreen.hideAsync();
@@ -74,7 +78,16 @@ function Navegacion() {
         <Stack.Screen name="proveedores" options={conEncabezado('Proveedores')} />
         <Stack.Screen name="reponer" options={conEncabezado('Por reponer')} />
         <Stack.Screen name="conteo" options={conEncabezado('Conteo de inventario')} />
+        <Stack.Screen name="suscripcion" options={conEncabezado('Suscripción')} />
+        <Stack.Screen name="admin" options={conEncabezado('Administración')} />
       </Stack.Protected>
+
+      {/*
+        Términos y privacidad: se pueden leer antes y después de iniciar sesión.
+        Va al final: si una ruta protegida no está disponible, se abre la primera
+        de la lista que sí lo esté, y no debe ser esta.
+      */}
+      <Stack.Screen name="legal/[doc]" options={conEncabezado('')} />
     </Stack>
   );
 }

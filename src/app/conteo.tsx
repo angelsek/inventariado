@@ -13,6 +13,7 @@ import { obtenerAutor } from '@/sesion/autor';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
+import { bloqueadoPorSuscripcion } from '@/features/suscripcion/useSoloLectura';
 
 /** Toma de inventario: contar lo que hay y dejar el stock igual a lo contado. */
 export default function ConteoScreen() {
@@ -32,6 +33,7 @@ export default function ConteoScreen() {
   };
 
   const aplicar = () =>
+    !bloqueadoPorSuscripcion() &&
     Alert.alert(
       'Aplicar conteo',
       `El stock de ${lineas.length} producto(s) quedará igual a lo contado. Hazlo sin vender al mismo tiempo.`,

@@ -30,6 +30,7 @@ import { obtenerAutor } from '@/sesion/autor';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
+import { bloqueadoPorSuscripcion } from '@/features/suscripcion/useSoloLectura';
 
 const soloDigitos = (v: string) => v.replace(/\D/g, '');
 
@@ -85,6 +86,7 @@ export default function CajaScreen() {
   };
 
   const abrir = async () => {
+    if (bloqueadoPorSuscripcion()) return;
     await abrirCaja(db, negocioId!, parsearMonto(montoInicial || '0') ?? 0, await obtenerAutor(db));
     setMontoInicial('');
     listo();

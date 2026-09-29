@@ -1,8 +1,10 @@
 import { AJUSTE_DISPOSITIVO, leerAjuste } from '@/db/ajustes';
 import { marcarSincronizado } from '@/db/dispositivos';
 import { obtenerPerfil } from '@/db/perfiles';
+import { dispositivoDesvinculado, obtenerEstadoSuscripcion } from '@/db/suscripcion';
 import type { BaseLocal } from '@/db/tipos';
 import { mensajeDeError, supabase } from '@/lib/supabase';
+import { cerrarSesion } from '@/sesion/cuenta';
 import { useSesion } from '@/sesion/store';
 
 import { contarPendientes, sincronizar } from './motor';
@@ -36,6 +38,14 @@ async function ejecutar(db: BaseLocal): Promise<void> {
 
     const resultado = await sincronizar(db, remotoSupabase, negocioId);
     if (resultado.descargadas > 0) useSesion.getState().datosCambiaron();
+
+    // Otro teléfono desvinculó a este (para liberar cupo del plan): se cierra la sesión.
+    if (dispositivoId && (await dispositivoDesvinculado(db, dispositivoId))) {
+      await cerrarSesion(db);
+      useSesion.getState().fijarAvisoSalida('Este teléfono fue desvinculado del negocio.');
+      return;
+    }
+    useSesion.getState().fijarSuscripcion(await obtenerEstadoSuscripcion(db, negocioId));
 
     await expulsarPerfilDesactivado(db);
     useSesion.getState().actualizarSync({

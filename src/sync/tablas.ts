@@ -166,4 +166,19 @@ export const TABLAS_SYNC: readonly TablaSync[] = [
     ],
     booleanas: ['eliminado'],
   },
+  {
+    // Solo se descarga: la app nunca la modifica (no hay filas pendientes que subir).
+    nombre: 'suscripciones',
+    columnas: [
+      'id',
+      'negocio_id',
+      'plan_id',
+      'prueba_hasta',
+      'pagado_hasta',
+      'suspendida',
+      'notas',
+      ...control,
+    ],
+    booleanas: ['suspendida', 'eliminado'],
+  },
 ];

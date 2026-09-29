@@ -32,11 +32,7 @@ jest.mock('expo-sqlite', () => {
 });
 
 // Sin servidor: la sincronización y Supabase no se prueban aquí.
-jest.mock('@/lib/supabase', () => ({
-  supabaseConfigurado: true,
-  supabase: {},
-  mensajeDeError: (e: unknown) => String(e),
-}));
+jest.mock('@/lib/supabase', () => require('@/test/mockSupabase'));
 jest.mock('@/sync/useSincronizacionAutomatica', () => ({ useSincronizacionAutomatica: () => {} }));
 
 const NEGOCIO = 'negocio-1';

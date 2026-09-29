@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { AJUSTE_DISPOSITIVO, AJUSTE_NEGOCIO, guardarAjuste, leerAjuste } from '@/db/ajustes';
 import { registrarDispositivo } from '@/db/dispositivos';
 import { borrarDatosLocales } from '@/db/negocio';
+import { obtenerEstadoSuscripcion } from '@/db/suscripcion';
 import type { BaseLocal } from '@/db/tipos';
 import { hashPin } from '@/lib/pin';
 import { supabase } from '@/lib/supabase';
@@ -107,11 +108,21 @@ async function vincularTelefono(db: BaseLocal, negocioId: string): Promise<void>
     dispositivoId = randomUUID();
     await guardarAjuste(db, AJUSTE_DISPOSITIVO, dispositivoId);
   }
-  await registrarDispositivo(db, { id: dispositivoId, negocioId, nombre: nombreDelTelefono() });
+  const nombre = nombreDelTelefono();
+  // El servidor revisa el límite de teléfonos del plan (error LIMITE_DISPOSITIVOS).
+  const { error } = await supabase.rpc('registrar_dispositivo', {
+    p_id: dispositivoId,
+    p_negocio_id: negocioId,
+    p_nombre: nombre,
+  });
+  if (error) throw new Error(error.message);
+  await registrarDispositivo(db, { id: dispositivoId, negocioId, nombre });
 
   // La primera sincronización trae el negocio y los perfiles: sin ella no se puede elegir usuario.
   await sincronizar(db, remotoSupabase, negocioId);
   await guardarAjuste(db, AJUSTE_NEGOCIO, negocioId);
+  useSesion.getState().fijarSuscripcion(await obtenerEstadoSuscripcion(db, negocioId));
+  useSesion.getState().fijarAvisoSalida(null);
   useSesion.getState().vincular(negocioId);
 }
 

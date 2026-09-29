@@ -155,22 +155,29 @@ compartido) y negocio creado desde el teléfono.
 
 **Entregable:** el dueño sabe qué tiene, qué perdió y si cada caja cuadra.
 
-**Estado:** 🚧 código listo; falta ejecutar el SQL de la fase 4 en Supabase y probar.
+**Estado:** ✅ completada (SQL ejecutado en Supabase).
 
 ## Fase 5 — Suscripciones y administración del servicio
 
 **Meta:** poder cobrar a los negocios clientes.
 
-- Planes (ej. Básico: 1–2 teléfonos; Pro: más teléfonos y reportes avanzados).
-- **Prueba gratuita** (ej. 14 días) al registrarse.
-- Cobro mensual recurrente con Mercado Pago o Flow; webhook que actualiza el estado.
-- Estados de la suscripción: prueba, activa, vencida (con **período de gracia**), suspendida.
-- Al vencer: la app avisa; tras la gracia pasa a **solo lectura** (nunca se borran datos).
-- Límite de teléfonos según el plan.
-- Panel interno de administración (para ti): negocios, planes, pagos, activar/suspender.
-- Términos y condiciones y política de privacidad.
+- Planes en la base de datos (se cambian con SQL): **Básico** $9.990/mes, 2 teléfonos; **Pro**
+  $19.990/mes, 5 teléfonos + reportes avanzados (fase 7).
+- **Prueba gratis de 14 días** (con plan Pro) creada automáticamente al registrar un negocio.
+- Estados: prueba → activa → vencida (7 días de gracia, la app avisa) → suspendida (solo
+  lectura: se ven los datos pero no se vende ni se modifica nada). Nunca se borran datos.
+- **Sin pasarela de pago** por ahora: el cliente paga (ej. transferencia) y el administrador
+  registra el pago desde el **panel de administración** de la app, que extiende la suscripción
+  sin perder días de prueba o ya pagados.
+- **Límite de teléfonos** por plan, validado en el servidor al iniciar sesión; el dueño puede
+  **desvincular** teléfonos desde Más → Suscripción (el teléfono desvinculado cierra sesión).
+- Pantalla Suscripción: estado, planes, teléfonos, historial de pagos y cómo pagar.
+- Panel de administración: clientes con estado, vencimiento, teléfonos y última conexión;
+  registrar pagos, extender prueba, suspender o reactivar; ingreso mensual estimado.
+- Borradores de **Términos y condiciones** y **Política de privacidad** (revisar con abogado).
+- Pendiente: conectar con los terminales POS (Transbank, Getnet, etc.) al publicar en Play Store.
 
-**Entregable:** un negocio nuevo se registra, prueba la app y paga su mensualidad.
+**Estado:** 🚧 código listo; falta ejecutar el SQL de la fase 5 y registrarse como administrador.
 
 ## Fase 6 — Piloto con locales reales
 

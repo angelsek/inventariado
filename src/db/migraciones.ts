@@ -223,6 +223,21 @@ export const migraciones: string[] = [
    CREATE INDEX movimientos_caja_caja ON movimientos_caja (caja_id);
    ALTER TABLE ventas ADD COLUMN caja_id TEXT;
    CREATE INDEX ventas_caja ON ventas (caja_id);`,
+
+  // 6 (fase 5): suscripción del negocio (solo se descarga; la modifica el administrador).
+  `CREATE TABLE suscripciones (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     plan_id TEXT NOT NULL,
+     prueba_hasta TEXT,
+     pagado_hasta TEXT,
+     suspendida INTEGER NOT NULL DEFAULT 0,
+     notas TEXT,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );`,
 ];
 
 /** Aplica las migraciones pendientes usando PRAGMA user_version. */

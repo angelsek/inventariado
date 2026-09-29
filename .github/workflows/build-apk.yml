@@ -40,6 +40,10 @@ jobs:
         env:
           EXPO_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          # Opcionales: dónde avisar los pagos de la suscripción (pantalla Suscripción).
+          EXPO_PUBLIC_CONTACTO_WHATSAPP: ${{ vars.CONTACTO_WHATSAPP }}
+          EXPO_PUBLIC_CONTACTO_CORREO: ${{ vars.CONTACTO_CORREO }}
+          EXPO_PUBLIC_DATOS_TRANSFERENCIA: ${{ vars.DATOS_TRANSFERENCIA }}
         # Solo arquitecturas de teléfonos reales: APK más liviano y compilación más rápida.
         run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
 

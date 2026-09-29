@@ -5,9 +5,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Boton } from '@/components/Boton';
 import { supabaseConfigurado } from '@/lib/supabase';
+import { useSesion } from '@/sesion/store';
 import { colores } from '@/theme/colores';
 
 export default function BienvenidaScreen() {
+  const avisoSalida = useSesion((s) => s.avisoSalida);
   return (
     <SafeAreaView style={estilos.pantalla}>
       <View style={estilos.encabezado}>
@@ -15,6 +17,8 @@ export default function BienvenidaScreen() {
         <Text style={estilos.titulo}>Inventariado</Text>
         <Text style={estilos.subtitulo}>Inventario y ventas para tu almacén o botillería</Text>
       </View>
+
+      {avisoSalida ? <Text style={estilos.aviso}>{avisoSalida}</Text> : null}
 
       {!supabaseConfigurado ? (
         <Text style={estilos.aviso}>

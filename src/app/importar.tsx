@@ -17,6 +17,7 @@ import { obtenerAutor } from '@/sesion/autor';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
+import { bloqueadoPorSuscripcion } from '@/features/suscripcion/useSoloLectura';
 
 export default function ImportarScreen() {
   const db = useSQLiteContext();
@@ -46,6 +47,7 @@ export default function ImportarScreen() {
   };
 
   const importar = async () => {
+    if (bloqueadoPorSuscripcion()) return;
     if (!analisis) return;
     setImportando(true);
     try {

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import type { Perfil } from '@/db/perfiles';
+import type { EstadoSuscripcion } from '@/features/suscripcion/estado';
 
 export type EstadoSync = 'inactivo' | 'sincronizando' | 'ok' | 'error';
 
@@ -19,6 +20,10 @@ type Sesion = {
   };
   /** Aumenta cuando cambian datos locales; las pantallas lo usan para recargar. */
   versionDatos: number;
+  /** Estado de la suscripción del negocio (null: aún no se descarga). */
+  suscripcion: EstadoSuscripcion | null;
+  /** Mensaje para mostrar en la bienvenida tras un cierre de sesión forzado. */
+  avisoSalida: string | null;
 
   cargar(negocioId: string | null): void;
   vincular(negocioId: string): void;
@@ -27,6 +32,8 @@ type Sesion = {
   salir(): void;
   actualizarSync(cambios: Partial<Sesion['sync']>): void;
   datosCambiaron(): void;
+  fijarSuscripcion(suscripcion: EstadoSuscripcion | null): void;
+  fijarAvisoSalida(aviso: string | null): void;
 };
 
 const syncInicial: Sesion['sync'] = {
@@ -42,12 +49,16 @@ export const useSesion = create<Sesion>((set) => ({
   perfil: null,
   sync: syncInicial,
   versionDatos: 0,
+  suscripcion: null,
+  avisoSalida: null,
 
   cargar: (negocioId) => set({ cargada: true, negocioId }),
   vincular: (negocioId) => set({ negocioId, perfil: null }),
-  desvincular: () => set({ negocioId: null, perfil: null, sync: syncInicial }),
+  desvincular: () => set({ negocioId: null, perfil: null, sync: syncInicial, suscripcion: null }),
   entrar: (perfil) => set({ perfil }),
   salir: () => set({ perfil: null }),
   actualizarSync: (cambios) => set((s) => ({ sync: { ...s.sync, ...cambios } })),
   datosCambiaron: () => set((s) => ({ versionDatos: s.versionDatos + 1 })),
+  fijarSuscripcion: (suscripcion) => set({ suscripcion }),
+  fijarAvisoSalida: (avisoSalida) => set({ avisoSalida }),
 }));

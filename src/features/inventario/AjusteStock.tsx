@@ -10,6 +10,7 @@ import { ajustarStock, MOTIVOS_AJUSTE, type Producto } from '@/db/productos';
 import { formatearCantidad, parsearCantidad } from '@/lib/numeros';
 import { obtenerAutor } from '@/sesion/autor';
 import { colores } from '@/theme/colores';
+import { bloqueadoPorSuscripcion } from '@/features/suscripcion/useSoloLectura';
 
 type Props = {
   producto: Producto;
@@ -31,6 +32,7 @@ export function AjusteStock({ producto, visible, onCerrar, onListo }: Props) {
   const unidad = producto.unidad === 'kg' ? ' kg' : '';
 
   const guardar = async () => {
+    if (bloqueadoPorSuscripcion()) return;
     if (cantidad === null || cantidad < 0) return setError('Ingresa cuánto hay (0 o más).');
     await ajustarStock(db, {
       negocioId: producto.negocioId,

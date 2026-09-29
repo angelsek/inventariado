@@ -25,7 +25,7 @@ export async function borrarDatosLocales(db: BaseLocal): Promise<void> {
        DELETE FROM categorias; DELETE FROM productos; DELETE FROM movimientos_stock;
        DELETE FROM ventas; DELETE FROM venta_items; DELETE FROM pagos;
        DELETE FROM proveedores; DELETE FROM compras; DELETE FROM compra_items;
-       DELETE FROM cajas; DELETE FROM movimientos_caja;
+       DELETE FROM cajas; DELETE FROM movimientos_caja; DELETE FROM suscripciones;
        DELETE FROM sync_cursores; DELETE FROM ajustes WHERE clave = 'negocio_id';`,
     );
   });

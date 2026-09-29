@@ -1,149 +1,208 @@
 # Plan de desarrollo — Inventariado
 
-App móvil de **inventario y punto de venta (POS)** para pequeños almacenes y botillerías.
+App móvil de **inventario y punto de venta (POS)** para pequeños almacenes y botillerías,
+vendida a otros negocios como **servicio con pago mensual** (SaaS).
+
+## Decisiones tomadas
+
+| Tema | Decisión |
+|------|----------|
+| Plataforma | **Solo Android** por ahora |
+| Distribución | **APK instalable** directamente; Play Store más adelante |
+| Tecnología | **React Native + Expo** (TypeScript) |
+| Dispositivos | **Varios teléfonos por local**, compartiendo inventario y ventas |
+| Código de barras | **Cámara del teléfono** (sin lectores externos) |
+| Boleta electrónica | **Fuera del alcance** por ahora |
+| Modelo de negocio | **Suscripción mensual** por negocio |
+
+Consecuencia importante: como hay varios teléfonos por local y varios negocios clientes,
+la app necesita **backend en la nube y cuentas desde el principio**, y la base de datos
+debe ser **multi-negocio** (cada negocio ve solo sus datos).
 
 ## Objetivos del producto
 
-- Registrar ventas en segundos, idealmente escaneando el código de barras.
+- Registrar ventas en segundos escaneando el código de barras con la cámara.
 - Saber en todo momento qué hay en stock y qué hay que reponer.
 - Cuadrar la caja al final del día sin planillas.
-- Funcionar **sin internet** (muchos locales tienen conexión inestable).
+- Seguir vendiendo **sin internet** y sincronizar al volver la conexión.
 - Ser simple: la usarán dueños y cajeros sin formación técnica.
 
-## Stack propuesto
+## Stack
 
-| Capa | Propuesta | Motivo |
+| Capa | Tecnología | Motivo |
 |------|-----------|--------|
-| App móvil | React Native + Expo (TypeScript) | Un solo código para Android e iOS; cámara para escanear códigos incluida |
-| Base de datos local | SQLite (expo-sqlite) | Funciona offline, rápida, sin servidor |
-| Estado / UI | Zustand + React Native Paper | Livianos y fáciles de mantener |
-| Backend (desde fase 4) | Supabase (Postgres + Auth) | Sincronización y respaldo en la nube sin montar servidor propio |
-| Pruebas | Jest + React Native Testing Library | Estándar del ecosistema |
+| App | React Native + Expo (TypeScript) | Rápido de desarrollar, cámara y escáner incluidos (expo-camera) |
+| Base local | SQLite (expo-sqlite) | Permite vender sin internet |
+| Backend | Supabase (Postgres + Auth + Row Level Security) | Cuentas, datos por negocio y sincronización sin montar servidor propio |
+| Sincronización | Capa propia sobre Supabase (evaluar PowerSync si crece la complejidad) | Offline-first entre varios teléfonos |
+| UI / estado | React Native Paper + Zustand | Livianos y fáciles de mantener |
+| Build del APK | EAS Build (perfil `apk`) | Genera el APK instalable sin Play Store |
+| Actualizaciones | EAS Update + aviso de nueva versión dentro de la app | Sin Play Store no hay actualización automática |
+| Cobro mensual | Mercado Pago o Flow (suscripciones / cobro recurrente) | Medios de pago usados en Chile |
+| Pruebas / CI | Jest + GitHub Actions | Revisiones automáticas en cada cambio |
 
-> Alternativa equivalente: Flutter + Drift (SQLite). Conviene decidir el stack antes de empezar la fase 0.
+### Reglas de diseño para que la sincronización funcione
+
+- Identificadores **UUID** generados en el teléfono (no números correlativos).
+- Todas las tablas llevan `negocio_id`, `actualizado_en` y borrado lógico (`eliminado`).
+- Las ventas y movimientos de stock **nunca se editan, solo se agregan** (una anulación es un
+  registro nuevo). Así dos teléfonos que venden a la vez no generan conflictos.
+- El stock se calcula a partir de los movimientos, no se sobrescribe un número.
 
 ---
 
 ## Fase 0 — Fundaciones
 
-**Meta:** proyecto listo para construir funciones encima.
+**Meta:** proyecto listo y primer APK instalable.
 
-- Crear proyecto Expo con TypeScript, ESLint, Prettier y Jest.
-- Estructura de carpetas (`src/features`, `src/db`, `src/components`, ...).
-- Capa de base de datos local con migraciones versionadas.
+- Proyecto Expo con TypeScript, ESLint, Prettier y Jest.
+- Estructura de carpetas (`src/features`, `src/db`, `src/components`, `src/sync`...).
+- Base de datos local SQLite con migraciones versionadas.
 - Navegación base (pestañas: Vender, Inventario, Caja, Más).
-- Formato de moneda en pesos chilenos (CLP, sin decimales) y fechas locales.
-- CI en GitHub Actions: lint + tests en cada push.
+- Formato de pesos chilenos (CLP, sin decimales) y fechas locales.
+- CI en GitHub Actions: lint + tests.
+- Configurar EAS Build y generar el **primer APK** para instalar en un teléfono de prueba.
 
-**Entregable:** app que abre, navega entre pestañas vacías y pasa CI.
+**Entregable:** APK que se instala, abre y navega entre pestañas vacías.
 
-## Fase 1 — Catálogo de productos (MVP parte 1)
+## Fase 1 — Cuentas, negocios y sincronización base
 
-**Meta:** tener los productos cargados en la app.
+**Meta:** varios teléfonos del mismo local conectados a la misma cuenta.
+
+- Proyecto Supabase con tablas multi-negocio y reglas de seguridad (RLS) por `negocio_id`.
+- Registro del negocio (nombre, RUT, dirección) y del dueño.
+- Inicio de sesión; la sesión queda guardada para trabajar sin internet.
+- Roles: **dueño/administrador** y **cajero**. El cajero no ve costos ni puede anular ventas
+  o ajustar stock sin autorización.
+- Invitar cajeros al negocio (código o enlace).
+- PIN rápido para cambiar de cajero en un mismo teléfono.
+- Motor de sincronización: guardar local → subir cambios → bajar cambios de otros teléfonos.
+- Indicador de estado: sincronizado / pendiente / sin conexión.
+
+**Entregable:** dos teléfonos inician sesión en el mismo negocio y ven los mismos datos.
+
+## Fase 2 — Catálogo de productos
+
+**Meta:** tener los productos cargados.
 
 - Crear, editar, desactivar y buscar productos.
-- Campos: nombre, código de barras, categoría, precio de venta, costo, stock actual, stock mínimo, unidad (unidad / pack / kg).
-- **Escáner de código de barras** con la cámara para crear y buscar productos.
+- Campos: nombre, código de barras, categoría, precio de venta, costo, stock mínimo, unidad
+  (unidad / pack / kg), foto opcional.
+- **Escáner con la cámara** para crear y buscar productos (EAN-13, EAN-8, UPC, Code 128).
 - Categorías (bebidas, cervezas, destilados, snacks, abarrotes, cigarros...).
-- Fotos opcionales del producto.
-- Importación masiva desde CSV/Excel para la carga inicial.
+- Importación masiva desde Excel/CSV para la carga inicial.
 
-**Entregable:** el dueño puede cargar todo su catálogo.
+**Entregable:** el dueño carga su catálogo y aparece en todos los teléfonos del local.
 
-## Fase 2 — Ventas / punto de venta (MVP parte 2)
+## Fase 3 — Ventas (fin del MVP)
 
-**Meta:** vender con la app.
+**Meta:** atender la caja solo con la app.
 
-- Pantalla de venta: escanear o buscar productos, carrito, cambiar cantidades, quitar ítems.
+- Pantalla de venta: escanear o buscar, carrito, cambiar cantidades, quitar ítems.
 - Descuentos por ítem o por venta total.
 - Medios de pago: efectivo (con cálculo de vuelto), débito, crédito, transferencia; pago mixto.
-- Descuento automático del stock al confirmar la venta.
-- Historial de ventas con detalle y **anulación** (devuelve el stock).
-- Comprobante interno (compartir por WhatsApp / imprimir en impresora térmica Bluetooth como mejora).
+- Descuento automático del stock al confirmar.
+- Historial de ventas con detalle y anulación (devuelve el stock, requiere rol dueño).
+- Comprobante interno para compartir por WhatsApp (no es boleta tributaria).
+- Ventas funcionando sin internet y sincronizadas después.
 
-**Entregable:** se puede atender la caja del local solo con la app. **Aquí termina el MVP.**
+**Entregable:** primera versión usable en un local real.
 
-## Fase 3 — Inventario y caja
+## Fase 4 — Inventario y caja
 
 **Meta:** control real del stock y del dinero.
 
-- **Ingreso de mercadería** (compras a proveedores): productos, cantidades y costo; actualiza stock y costo.
+- Ingreso de mercadería (compras a proveedores): actualiza stock y costo.
 - Registro de proveedores.
-- Ajustes de stock con motivo (merma, rotura, vencimiento, consumo interno, conteo).
-- Toma de inventario (conteo físico escaneando y comparando con el sistema).
-- Alertas de **stock bajo** y lista de reposición sugerida.
-- Control de vencimientos por lote (opcional, útil para lácteos y cervezas).
-- **Apertura y cierre de caja**: monto inicial, ventas por medio de pago, retiros/ingresos de efectivo, diferencia al cierre.
-
-**Entregable:** el dueño sabe qué tiene, qué perdió y si la caja cuadra.
-
-## Fase 4 — Usuarios, nube y multi-dispositivo
-
-**Meta:** varios cajeros y respaldo seguro.
-
-- Cuentas con Supabase Auth; el local como "negocio" con sus usuarios.
-- Roles: **dueño/administrador** y **cajero** (el cajero no ve costos, no anula ventas ni ajusta stock sin autorización).
-- PIN rápido para cambiar de cajero en el mismo dispositivo.
-- **Sincronización offline-first**: todo se guarda local y se sube cuando hay internet; resolución de conflictos.
-- Respaldo automático y restauración al cambiar de teléfono.
+- Ajustes de stock con motivo (merma, rotura, vencimiento, consumo interno).
+- Toma de inventario: conteo físico escaneando y comparando con el sistema.
+- Alertas de stock bajo y lista de reposición sugerida.
+- **Apertura y cierre de caja por teléfono/cajero**: monto inicial, ventas por medio de pago,
+  retiros e ingresos de efectivo, diferencia al cierre.
 - Registro de auditoría (quién vendió, anuló o ajustó qué y cuándo).
 
-**Entregable:** dos o más teléfonos trabajando sobre el mismo inventario.
+**Entregable:** el dueño sabe qué tiene, qué perdió y si cada caja cuadra.
 
-## Fase 5 — Reportes
+## Fase 5 — Suscripciones y administración del servicio
 
-**Meta:** que los datos ayuden a decidir.
+**Meta:** poder cobrar a los negocios clientes.
+
+- Planes (ej. Básico: 1–2 teléfonos; Pro: más teléfonos y reportes avanzados).
+- **Prueba gratuita** (ej. 14 días) al registrarse.
+- Cobro mensual recurrente con Mercado Pago o Flow; webhook que actualiza el estado.
+- Estados de la suscripción: prueba, activa, vencida (con **período de gracia**), suspendida.
+- Al vencer: la app avisa; tras la gracia pasa a **solo lectura** (nunca se borran datos).
+- Límite de teléfonos según el plan.
+- Panel interno de administración (para ti): negocios, planes, pagos, activar/suspender.
+- Términos y condiciones y política de privacidad.
+
+**Entregable:** un negocio nuevo se registra, prueba la app y paga su mensualidad.
+
+## Fase 6 — Piloto con locales reales
+
+**Meta:** validar con clientes antes de crecer.
+
+- Instalar el APK en 2–3 locales de prueba.
+- Sistema de actualizaciones: EAS Update para cambios menores y aviso de nueva versión del APK.
+- Reporte de errores (ej. Sentry) y respaldo de datos.
+- Recoger comentarios y corregir lo más urgente.
+
+## Fase 7 — Reportes
 
 - Panel diario: ventas totales, número de ventas, ticket promedio, ganancia bruta.
 - Ventas por día / semana / mes, por categoría, por medio de pago y por cajero.
 - Productos más y menos vendidos; productos sin movimiento.
-- Margen por producto y valorización del inventario (a costo y a precio de venta).
-- Exportar reportes a Excel/PDF.
+- Margen por producto y valorización del inventario.
+- Exportar a Excel/PDF.
 
-## Fase 6 — Funciones específicas del rubro
+## Fase 8 — Funciones del rubro
 
-- **Fiado / cuentas corrientes** de clientes frecuentes (deuda, abonos, historial).
-- **Envases retornables** (cobro y devolución de envase).
+- Fiado / cuentas corrientes de clientes frecuentes.
+- Envases retornables.
 - Packs y promociones (ej. "3 x $2.000", six-pack que descuenta 6 unidades).
 - Productos a granel / por peso.
-- Recordatorio de horario legal de venta de alcohol y confirmación de mayoría de edad.
-- Precios mayoristas por volumen.
+- Aviso de horario legal de venta de alcohol y confirmación de mayoría de edad.
 
-## Fase 7 — Integraciones y cumplimiento
+## Fase 9 — Play Store y crecimiento
 
-- **Boleta electrónica SII** mediante un proveedor autorizado (evaluar opciones y costos).
-- Integración con terminales de pago (ej. SumUp, Mercado Pago Point, Getnet, Transbank) si ofrecen SDK.
-- Impresoras térmicas Bluetooth y lectores de código de barras externos.
-- Panel web para el dueño (ver ventas y stock desde el computador).
-- Soporte multi-local.
+- Publicación en Google Play (revisar su política para suscripciones cobradas fuera de la app).
+- Panel web para el dueño (ventas y stock desde el computador).
+- Soporte multi-local (una cuenta, varias sucursales).
+- Más adelante: boleta electrónica SII, terminales de pago, impresora térmica, iOS.
 
 ---
 
-## Modelo de datos inicial (fases 1–3)
+## Modelo de datos inicial
+
+Todas las tablas de datos del negocio incluyen además `negocio_id`, `actualizado_en` y `eliminado`.
 
 ```
+Negocio(id, nombre, rut, direccion, creado_en)
+Usuario(id, negocio_id, nombre, email, rol[dueno|cajero], pin_hash, activo)
+Dispositivo(id, negocio_id, nombre, ultimo_sync)
+Suscripcion(id, negocio_id, plan, estado[prueba|activa|vencida|suspendida],
+            vence_en, proveedor_pago, referencia_externa)
+
 Categoria(id, nombre)
 Producto(id, nombre, codigo_barras, categoria_id, precio_venta, costo,
-         stock, stock_minimo, unidad, activo, foto, creado_en, actualizado_en)
-Venta(id, fecha, total, descuento, estado[completada|anulada], usuario_id, caja_id)
+         stock_minimo, unidad, activo, foto)
+Venta(id, fecha, total, descuento, estado[completada|anulada], usuario_id,
+      dispositivo_id, caja_id)
 VentaItem(id, venta_id, producto_id, cantidad, precio_unitario, descuento)
 Pago(id, venta_id, medio[efectivo|debito|credito|transferencia], monto)
 Proveedor(id, nombre, rut, telefono)
 Compra(id, proveedor_id, fecha, total)
 CompraItem(id, compra_id, producto_id, cantidad, costo_unitario)
-MovimientoStock(id, producto_id, tipo[venta|compra|ajuste|anulacion], cantidad,
-                motivo, referencia_id, fecha, usuario_id)
-Caja(id, apertura, cierre, monto_inicial, monto_contado, usuario_id)
+MovimientoStock(id, producto_id, tipo[venta|compra|ajuste|anulacion|conteo],
+                cantidad, motivo, referencia_id, fecha, usuario_id, dispositivo_id)
+Caja(id, dispositivo_id, usuario_id, apertura, cierre, monto_inicial, monto_contado)
 MovimientoCaja(id, caja_id, tipo[ingreso|retiro], monto, motivo)
 ```
 
-Todo cambio de stock queda en `MovimientoStock`, así el stock siempre es trazable.
+El stock de un producto es la suma de sus `MovimientoStock`.
 
-## Preguntas abiertas
+## Pendientes por definir
 
-1. ¿Android solamente o también iOS?
-2. ¿React Native (Expo) o Flutter?
-3. ¿Un solo dispositivo por local al inicio, o varios desde el comienzo?
-4. ¿La boleta electrónica es obligatoria desde el principio o puede esperar?
-5. ¿Se usará impresora térmica o lector de código de barras externo?
-6. ¿Uso propio en un local o producto para vender a varios negocios (modelo SaaS)?
+- Precio de los planes y cantidad de teléfonos incluidos en cada uno.
+- Proveedor de cobro: Mercado Pago o Flow.
+- Nombre comercial de la app.

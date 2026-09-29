@@ -108,21 +108,29 @@ compartido) y negocio creado desde el teléfono.
 
 **Entregable:** el dueño carga su catálogo y aparece en todos los teléfonos del local.
 
-**Estado:** 🚧 código listo; falta ejecutar el SQL de la fase 2 en Supabase y probar.
+**Estado:** ✅ completada (SQL ejecutado en Supabase, APK build 8).
 
 ## Fase 3 — Ventas (fin del MVP)
 
 **Meta:** atender la caja solo con la app.
 
-- Pantalla de venta: escanear o buscar, carrito, cambiar cantidades, quitar ítems.
-- Descuentos por ítem o por venta total.
-- Medios de pago: efectivo (con cálculo de vuelto), débito, crédito, transferencia; pago mixto.
-- Descuento automático del stock al confirmar.
-- Historial de ventas con detalle y anulación (devuelve el stock, requiere rol dueño).
-- Comprobante interno para compartir por WhatsApp (no es boleta tributaria).
-- Ventas funcionando sin internet y sincronizadas después.
+- Pantalla Vender: escáner **continuo** (se leen varios productos seguidos sin cerrar la
+  cámara), búsqueda por nombre, carrito con + / −, edición de cantidad y descuento por línea.
+- Productos por kilo: se pide el peso (atajos 0,25 / 0,5 / 1 kg).
+- **Monto libre** para cobrar algo que no está en el catálogo (ej. hielo, pan a granel).
+- Cobro: descuento a toda la venta; efectivo con montos rápidos y cálculo de **vuelto**;
+  débito, crédito, transferencia; **pago mixto** (ej. parte débito, parte efectivo).
+- Al confirmar: venta, ítems (con copia de nombre, precio y costo) y pagos en una sola
+  transacción, y movimiento de stock negativo por producto. Se permite vender aunque el stock
+  registrado no alcance (se avisa en el carrito).
+- Ventas del día con total por medio de pago; navegación por días.
+- Detalle de venta; **comprobante interno** para compartir por WhatsApp (no es boleta).
+- **Anulación** solo por el dueño, con motivo: devuelve el stock y deja de sumar en los totales.
+- Todo funciona sin internet y se sincroniza después.
 
 **Entregable:** primera versión usable en un local real.
+
+**Estado:** 🚧 código listo; falta ejecutar el SQL de la fase 3 en Supabase y probar.
 
 ## Fase 4 — Inventario y caja
 

@@ -36,6 +36,7 @@ En la misma página, si aparecen **Exposed tables** y **Exposed functions**, act
 
 - Tablas de `inventariado`: `negocios`, `negocio_usuarios`, `perfiles`, `dispositivos`.
 - Tablas de la fase 2: `categorias`, `productos`, `movimientos_stock`.
+- Tablas de la fase 3: `ventas`, `venta_items`, `pagos`.
 - Funciones de `inventariado`: `crear_negocio`, `sincronizar_descarga`.
 
 (`es_miembro` y `marcar_cambio_sync` las usa la base internamente; no hace falta exponerlas.)

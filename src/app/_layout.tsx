@@ -66,6 +66,9 @@ function Navegacion() {
         <Stack.Screen name="producto/[id]" options={conEncabezado('Producto')} />
         <Stack.Screen name="categorias" options={conEncabezado('Categorías')} />
         <Stack.Screen name="importar" options={conEncabezado('Importar productos')} />
+        <Stack.Screen name="cobrar" options={conEncabezado('Cobrar')} />
+        <Stack.Screen name="ventas" options={conEncabezado('Ventas')} />
+        <Stack.Screen name="venta/[id]" options={conEncabezado('Venta')} />
       </Stack.Protected>
     </Stack>
   );

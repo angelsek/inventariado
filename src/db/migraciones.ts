@@ -96,6 +96,57 @@ export const migraciones: string[] = [
      pendiente INTEGER NOT NULL DEFAULT 0
    );
    CREATE INDEX movimientos_producto ON movimientos_stock (producto_id);`,
+
+  // 4 (fase 3): ventas, ítems y pagos.
+  `CREATE TABLE ventas (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     subtotal INTEGER NOT NULL,
+     descuento INTEGER NOT NULL DEFAULT 0,
+     total INTEGER NOT NULL,
+     efectivo_recibido INTEGER,
+     vuelto INTEGER,
+     estado TEXT NOT NULL DEFAULT 'completada',
+     perfil_id TEXT,
+     dispositivo_id TEXT,
+     anulada_en TEXT,
+     anulada_por TEXT,
+     motivo_anulacion TEXT,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE INDEX ventas_fecha ON ventas (negocio_id, creado_en);
+   CREATE TABLE venta_items (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     venta_id TEXT NOT NULL,
+     producto_id TEXT,
+     nombre TEXT NOT NULL,
+     cantidad REAL NOT NULL,
+     precio_unitario INTEGER NOT NULL,
+     costo_unitario INTEGER NOT NULL DEFAULT 0,
+     descuento INTEGER NOT NULL DEFAULT 0,
+     total INTEGER NOT NULL,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE INDEX venta_items_venta ON venta_items (venta_id);
+   CREATE TABLE pagos (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     venta_id TEXT NOT NULL,
+     medio TEXT NOT NULL,
+     monto INTEGER NOT NULL,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE INDEX pagos_venta ON pagos (venta_id);`,
 ];
 
 /** Aplica las migraciones pendientes usando PRAGMA user_version. */

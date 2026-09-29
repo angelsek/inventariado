@@ -90,7 +90,7 @@ it('con negocio pide elegir usuario y PIN antes de entrar', async () => {
 
   marcarPin('5678');
   await waitFor(() => expect(useSesion.getState().perfil?.nombre).toBe('Carla'));
-  expect(await screen.findByText(/registrarán las ventas/)).toBeTruthy();
+  expect(await screen.findByText(/Escanea o busca productos/)).toBeTruthy();
 });
 
 it('un cajero no ve la administración de usuarios ni cerrar sesión', async () => {

@@ -1,6 +1,7 @@
 import { migrarBaseDeDatos } from '@/db/migraciones';
 import { cambiarActivo, crearPerfil, listarPerfiles } from '@/db/perfiles';
 import { crearProducto, listarProductos, registrarMovimiento } from '@/db/productos';
+import { anularVenta, obtenerVenta, registrarVenta } from '@/db/ventas';
 import type { BaseLocal } from '@/db/tipos';
 import { crearBaseEnMemoria } from '@/test/baseEnMemoria';
 import { crearRemotoFalso } from '@/test/remotoFalso';
@@ -136,5 +137,65 @@ describe('sincronizar', () => {
       const [producto] = await listarProductos(telefono, NEGOCIO);
       expect(producto).toMatchObject({ nombre: 'Queso gauda', unidad: 'kg', stock: 1.75 });
     }
+  });
+
+  it('una venta y su anulación llegan al otro teléfono con el stock correcto', async () => {
+    const remoto = crearRemotoFalso();
+    const a = await nuevoTelefono();
+    const b = await nuevoTelefono();
+    const autor = { perfilId: 'p1', dispositivoId: 'd1' };
+
+    const productoId = await crearProducto(
+      a,
+      NEGOCIO,
+      {
+        nombre: 'Cerveza',
+        codigoBarras: null,
+        categoriaId: null,
+        precioVenta: 1000,
+        costo: 600,
+        stockMinimo: 0,
+        unidad: 'unidad',
+      },
+      10,
+      autor,
+    );
+    const [producto] = await listarProductos(a, NEGOCIO);
+    const ventaId = await registrarVenta(a, {
+      negocioId: NEGOCIO,
+      items: [
+        {
+          clave: productoId,
+          productoId,
+          nombre: 'Cerveza',
+          unidad: 'unidad',
+          cantidad: 3,
+          precioUnitario: 1000,
+          costoUnitario: 600,
+          descuento: 0,
+          stock: producto.stock,
+        },
+      ],
+      descuentoGeneral: 0,
+      pagos: [{ medio: 'efectivo', monto: 3000 }],
+      efectivoRecibido: 3000,
+      vuelto: 0,
+      autor,
+    });
+    await sincronizar(a, remoto, NEGOCIO);
+    await sincronizar(b, remoto, NEGOCIO);
+
+    expect((await listarProductos(b, NEGOCIO))[0].stock).toBe(7);
+    expect(await obtenerVenta(b, ventaId)).toMatchObject({ total: 3000, estado: 'completada' });
+
+    await anularVenta(b, ventaId, 'Error', autor);
+    await sincronizar(b, remoto, NEGOCIO);
+    await sincronizar(a, remoto, NEGOCIO);
+
+    expect(await obtenerVenta(a, ventaId)).toMatchObject({
+      estado: 'anulada',
+      motivoAnulacion: 'Error',
+    });
+    expect((await listarProductos(a, NEGOCIO))[0].stock).toBe(10);
   });
 });

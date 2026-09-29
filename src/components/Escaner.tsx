@@ -15,16 +15,27 @@ type Props = {
   visible: boolean;
   onCodigo: (codigo: string) => void;
   onCerrar: () => void;
+  /**
+   * Sigue leyendo después de cada código (para vender varios productos seguidos).
+   * Ignora el mismo código durante un momento para no sumarlo dos veces.
+   */
+  continuo?: boolean;
+  /** Texto a mostrar sobre la cámara (ej. el último producto agregado). */
+  mensaje?: string | null;
 };
 
+const PAUSA_MS = 1500;
+
 /** Cámara a pantalla completa que devuelve el primer código de barras leído. */
-export function Escaner({ visible, onCodigo, onCerrar }: Props) {
+export function Escaner({ visible, onCodigo, onCerrar, continuo, mensaje }: Props) {
   const [permiso, pedirPermiso] = useCameraPermissions();
   // La cámara informa el mismo código varias veces por segundo: solo se usa el primero.
   const leido = useRef(false);
+  const ultimo = useRef<{ codigo: string; hora: number } | null>(null);
 
   const alMostrar = () => {
     leido.current = false;
+    ultimo.current = null;
     if (permiso && !permiso.granted && permiso.canAskAgain) pedirPermiso();
   };
 
@@ -38,13 +49,26 @@ export function Escaner({ visible, onCodigo, onCerrar }: Props) {
               facing="back"
               barcodeScannerSettings={{ barcodeTypes: TIPOS }}
               onBarcodeScanned={({ data }) => {
-                if (leido.current || !data) return;
-                leido.current = true;
-                onCodigo(data.trim());
+                const codigo = data?.trim();
+                if (leido.current || !codigo) return;
+                if (continuo) {
+                  const ahora = Date.now();
+                  if (ultimo.current?.codigo === codigo && ahora - ultimo.current.hora < PAUSA_MS)
+                    return;
+                  ultimo.current = { codigo, hora: ahora };
+                } else {
+                  leido.current = true;
+                }
+                onCodigo(codigo);
               }}
             />
             <View style={estilos.marco} pointerEvents="none" />
-            <Text style={estilos.indicacion}>Apunta al código de barras</Text>
+            <Text style={estilos.indicacion}>{mensaje ?? 'Apunta al código de barras'}</Text>
+            {continuo ? (
+              <View style={estilos.listo}>
+                <Boton titulo="Listo" onPress={onCerrar} />
+              </View>
+            ) : null}
           </View>
         ) : (
           <View style={estilos.sinPermiso}>
@@ -78,7 +102,14 @@ const estilos = StyleSheet.create({
     borderColor: colores.superficie,
     borderRadius: 16,
   },
-  indicacion: { marginTop: 24, fontSize: 17, color: colores.superficie },
+  indicacion: {
+    marginTop: 24,
+    marginHorizontal: 24,
+    fontSize: 17,
+    textAlign: 'center',
+    color: colores.superficie,
+  },
+  listo: { position: 'absolute', bottom: 32, left: 24, right: 24 },
   sinPermiso: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 20 },
   textoPermiso: { fontSize: 17, textAlign: 'center', color: colores.superficie },
   cerrar: { position: 'absolute', top: 48, right: 20, padding: 8 },

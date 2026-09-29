@@ -23,6 +23,7 @@ export async function borrarDatosLocales(db: BaseLocal): Promise<void> {
     await db.execAsync(
       `DELETE FROM negocios; DELETE FROM perfiles; DELETE FROM dispositivos;
        DELETE FROM categorias; DELETE FROM productos; DELETE FROM movimientos_stock;
+       DELETE FROM ventas; DELETE FROM venta_items; DELETE FROM pagos;
        DELETE FROM sync_cursores; DELETE FROM ajustes WHERE clave = 'negocio_id';`,
     );
   });

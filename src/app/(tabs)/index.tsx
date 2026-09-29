@@ -1,11 +1,470 @@
-import { PantallaEnConstruccion } from '@/components/PantallaEnConstruccion';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
+import { useSQLiteContext } from 'expo-sqlite';
+import { useEffect, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+
+import { Boton } from '@/components/Boton';
+import { Campo } from '@/components/Campo';
+import { Escaner } from '@/components/Escaner';
+import { Hoja } from '@/components/Hoja';
+import { buscarPorCodigo, listarProductos, type Producto } from '@/db/productos';
+import { calcularTotales, type ItemCarrito, totalItem } from '@/features/ventas/calculos';
+import { useCarrito } from '@/features/ventas/carrito';
+import { formatearCLP } from '@/lib/formato';
+import { formatearCantidad, parsearCantidad, parsearMonto } from '@/lib/numeros';
+import { useSesion } from '@/sesion/store';
+import { colores } from '@/theme/colores';
 
 export default function VenderScreen() {
+  const db = useSQLiteContext();
+  const negocioId = useSesion((s) => s.negocioId);
+  const carrito = useCarrito();
+  const { total } = calcularTotales(carrito.items, carrito.descuentoGeneral);
+
+  const [busqueda, setBusqueda] = useState('');
+  const [resultados, setResultados] = useState<Producto[]>([]);
+  const [escaneando, setEscaneando] = useState(false);
+  const [mensajeEscaner, setMensajeEscaner] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [pesando, setPesando] = useState<Producto | null>(null);
+  const [editando, setEditando] = useState<ItemCarrito | null>(null);
+  const [montoLibre, setMontoLibre] = useState(false);
+
+  useEffect(() => {
+    if (!negocioId || !busqueda.trim()) return;
+    listarProductos(db, negocioId, { busqueda }).then((lista) => setResultados(lista.slice(0, 30)));
+  }, [db, negocioId, busqueda]);
+
+  const agregar = (producto: Producto) => {
+    setBusqueda('');
+    if (producto.unidad === 'kg') {
+      setEscaneando(false);
+      setPesando(producto);
+    } else {
+      carrito.agregarProducto(producto);
+    }
+  };
+
+  const alEscanear = async (codigo: string) => {
+    const producto = await buscarPorCodigo(db, negocioId!, codigo);
+    if (!producto || !producto.activo) {
+      setMensajeEscaner(`Código ${codigo} no está en el catálogo`);
+      setAviso(`El código ${codigo} no está en el catálogo.`);
+      return;
+    }
+    setAviso(null);
+    agregar(producto);
+    setMensajeEscaner(`✓ ${producto.nombre}`);
+  };
+
   return (
-    <PantallaEnConstruccion
-      icono="cart-outline"
-      titulo="Vender"
-      descripcion="Aquí se registrarán las ventas escaneando productos (fase 3)."
-    />
+    <View style={estilos.pantalla}>
+      <View style={estilos.barra}>
+        <View style={estilos.buscador}>
+          <Ionicons name="search" size={20} color={colores.inactivo} />
+          <TextInput
+            accessibilityLabel="Buscar producto para vender"
+            placeholder="Buscar producto"
+            placeholderTextColor={colores.inactivo}
+            value={busqueda}
+            onChangeText={setBusqueda}
+            style={estilos.entrada}
+          />
+          {busqueda ? (
+            <Pressable accessibilityLabel="Borrar búsqueda" onPress={() => setBusqueda('')}>
+              <Ionicons name="close-circle" size={20} color={colores.inactivo} />
+            </Pressable>
+          ) : null}
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Escanear para vender"
+          onPress={() => {
+            setMensajeEscaner(null);
+            setEscaneando(true);
+          }}
+          style={estilos.botonIcono}
+        >
+          <Ionicons name="barcode-outline" size={26} color={colores.superficie} />
+        </Pressable>
+      </View>
+
+      {aviso ? (
+        <Pressable onPress={() => setAviso(null)} style={estilos.aviso}>
+          <Text style={estilos.textoAviso}>{aviso}</Text>
+        </Pressable>
+      ) : null}
+
+      {busqueda.trim() ? (
+        <FlatList
+          data={resultados}
+          keyExtractor={(p) => p.id}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={estilos.lista}
+          ListEmptyComponent={<Text style={estilos.vacio}>No hay productos que coincidan.</Text>}
+          renderItem={({ item }) => (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => agregar(item)}
+              style={({ pressed }) => [estilos.resultado, pressed && estilos.presionado]}
+            >
+              <View style={estilos.flex}>
+                <Text style={estilos.nombre}>{item.nombre}</Text>
+                <Text style={estilos.detalle}>
+                  Stock: {formatearCantidad(item.stock)}
+                  {item.unidad === 'kg' ? ' kg' : ''}
+                </Text>
+              </View>
+              <Text style={estilos.precio}>
+                {formatearCLP(item.precioVenta)}
+                {item.unidad === 'kg' ? '/kg' : ''}
+              </Text>
+            </Pressable>
+          )}
+        />
+      ) : (
+        <FlatList
+          data={carrito.items}
+          keyExtractor={(i) => i.clave}
+          contentContainerStyle={estilos.lista}
+          ListEmptyComponent={
+            <View style={estilos.vacioCarrito}>
+              <Ionicons name="cart-outline" size={56} color={colores.inactivo} />
+              <Text style={estilos.vacio}>Escanea o busca productos para empezar una venta.</Text>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <LineaCarrito
+              item={item}
+              onEditar={() => setEditando(item)}
+              onCambiar={(cantidad) => carrito.cambiarCantidad(item.clave, cantidad)}
+            />
+          )}
+        />
+      )}
+
+      <View style={estilos.pie}>
+        <View style={estilos.accionesPie}>
+          <Text
+            accessibilityRole="button"
+            style={estilos.enlace}
+            onPress={() => setMontoLibre(true)}
+          >
+            + Monto libre
+          </Text>
+          <Text
+            accessibilityRole="button"
+            style={estilos.enlace}
+            onPress={() => router.push('/ventas')}
+          >
+            Ventas del día
+          </Text>
+          {carrito.items.length > 0 ? (
+            <Text
+              accessibilityRole="button"
+              style={[estilos.enlace, estilos.peligro]}
+              onPress={carrito.vaciar}
+            >
+              Vaciar
+            </Text>
+          ) : null}
+        </View>
+        <Boton
+          titulo={carrito.items.length ? `Cobrar ${formatearCLP(total)}` : 'Cobrar'}
+          deshabilitado={carrito.items.length === 0}
+          onPress={() => router.push('/cobrar')}
+        />
+      </View>
+
+      <Escaner
+        visible={escaneando}
+        continuo
+        mensaje={mensajeEscaner}
+        onCodigo={alEscanear}
+        onCerrar={() => setEscaneando(false)}
+      />
+      <HojaPeso producto={pesando} onCerrar={() => setPesando(null)} />
+      <HojaItem key={editando?.clave} item={editando} onCerrar={() => setEditando(null)} />
+      <HojaMontoLibre visible={montoLibre} onCerrar={() => setMontoLibre(false)} />
+    </View>
   );
 }
+
+function LineaCarrito({
+  item,
+  onEditar,
+  onCambiar,
+}: {
+  item: ItemCarrito;
+  onEditar: () => void;
+  onCambiar: (cantidad: number) => void;
+}) {
+  const esKilo = item.unidad === 'kg';
+  const sinStock = item.stock !== null && item.stock < item.cantidad;
+
+  return (
+    <Pressable accessibilityRole="button" onPress={onEditar} style={estilos.linea}>
+      <View style={estilos.flex}>
+        <Text style={estilos.nombre}>{item.nombre}</Text>
+        <Text style={estilos.detalle}>
+          {formatearCLP(item.precioUnitario)}
+          {esKilo ? '/kg' : ' c/u'}
+          {item.descuento ? ` · desc. ${formatearCLP(item.descuento)}` : ''}
+        </Text>
+        {sinStock ? (
+          <Text style={estilos.sinStock}>Stock registrado: {formatearCantidad(item.stock!)}</Text>
+        ) : null}
+      </View>
+      <View style={estilos.cantidad}>
+        {esKilo ? (
+          <Text style={estilos.numero}>{formatearCantidad(item.cantidad)} kg</Text>
+        ) : (
+          <>
+            <Pressable
+              accessibilityLabel={`Quitar uno de ${item.nombre}`}
+              onPress={() => onCambiar(item.cantidad - 1)}
+              style={estilos.botonCantidad}
+            >
+              <Ionicons name="remove" size={20} color={colores.primario} />
+            </Pressable>
+            <Text style={estilos.numero}>{formatearCantidad(item.cantidad)}</Text>
+            <Pressable
+              accessibilityLabel={`Agregar uno de ${item.nombre}`}
+              onPress={() => onCambiar(item.cantidad + 1)}
+              style={estilos.botonCantidad}
+            >
+              <Ionicons name="add" size={20} color={colores.primario} />
+            </Pressable>
+          </>
+        )}
+      </View>
+      <Text style={estilos.totalLinea}>{formatearCLP(totalItem(item))}</Text>
+    </Pressable>
+  );
+}
+
+/** Pide los kilos de un producto que se vende por peso. */
+function HojaPeso({ producto, onCerrar }: { producto: Producto | null; onCerrar: () => void }) {
+  const agregarProducto = useCarrito((s) => s.agregarProducto);
+  const [kilos, setKilos] = useState('');
+  const cantidad = parsearCantidad(kilos || '0') ?? 0;
+
+  const agregar = (valor: number) => {
+    if (!producto || valor <= 0) return;
+    agregarProducto(producto, valor);
+    setKilos('');
+    onCerrar();
+  };
+
+  return (
+    <Hoja visible={!!producto} titulo={producto?.nombre ?? ''} onCerrar={onCerrar}>
+      <Campo
+        etiqueta="Kilos"
+        keyboardType="decimal-pad"
+        placeholder="0,5"
+        autoFocus
+        value={kilos}
+        onChangeText={setKilos}
+        ayuda={
+          producto && cantidad > 0
+            ? `Total: ${formatearCLP(Math.round(cantidad * producto.precioVenta))}`
+            : undefined
+        }
+      />
+      <View style={estilos.rapidos}>
+        {[0.25, 0.5, 1].map((valor) => (
+          <View key={valor} style={estilos.flex}>
+            <Boton
+              variante="secundario"
+              titulo={`${formatearCantidad(valor)} kg`}
+              onPress={() => agregar(valor)}
+            />
+          </View>
+        ))}
+      </View>
+      <Boton titulo="Agregar" deshabilitado={cantidad <= 0} onPress={() => agregar(cantidad)} />
+    </Hoja>
+  );
+}
+
+/** Cambiar cantidad, aplicar descuento o quitar una línea. */
+function HojaItem({ item, onCerrar }: { item: ItemCarrito | null; onCerrar: () => void }) {
+  const { cambiarCantidad, cambiarDescuentoItem, quitar } = useCarrito();
+  // Se monta de nuevo para cada línea (key), así el estado inicial sale del ítem.
+  const [cantidad, setCantidad] = useState(item ? formatearCantidad(item.cantidad) : '');
+  const [descuento, setDescuento] = useState(item?.descuento ? String(item.descuento) : '');
+
+  if (!item) return null;
+
+  const guardar = () => {
+    const nuevaCantidad = parsearCantidad(cantidad);
+    if (nuevaCantidad !== null) cambiarCantidad(item.clave, nuevaCantidad);
+    cambiarDescuentoItem(item.clave, parsearMonto(descuento || '0') ?? 0);
+    onCerrar();
+  };
+
+  return (
+    <Hoja visible titulo={item.nombre} onCerrar={onCerrar}>
+      <Campo
+        etiqueta={item.unidad === 'kg' ? 'Kilos' : 'Cantidad'}
+        keyboardType="decimal-pad"
+        value={cantidad}
+        onChangeText={setCantidad}
+      />
+      <Campo
+        etiqueta="Descuento en pesos (opcional)"
+        keyboardType="number-pad"
+        placeholder="$0"
+        value={descuento}
+        onChangeText={(v) => setDescuento(v.replace(/\D/g, ''))}
+      />
+      <View style={estilos.botones}>
+        <Boton titulo="Guardar" onPress={guardar} />
+        <Boton
+          titulo="Quitar de la venta"
+          variante="peligro"
+          onPress={() => {
+            quitar(item.clave);
+            onCerrar();
+          }}
+        />
+      </View>
+    </Hoja>
+  );
+}
+
+/** Cobrar algo que no está en el catálogo (ej. pan a granel, recarga). */
+function HojaMontoLibre({ visible, onCerrar }: { visible: boolean; onCerrar: () => void }) {
+  const agregarMontoLibre = useCarrito((s) => s.agregarMontoLibre);
+  const [nombre, setNombre] = useState('');
+  const [monto, setMonto] = useState('');
+  const valor = parsearMonto(monto || '0') ?? 0;
+
+  const agregar = () => {
+    if (valor <= 0) return;
+    agregarMontoLibre(nombre, valor);
+    setNombre('');
+    setMonto('');
+    onCerrar();
+  };
+
+  return (
+    <Hoja visible={visible} titulo="Monto libre" onCerrar={onCerrar}>
+      <Campo
+        etiqueta="Monto"
+        keyboardType="number-pad"
+        placeholder="$0"
+        autoFocus
+        value={monto}
+        onChangeText={(v) => setMonto(v.replace(/\D/g, ''))}
+        ayuda={valor ? formatearCLP(valor) : undefined}
+      />
+      <Campo
+        etiqueta="Detalle (opcional)"
+        placeholder="Varios"
+        value={nombre}
+        onChangeText={setNombre}
+      />
+      <Boton titulo="Agregar" deshabilitado={valor <= 0} onPress={agregar} />
+    </Hoja>
+  );
+}
+
+const estilos = StyleSheet.create({
+  pantalla: { flex: 1, backgroundColor: colores.fondo },
+  flex: { flex: 1 },
+  barra: { flexDirection: 'row', gap: 8, padding: 12, paddingBottom: 4 },
+  buscador: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colores.borde,
+    backgroundColor: colores.superficie,
+  },
+  entrada: { flex: 1, minHeight: 46, fontSize: 16, color: colores.texto },
+  botonIcono: {
+    width: 56,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colores.primario,
+  },
+  aviso: {
+    marginHorizontal: 12,
+    marginTop: 4,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: colores.fondoError,
+  },
+  textoAviso: { fontSize: 14, color: colores.error },
+  lista: { padding: 12, flexGrow: 1 },
+  resultado: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    marginBottom: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colores.borde,
+    backgroundColor: colores.superficie,
+  },
+  presionado: { opacity: 0.6 },
+  nombre: { fontSize: 16, fontWeight: '600', color: colores.texto },
+  detalle: { marginTop: 2, fontSize: 13, color: colores.textoSecundario },
+  precio: { fontSize: 17, fontWeight: '700', color: colores.texto },
+  vacioCarrito: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
+  vacio: { textAlign: 'center', fontSize: 16, color: colores.textoSecundario },
+  linea: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    marginBottom: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colores.borde,
+    backgroundColor: colores.superficie,
+  },
+  sinStock: { marginTop: 2, fontSize: 12, color: colores.aviso },
+  cantidad: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  botonCantidad: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colores.borde,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  numero: {
+    minWidth: 28,
+    textAlign: 'center',
+    fontSize: 17,
+    fontWeight: '600',
+    color: colores.texto,
+  },
+  totalLinea: {
+    minWidth: 72,
+    textAlign: 'right',
+    fontSize: 16,
+    fontWeight: '700',
+    color: colores.texto,
+  },
+  pie: {
+    padding: 12,
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: colores.borde,
+    backgroundColor: colores.superficie,
+  },
+  accionesPie: { flexDirection: 'row', gap: 20 },
+  enlace: { fontSize: 15, color: colores.primario },
+  peligro: { color: colores.error },
+  rapidos: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  botones: { gap: 10 },
+});

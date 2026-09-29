@@ -14,16 +14,27 @@ Se puede usar un proyecto **nuevo** o uno **existente** que ya tenga otra aplica
 
 ## 2. Crear las tablas
 
-1. En el proyecto, abrir **SQL Editor → New query**.
-2. Copiar y ejecutar, en orden, cada archivo de [`supabase/migrations/`](../supabase/migrations).
-   Cada archivo se ejecuta **una sola vez**. Cuando se agreguen archivos nuevos en próximas
-   fases, solo se ejecutan los nuevos.
+1. En GitHub, abrir cada archivo de [`supabase/migrations/`](../supabase/migrations) y tocar
+   **Raw** para ver el texto plano. Seleccionar **todo** y copiar (desde el celular es fácil
+   copiar solo una parte: revisar que termine con `notify pgrst, 'reload schema';`).
+2. En Supabase, **SQL Editor → New query**, pegar y presionar **Run** sin texto seleccionado
+   (si hay una selección, Supabase ejecuta solo esa parte).
+3. Debe responder "Success. No rows returned".
+
+Los archivos se pueden ejecutar de nuevo sin problema: completan lo que falte y no borran datos.
 
 ## 3. Exponer el esquema
 
 En **Project Settings → Data API → Exposed schemas**, agregar `inventariado` a la lista
 (sin quitar los que ya estén, como `public`) y guardar. Sin esto la app muestra
 "falta exponer el esquema".
+
+En la misma página, si aparecen **Exposed tables** y **Exposed functions**, activar:
+
+- Tablas de `inventariado`: `negocios`, `negocio_usuarios`, `perfiles`, `dispositivos`.
+- Funciones de `inventariado`: `crear_negocio`, `sincronizar_descarga`.
+
+(`es_miembro` y `marcar_cambio_sync` las usa la base internamente; no hace falta exponerlas.)
 
 ## 4. Autenticación
 

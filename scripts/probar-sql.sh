@@ -21,12 +21,17 @@ fi
 "${COMO[@]}" initdb -D "$DIR/datos" -U postgres -A trust >/dev/null
 "${COMO[@]}" pg_ctl -D "$DIR/datos" -o "-p $PUERTO -k $DIR -c listen_addresses=''" -l "$DIR/log" -w start >/dev/null
 
+export PGOPTIONS="-c client_min_messages=warning"
 PSQL=(psql -h "$DIR" -p "$PUERTO" -U postgres -d postgres -v ON_ERROR_STOP=1 -q -X)
 
 "${PSQL[@]}" -f "$RAIZ/supabase/tests/00_stub_supabase.sql"
-for migracion in "$RAIZ"/supabase/migrations/*.sql; do
-  echo "Migración: $(basename "$migracion")"
-  "${PSQL[@]}" -f "$migracion"
+# Cada migración se aplica dos veces: deben poder repetirse sin error
+# (en Supabase se ejecutan a mano y es fácil correrlas de nuevo).
+for vuelta in 1 2; do
+  for migracion in "$RAIZ"/supabase/migrations/*.sql; do
+    echo "Migración (vuelta $vuelta): $(basename "$migracion")"
+    "${PSQL[@]}" -f "$migracion"
+  done
 done
 for prueba in "$RAIZ"/supabase/tests/[1-9]*.sql; do
   echo "Pruebas: $(basename "$prueba")"

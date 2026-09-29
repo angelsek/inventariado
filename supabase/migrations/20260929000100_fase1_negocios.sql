@@ -14,6 +14,8 @@
 --     transacciones concurrentes).
 --   * Nunca se borran filas: se marcan con eliminado = true.
 --
+-- Se puede ejecutar más de una vez sin error: completa lo que falte y no borra datos.
+--
 -- Todo vive en el esquema "inventariado" para poder compartir el proyecto de
 -- Supabase con otras aplicaciones sin mezclar tablas. El esquema debe estar
 -- en Settings → Data API → Exposed schemas.
@@ -40,7 +42,7 @@ $$;
 -- Tablas
 -- ---------------------------------------------------------------------------
 
-create table inventariado.negocios (
+create table if not exists inventariado.negocios (
   id uuid primary key default gen_random_uuid(),
   nombre text not null check (length(trim(nombre)) > 0),
   rut text,
@@ -52,7 +54,7 @@ create table inventariado.negocios (
 );
 
 -- Cuentas de Supabase Auth con acceso a un negocio.
-create table inventariado.negocio_usuarios (
+create table if not exists inventariado.negocio_usuarios (
   negocio_id uuid not null references inventariado.negocios (id),
   usuario_id uuid not null references auth.users (id) on delete cascade,
   rol text not null default 'dueno' check (rol in ('dueno')),
@@ -60,10 +62,10 @@ create table inventariado.negocio_usuarios (
   primary key (negocio_id, usuario_id)
 );
 
-create index negocio_usuarios_usuario_idx on inventariado.negocio_usuarios (usuario_id);
+create index if not exists negocio_usuarios_usuario_idx on inventariado.negocio_usuarios (usuario_id);
 
 -- Personas que usan la app en el local (dueño y cajeros), identificadas por PIN.
-create table inventariado.perfiles (
+create table if not exists inventariado.perfiles (
   id uuid primary key default gen_random_uuid(),
   negocio_id uuid not null references inventariado.negocios (id),
   nombre text not null check (length(trim(nombre)) > 0),
@@ -76,10 +78,10 @@ create table inventariado.perfiles (
   sync_xid xid8 not null default pg_current_xact_id()
 );
 
-create index perfiles_negocio_idx on inventariado.perfiles (negocio_id);
+create index if not exists perfiles_negocio_idx on inventariado.perfiles (negocio_id);
 
 -- Teléfonos registrados en el negocio.
-create table inventariado.dispositivos (
+create table if not exists inventariado.dispositivos (
   id uuid primary key,
   negocio_id uuid not null references inventariado.negocios (id),
   nombre text not null,
@@ -90,12 +92,15 @@ create table inventariado.dispositivos (
   sync_xid xid8 not null default pg_current_xact_id()
 );
 
-create index dispositivos_negocio_idx on inventariado.dispositivos (negocio_id);
+create index if not exists dispositivos_negocio_idx on inventariado.dispositivos (negocio_id);
 
+drop trigger if exists negocios_sync on inventariado.negocios;
 create trigger negocios_sync before insert or update on inventariado.negocios
   for each row execute function inventariado.marcar_cambio_sync();
+drop trigger if exists perfiles_sync on inventariado.perfiles;
 create trigger perfiles_sync before insert or update on inventariado.perfiles
   for each row execute function inventariado.marcar_cambio_sync();
+drop trigger if exists dispositivos_sync on inventariado.dispositivos;
 create trigger dispositivos_sync before insert or update on inventariado.dispositivos
   for each row execute function inventariado.marcar_cambio_sync();
 
@@ -125,28 +130,38 @@ alter table inventariado.dispositivos enable row level security;
 -- Los negocios se crean con crear_negocio(). La política de insert solo existe
 -- porque un upsert (insert ... on conflict do update) la exige; como pide ser
 -- miembro, no permite crear negocios nuevos.
+drop policy if exists negocios_insert on inventariado.negocios;
 create policy negocios_insert on inventariado.negocios
   for insert to authenticated with check (inventariado.es_miembro(id));
+drop policy if exists negocios_select on inventariado.negocios;
 create policy negocios_select on inventariado.negocios
   for select to authenticated using (inventariado.es_miembro(id));
+drop policy if exists negocios_update on inventariado.negocios;
 create policy negocios_update on inventariado.negocios
   for update to authenticated using (inventariado.es_miembro(id)) with check (inventariado.es_miembro(id));
 
+drop policy if exists negocio_usuarios_select on inventariado.negocio_usuarios;
 create policy negocio_usuarios_select on inventariado.negocio_usuarios
   for select to authenticated using (usuario_id = auth.uid());
 
+drop policy if exists perfiles_select on inventariado.perfiles;
 create policy perfiles_select on inventariado.perfiles
   for select to authenticated using (inventariado.es_miembro(negocio_id));
+drop policy if exists perfiles_insert on inventariado.perfiles;
 create policy perfiles_insert on inventariado.perfiles
   for insert to authenticated with check (inventariado.es_miembro(negocio_id));
+drop policy if exists perfiles_update on inventariado.perfiles;
 create policy perfiles_update on inventariado.perfiles
   for update to authenticated using (inventariado.es_miembro(negocio_id))
   with check (inventariado.es_miembro(negocio_id));
 
+drop policy if exists dispositivos_select on inventariado.dispositivos;
 create policy dispositivos_select on inventariado.dispositivos
   for select to authenticated using (inventariado.es_miembro(negocio_id));
+drop policy if exists dispositivos_insert on inventariado.dispositivos;
 create policy dispositivos_insert on inventariado.dispositivos
   for insert to authenticated with check (inventariado.es_miembro(negocio_id));
+drop policy if exists dispositivos_update on inventariado.dispositivos;
 create policy dispositivos_update on inventariado.dispositivos
   for update to authenticated using (inventariado.es_miembro(negocio_id))
   with check (inventariado.es_miembro(negocio_id));
@@ -247,3 +262,6 @@ revoke execute on function inventariado.sincronizar_descarga(text, uuid, text) f
 grant execute on function inventariado.sincronizar_descarga(text, uuid, text) to authenticated;
 revoke execute on function inventariado.es_miembro(uuid) from public, anon;
 grant execute on function inventariado.es_miembro(uuid) to authenticated;
+
+-- Avisa a la API de Supabase que recargue tablas y funciones.
+notify pgrst, 'reload schema';

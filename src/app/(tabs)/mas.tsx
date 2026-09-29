@@ -1,13 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import Constants from 'expo-constants';
 import { router, useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { obtenerNegocio } from '@/db/negocio';
 import { formatearFechaHora } from '@/lib/formato';
+import { useActualizacion } from '@/features/actualizacion/actualizacion';
 import { supabase } from '@/lib/supabase';
+import { versionActual } from '@/lib/version';
 import { cerrarSesion } from '@/sesion/cuenta';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
@@ -20,6 +21,7 @@ export default function MasScreen() {
   const esDueno = perfil?.rol === 'dueno';
 
   const [esAdmin, setEsAdmin] = useState(false);
+  const nueva = useActualizacion((s) => s.nueva);
 
   useEffect(() => {
     if (negocioId) obtenerNegocio(db, negocioId).then((n) => setNegocio(n?.nombre ?? ''));
@@ -90,6 +92,18 @@ export default function MasScreen() {
           texto="Suscripción"
           onPress={() => router.push('/suscripcion')}
         />
+        {esDueno ? (
+          <Opcion
+            icono="download-outline"
+            texto="Exportar datos"
+            onPress={() => router.push('/exportar')}
+          />
+        ) : null}
+        <Opcion
+          icono="chatbubble-ellipses-outline"
+          texto="Enviar comentario o problema"
+          onPress={() => router.push('/comentario')}
+        />
         {esAdmin ? (
           <Opcion
             icono="shield-checkmark-outline"
@@ -109,7 +123,16 @@ export default function MasScreen() {
         />
       </View>
 
-      <Text style={estilos.version}>Versión {Constants.expoConfig?.version ?? '-'}</Text>
+      <Text style={estilos.version}>Versión {versionActual().texto}</Text>
+      {nueva ? (
+        <Text
+          accessibilityRole="button"
+          style={estilos.nuevaVersion}
+          onPress={() => Linking.openURL(nueva.url)}
+        >
+          Descargar versión {nueva.version} ({nueva.version_code})
+        </Text>
+      ) : null}
     </ScrollView>
   );
 }
@@ -196,4 +219,5 @@ const estilos = StyleSheet.create({
   presionada: { backgroundColor: colores.fondo },
   opcionTexto: { fontSize: 16 },
   version: { marginTop: 24, textAlign: 'center', color: colores.inactivo },
+  nuevaVersion: { marginTop: 8, textAlign: 'center', fontSize: 15, color: colores.primario },
 });

@@ -177,16 +177,26 @@ compartido) y negocio creado desde el teléfono.
 - Borradores de **Términos y condiciones** y **Política de privacidad** (revisar con abogado).
 - Pendiente: conectar con los terminales POS (Transbank, Getnet, etc.) al publicar en Play Store.
 
-**Estado:** 🚧 código listo; falta ejecutar el SQL de la fase 5 y registrarse como administrador.
+**Estado:** ✅ completada (SQL ejecutado en Supabase).
 
 ## Fase 6 — Piloto con locales reales
 
-**Meta:** validar con clientes antes de crecer.
+**Meta:** validar con clientes antes de crecer. Guía: `docs/PILOTO.md`.
 
-- Instalar el APK en 2–3 locales de prueba.
-- Sistema de actualizaciones: EAS Update para cambios menores y aviso de nueva versión del APK.
-- Reporte de errores (ej. Sentry) y respaldo de datos.
-- Recoger comentarios y corregir lo más urgente.
+- **Aviso de versión nueva**: el workflow "Construir APK" puede publicar el APK en Supabase
+  Storage y registrar la versión; la app avisa y descarga desde ahí (los clientes no necesitan
+  GitHub). Opción de actualización obligatoria. Enlace fijo a la última versión.
+- **Firma con clave propia** (plugin de Expo + secretos de GitHub) antes de entregar a clientes.
+- **Registro de errores** propio (sin servicios externos): errores de pantalla y no capturados
+  llegan al panel de administración con versión y modelo de teléfono.
+- **Comentarios** desde la app (Más → Enviar comentario o problema), visibles para el
+  administrador, con marca de leído.
+- **Exportar datos** (dueño): productos en CSV reimportable, ventas por ítem en CSV (mes actual
+  y anterior) y respaldo completo en JSON.
+- **Respaldo semanal** de la base de datos con GitHub Actions (pg_dump, 90 días).
+- Pendiente del dueño del proyecto: crear la clave de firma, los secretos y elegir los locales.
+
+**Estado:** 🚧 código listo; falta ejecutar el SQL de la fase 6 y configurar los secretos.
 
 ## Fase 7 — Reportes
 

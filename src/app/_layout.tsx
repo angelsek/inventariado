@@ -3,15 +3,58 @@ import * as SplashScreen from 'expo-splash-screen';
 import { SQLiteProvider, useSQLiteContext } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AJUSTE_NEGOCIO, leerAjuste } from '@/db/ajustes';
 import { migrarBaseDeDatos, NOMBRE_BASE_DE_DATOS } from '@/db/migraciones';
 import { obtenerEstadoSuscripcion } from '@/db/suscripcion';
+import { useActualizacion } from '@/features/actualizacion/actualizacion';
+import { informarError, instalarManejadorErrores } from '@/lib/errores';
 import { useSesion } from '@/sesion/store';
 import { useSincronizacionAutomatica } from '@/sync/useSincronizacionAutomatica';
 import { colores } from '@/theme/colores';
 
 SplashScreen.preventAutoHideAsync();
+instalarManejadorErrores();
+
+/**
+ * Pantalla de error de Expo Router: si una pantalla falla, se informa el error
+ * al administrador y se ofrece reintentar en vez de cerrar la app.
+ */
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Promise<void> }) {
+  useEffect(() => {
+    informarError(error, 'Pantalla');
+  }, [error]);
+
+  return (
+    <ScrollView contentContainerStyle={estilosError.contenedor}>
+      <Text style={estilosError.titulo}>Algo salió mal</Text>
+      <Text style={estilosError.texto}>
+        El error se informó automáticamente. Tus datos están guardados en el teléfono.
+      </Text>
+      <Text style={estilosError.detalle}>{error.message}</Text>
+      <View style={estilosError.boton}>
+        <Text accessibilityRole="button" style={estilosError.reintentar} onPress={retry}>
+          Reintentar
+        </Text>
+      </View>
+    </ScrollView>
+  );
+}
+
+const estilosError = StyleSheet.create({
+  contenedor: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: colores.fondo,
+  },
+  titulo: { fontSize: 24, fontWeight: '700', color: colores.texto },
+  texto: { marginTop: 8, fontSize: 16, color: colores.textoSecundario },
+  detalle: { marginTop: 16, fontSize: 13, color: colores.error },
+  boton: { marginTop: 24 },
+  reintentar: { fontSize: 17, fontWeight: '600', color: colores.primario },
+});
 
 export default function RootLayout() {
   return (
@@ -42,6 +85,11 @@ function Navegacion() {
   useEffect(() => {
     if (cargada) SplashScreen.hideAsync();
   }, [cargada]);
+
+  const verificarActualizacion = useActualizacion((s) => s.verificar);
+  useEffect(() => {
+    verificarActualizacion();
+  }, [verificarActualizacion]);
 
   useSincronizacionAutomatica();
 
@@ -80,6 +128,9 @@ function Navegacion() {
         <Stack.Screen name="conteo" options={conEncabezado('Conteo de inventario')} />
         <Stack.Screen name="suscripcion" options={conEncabezado('Suscripción')} />
         <Stack.Screen name="admin" options={conEncabezado('Administración')} />
+        <Stack.Screen name="reportes" options={conEncabezado('Reportes')} />
+        <Stack.Screen name="exportar" options={conEncabezado('Exportar datos')} />
+        <Stack.Screen name="comentario" options={conEncabezado('Enviar comentario')} />
       </Stack.Protected>
 
       {/*

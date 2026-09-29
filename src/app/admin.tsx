@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -138,7 +139,8 @@ export default function AdminScreen() {
         );
       })}
 
-      <View style={estilos.espacio}>
+      <View style={[estilos.espacio, estilos.acciones]}>
+        <Boton titulo="Comentarios y errores" onPress={() => router.push('/reportes')} />
         <Boton titulo="Actualizar" variante="secundario" onPress={recargar} />
       </View>
 

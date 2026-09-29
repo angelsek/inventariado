@@ -41,6 +41,8 @@ En la misma página, si aparecen **Exposed tables** y **Exposed functions**, act
 - Tablas de la fase 5: `planes`, `suscripciones`, `pagos_suscripcion`.
 - Funciones de la fase 5: `registrar_dispositivo`, `mis_dispositivos`, `desvincular_dispositivo`,
   `es_admin`, `admin_listar_negocios`, `admin_registrar_pago`, `admin_actualizar_suscripcion`.
+- Funciones de la fase 6: `ultima_version`, `registrar_error`, `enviar_comentario`,
+  `admin_listar_reportes`, `admin_marcar_comentario`.
 - Funciones de `inventariado`: `crear_negocio`, `sincronizar_descarga`.
 
 (`es_miembro` y `marcar_cambio_sync` las usa la base internamente; no hace falta exponerlas.)

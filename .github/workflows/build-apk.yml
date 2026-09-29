@@ -2,8 +2,25 @@ name: Construir APK
 
 # Genera un APK instalable de Android y lo deja como archivo descargable
 # en la página de la ejecución (sección "Artifacts").
+#
+# Al ejecutarlo a mano (Actions → Construir APK → Run workflow) con "publicar"
+# marcado, además lo sube a Supabase y las apps de los clientes avisan que hay
+# una versión nueva. Ver docs/PILOTO.md.
 on:
   workflow_dispatch:
+    inputs:
+      publicar:
+        description: 'Publicar para los clientes (la app avisará que hay versión nueva)'
+        type: boolean
+        default: false
+      notas:
+        description: 'Novedades de esta versión (opcional)'
+        type: string
+        default: ''
+      obligatoria:
+        description: 'Actualización obligatoria'
+        type: boolean
+        default: false
   push:
     branches: [main, claude/fervent-franklin-regzl4]
 
@@ -33,6 +50,27 @@ jobs:
           ANDROID_VERSION_CODE: ${{ github.run_number }}
         run: npx expo prebuild --platform android --no-install --clean
 
+      # Clave de firma definitiva (secretos del repositorio, ver docs/PILOTO.md).
+      # Sin ella se firma con la clave de desarrollo.
+      - name: Preparar clave de firma
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::Sin clave de firma propia: se usa la clave de desarrollo."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+          {
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore"
+            echo "ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+            echo "ANDROID_KEY_ALIAS=$KEY_ALIAS"
+            echo "ANDROID_KEY_PASSWORD=${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+          } >> "$GITHUB_ENV"
+
       - name: Compilar APK
         working-directory: android
         # Datos del proyecto Supabase (Settings → Secrets and variables → Actions → Variables).
@@ -54,9 +92,55 @@ jobs:
           ARCHIVO="inventariado-v${VERSION}-${{ github.run_number }}.apk"
           mv android/app/build/outputs/apk/release/app-release.apk "$ARCHIVO"
           echo "archivo=$ARCHIVO" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.nombre.outputs.archivo }}
           path: ${{ steps.nombre.outputs.archivo }}
           retention-days: 30
+
+      # Sube el APK a Supabase Storage (carpeta pública "apk") y registra la versión.
+      # Requiere el secreto SUPABASE_SERVICE_ROLE_KEY (clave secreta del proyecto).
+      - name: Publicar para los clientes
+        if: ${{ inputs.publicar }}
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          CLAVE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ARCHIVO: ${{ steps.nombre.outputs.archivo }}
+          VERSION: ${{ steps.nombre.outputs.version }}
+          CODIGO: ${{ github.run_number }}
+          NOTAS: ${{ inputs.notas }}
+          OBLIGATORIA: ${{ inputs.obligatoria }}
+        run: |
+          if [ -z "$CLAVE" ] || [ -z "$SUPABASE_URL" ]; then
+            echo "::error::Falta el secreto SUPABASE_SERVICE_ROLE_KEY o la variable SUPABASE_URL."
+            exit 1
+          fi
+          # Las claves nuevas (sb_secret_...) van solo en "apikey"; las antiguas (JWT) también como Bearer.
+          CABECERAS=(-H "apikey: $CLAVE")
+          case "$CLAVE" in sb_*) ;; *) CABECERAS+=(-H "Authorization: Bearer $CLAVE") ;; esac
+
+          subir() {
+            curl --fail-with-body -sS -X POST "$SUPABASE_URL/storage/v1/object/apk/$1" \
+              "${CABECERAS[@]}" -H "x-upsert: true" \
+              -H "Content-Type: application/vnd.android.package-archive" \
+              --data-binary @"$ARCHIVO"
+            echo
+          }
+          subir "inventariado-$CODIGO.apk"
+          # Nombre fijo para compartir un enlace que siempre descarga la última versión.
+          subir "inventariado.apk"
+
+          URL_APK="$SUPABASE_URL/storage/v1/object/public/apk/inventariado-$CODIGO.apk"
+          jq -n --argjson codigo "$CODIGO" --arg version "$VERSION" --arg url "$URL_APK" \
+            --arg notas "$NOTAS" --argjson obligatoria "$OBLIGATORIA" \
+            '{version_code: $codigo, version: $version, url: $url, notas: (if $notas == "" then null else $notas end), obligatoria: $obligatoria}' \
+            > version.json
+          curl --fail-with-body -sS -X POST "$SUPABASE_URL/rest/v1/versiones_app" \
+            "${CABECERAS[@]}" -H "Content-Type: application/json" \
+            -H "Content-Profile: inventariado" -H "Prefer: resolution=merge-duplicates" \
+            --data @version.json
+          echo
+          echo "Publicado: $URL_APK"
+          echo "Enlace fijo a la última versión: $SUPABASE_URL/storage/v1/object/public/apk/inventariado.apk"

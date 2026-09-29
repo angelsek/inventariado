@@ -1,18 +1,20 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Campo } from '@/components/Campo';
 import { Escaner } from '@/components/Escaner';
 import { Hoja } from '@/components/Hoja';
+import { obtenerCajaAbierta } from '@/db/cajas';
 import { buscarPorCodigo, listarProductos, type Producto } from '@/db/productos';
 import { calcularTotales, type ItemCarrito, totalItem } from '@/features/ventas/calculos';
 import { useCarrito } from '@/features/ventas/carrito';
 import { formatearCLP } from '@/lib/formato';
 import { formatearCantidad, parsearCantidad, parsearMonto } from '@/lib/numeros';
+import { obtenerAutor } from '@/sesion/autor';
 import { useSesion } from '@/sesion/store';
 import { colores } from '@/theme/colores';
 
@@ -30,6 +32,16 @@ export default function VenderScreen() {
   const [pesando, setPesando] = useState<Producto | null>(null);
   const [editando, setEditando] = useState<ItemCarrito | null>(null);
   const [montoLibre, setMontoLibre] = useState(false);
+  const [cajaAbierta, setCajaAbierta] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!negocioId) return;
+      obtenerAutor(db)
+        .then(({ dispositivoId }) => obtenerCajaAbierta(db, negocioId, dispositivoId))
+        .then((caja) => setCajaAbierta(!!caja));
+    }, [db, negocioId]),
+  );
 
   useEffect(() => {
     if (!negocioId || !busqueda.trim()) return;
@@ -89,6 +101,17 @@ export default function VenderScreen() {
           <Ionicons name="barcode-outline" size={26} color={colores.superficie} />
         </Pressable>
       </View>
+
+      {!cajaAbierta ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/caja')}
+          style={estilos.cajaCerrada}
+        >
+          <Ionicons name="lock-closed-outline" size={16} color={colores.aviso} />
+          <Text style={estilos.textoCaja}>Caja cerrada: toca aquí para abrirla.</Text>
+        </Pressable>
+      ) : null}
 
       {aviso ? (
         <Pressable onPress={() => setAviso(null)} style={estilos.aviso}>
@@ -402,6 +425,17 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.fondoError,
   },
   textoAviso: { fontSize: 14, color: colores.error },
+  cajaCerrada: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginHorizontal: 12,
+    marginTop: 4,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: '#FFF3E0',
+  },
+  textoCaja: { fontSize: 14, color: colores.aviso },
   lista: { padding: 12, flexGrow: 1 },
   resultado: {
     flexDirection: 'row',

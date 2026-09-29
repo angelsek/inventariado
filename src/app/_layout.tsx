@@ -69,6 +69,11 @@ function Navegacion() {
         <Stack.Screen name="cobrar" options={conEncabezado('Cobrar')} />
         <Stack.Screen name="ventas" options={conEncabezado('Ventas')} />
         <Stack.Screen name="venta/[id]" options={conEncabezado('Venta')} />
+        <Stack.Screen name="compra" options={conEncabezado('Ingreso de mercadería')} />
+        <Stack.Screen name="compras" options={conEncabezado('Ingresos anteriores')} />
+        <Stack.Screen name="proveedores" options={conEncabezado('Proveedores')} />
+        <Stack.Screen name="reponer" options={conEncabezado('Por reponer')} />
+        <Stack.Screen name="conteo" options={conEncabezado('Conteo de inventario')} />
       </Stack.Protected>
     </Stack>
   );

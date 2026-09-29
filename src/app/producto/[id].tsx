@@ -19,6 +19,8 @@ import {
   type Unidad,
   UNIDADES,
 } from '@/db/productos';
+import { AjusteStock } from '@/features/inventario/AjusteStock';
+import { HistorialStock } from '@/features/inventario/HistorialStock';
 import { formatearCLP } from '@/lib/formato';
 import { formatearCantidad, parsearCantidad, parsearMonto } from '@/lib/numeros';
 import { obtenerAutor } from '@/sesion/autor';
@@ -65,6 +67,8 @@ export default function ProductoScreen() {
   const [guardando, setGuardando] = useState(false);
   const [escaneando, setEscaneando] = useState(false);
   const [nuevaCategoria, setNuevaCategoria] = useState<string | null>(null);
+  const [ajustando, setAjustando] = useState(false);
+  const [versionStock, setVersionStock] = useState(0);
 
   useEffect(() => {
     if (negocioId) listarCategorias(db, negocioId).then(setCategorias);
@@ -283,7 +287,13 @@ export default function ProductoScreen() {
                 {formatearCantidad(producto!.stock)}
                 {producto!.unidad === 'kg' ? ' kg' : ''}
               </Text>
-              <Text style={estilos.nota}>Los ajustes de stock llegan en la fase 4.</Text>
+              <Text
+                accessibilityRole="button"
+                style={estilos.enlace}
+                onPress={() => setAjustando(true)}
+              >
+                Ajustar stock
+              </Text>
             </View>
           )}
           <View style={estilos.columna}>
@@ -318,7 +328,24 @@ export default function ProductoScreen() {
         ) : null}
 
         <Boton titulo="Guardar" onPress={guardar} cargando={guardando} />
+        {!esNuevo ? <HistorialStock productoId={producto!.id} version={versionStock} /> : null}
       </Formulario>
+
+      {!esNuevo ? (
+        <AjusteStock
+          producto={producto!}
+          visible={ajustando}
+          onCerrar={() => setAjustando(false)}
+          onListo={async () => {
+            setAjustando(false);
+            const actualizado = await obtenerProducto(db, producto!.id);
+            if (actualizado) setProducto(actualizado);
+            setVersionStock((v) => v + 1);
+            datosCambiaron();
+            sincronizarAhora(db);
+          }}
+        />
+      ) : null}
 
       <Escaner
         visible={escaneando}

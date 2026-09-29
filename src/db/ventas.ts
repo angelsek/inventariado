@@ -56,6 +56,8 @@ export async function registrarVenta(
     pagos: Pago[];
     efectivoRecibido: number | null;
     vuelto: number | null;
+    /** Caja abierta del teléfono, si hay (fase 4). */
+    cajaId?: string | null;
     autor: Autor;
   },
 ): Promise<string> {
@@ -69,8 +71,8 @@ export async function registrarVenta(
   await db.withTransactionAsync(async () => {
     await db.runAsync(
       `INSERT INTO ventas (id, negocio_id, subtotal, descuento, total, efectivo_recibido, vuelto,
-         estado, perfil_id, dispositivo_id, creado_en, actualizado_en, pendiente)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'completada', ?, ?, ?, ?, 1)`,
+         estado, perfil_id, dispositivo_id, caja_id, creado_en, actualizado_en, pendiente)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'completada', ?, ?, ?, ?, ?, 1)`,
       ventaId,
       negocioId,
       subtotal,
@@ -80,6 +82,7 @@ export async function registrarVenta(
       datos.vuelto,
       autor.perfilId,
       autor.dispositivoId,
+      datos.cajaId ?? null,
       ahora,
       ahora,
     );

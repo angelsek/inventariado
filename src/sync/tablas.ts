@@ -67,6 +67,29 @@ export const TABLAS_SYNC: readonly TablaSync[] = [
     booleanas: ['eliminado'],
   },
   {
+    nombre: 'cajas',
+    columnas: [
+      'id',
+      'negocio_id',
+      'dispositivo_id',
+      'abierta_por',
+      'abierta_en',
+      'monto_inicial',
+      'cerrada_por',
+      'cerrada_en',
+      'efectivo_esperado',
+      'monto_contado',
+      'notas',
+      ...control,
+    ],
+    booleanas: ['eliminado'],
+  },
+  {
+    nombre: 'movimientos_caja',
+    columnas: ['id', 'negocio_id', 'caja_id', 'tipo', 'monto', 'motivo', 'perfil_id', ...control],
+    booleanas: ['eliminado'],
+  },
+  {
     nombre: 'ventas',
     columnas: [
       'id',
@@ -82,6 +105,7 @@ export const TABLAS_SYNC: readonly TablaSync[] = [
       'anulada_en',
       'anulada_por',
       'motivo_anulacion',
+      'caja_id',
       ...control,
     ],
     booleanas: ['eliminado'],
@@ -106,6 +130,40 @@ export const TABLAS_SYNC: readonly TablaSync[] = [
   {
     nombre: 'pagos',
     columnas: ['id', 'negocio_id', 'venta_id', 'medio', 'monto', ...control],
+    booleanas: ['eliminado'],
+  },
+  {
+    nombre: 'proveedores',
+    columnas: ['id', 'negocio_id', 'nombre', 'rut', 'telefono', ...control],
+    booleanas: ['eliminado'],
+  },
+  {
+    nombre: 'compras',
+    columnas: [
+      'id',
+      'negocio_id',
+      'proveedor_id',
+      'documento',
+      'total',
+      'perfil_id',
+      'dispositivo_id',
+      ...control,
+    ],
+    booleanas: ['eliminado'],
+  },
+  {
+    nombre: 'compra_items',
+    columnas: [
+      'id',
+      'negocio_id',
+      'compra_id',
+      'producto_id',
+      'nombre',
+      'cantidad',
+      'costo_unitario',
+      'total',
+      ...control,
+    ],
     booleanas: ['eliminado'],
   },
 ];

@@ -7,6 +7,7 @@ import { Boton } from '@/components/Boton';
 import { Campo } from '@/components/Campo';
 import { Formulario } from '@/components/Formulario';
 import { Selector } from '@/components/Selector';
+import { obtenerCajaAbierta } from '@/db/cajas';
 import { registrarVenta } from '@/db/ventas';
 import {
   calcularTotales,
@@ -73,6 +74,8 @@ export default function CobrarScreen() {
     setGuardando(true);
     setError(null);
     try {
+      const autor = await obtenerAutor(db);
+      const caja = await obtenerCajaAbierta(db, negocioId!, autor.dispositivoId);
       const ventaId = await registrarVenta(db, {
         negocioId: negocioId!,
         items: carrito.items,
@@ -80,7 +83,8 @@ export default function CobrarScreen() {
         pagos: revision.pagos,
         efectivoRecibido: revision.efectivoRecibido,
         vuelto: revision.vuelto,
-        autor: await obtenerAutor(db),
+        cajaId: caja?.id ?? null,
+        autor,
       });
       carrito.vaciar();
       datosCambiaron();

@@ -147,6 +147,82 @@ export const migraciones: string[] = [
      pendiente INTEGER NOT NULL DEFAULT 0
    );
    CREATE INDEX pagos_venta ON pagos (venta_id);`,
+
+  // 5 (fase 4): proveedores, compras y caja.
+  `CREATE TABLE proveedores (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     nombre TEXT NOT NULL,
+     rut TEXT,
+     telefono TEXT,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE TABLE compras (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     proveedor_id TEXT,
+     documento TEXT,
+     total INTEGER NOT NULL,
+     perfil_id TEXT,
+     dispositivo_id TEXT,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE INDEX compras_fecha ON compras (negocio_id, creado_en);
+   CREATE TABLE compra_items (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     compra_id TEXT NOT NULL,
+     producto_id TEXT NOT NULL,
+     nombre TEXT NOT NULL,
+     cantidad REAL NOT NULL,
+     costo_unitario INTEGER NOT NULL,
+     total INTEGER NOT NULL,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE INDEX compra_items_compra ON compra_items (compra_id);
+   CREATE TABLE cajas (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     dispositivo_id TEXT,
+     abierta_por TEXT,
+     abierta_en TEXT NOT NULL,
+     monto_inicial INTEGER NOT NULL,
+     cerrada_por TEXT,
+     cerrada_en TEXT,
+     efectivo_esperado INTEGER,
+     monto_contado INTEGER,
+     notas TEXT,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE INDEX cajas_fecha ON cajas (negocio_id, abierta_en);
+   CREATE TABLE movimientos_caja (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     caja_id TEXT NOT NULL,
+     tipo TEXT NOT NULL,
+     monto INTEGER NOT NULL,
+     motivo TEXT,
+     perfil_id TEXT,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE INDEX movimientos_caja_caja ON movimientos_caja (caja_id);
+   ALTER TABLE ventas ADD COLUMN caja_id TEXT;
+   CREATE INDEX ventas_caja ON ventas (caja_id);`,
 ];
 
 /** Aplica las migraciones pendientes usando PRAGMA user_version. */

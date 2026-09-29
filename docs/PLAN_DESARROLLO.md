@@ -130,22 +130,32 @@ compartido) y negocio creado desde el teléfono.
 
 **Entregable:** primera versión usable en un local real.
 
-**Estado:** 🚧 código listo; falta ejecutar el SQL de la fase 3 en Supabase y probar.
+**Estado:** ✅ completada (SQL ejecutado en Supabase).
 
 ## Fase 4 — Inventario y caja
 
 **Meta:** control real del stock y del dinero.
 
-- Ingreso de mercadería (compras a proveedores): actualiza stock y costo.
-- Registro de proveedores.
-- Ajustes de stock con motivo (merma, rotura, vencimiento, consumo interno).
-- Toma de inventario: conteo físico escaneando y comparando con el sistema.
-- Alertas de stock bajo y lista de reposición sugerida.
-- **Apertura y cierre de caja por teléfono/cajero**: monto inicial, ventas por medio de pago,
-  retiros e ingresos de efectivo, diferencia al cierre.
-- Registro de auditoría (quién vendió, anuló o ajustó qué y cuándo).
+- **Ingreso de mercadería**: proveedor (o sin proveedor), N° de factura/guía, productos por
+  búsqueda o escáner continuo, cantidad y costo por línea; suma stock y puede actualizar el
+  costo de cada producto. Historial de ingresos.
+- **Proveedores**: nombre, RUT validado y teléfono.
+- **Ajustes de stock** desde la ficha del producto, con motivo (merma, rotura, vencimiento,
+  consumo interno, robo o pérdida, corrección).
+- **Historial de stock** por producto: cada movimiento con tipo, motivo, quién y cuándo.
+- **Conteo de inventario**: cada escaneo suma 1 (o se escribe la cantidad); muestra la
+  diferencia contra el sistema y al aplicar deja el stock igual a lo contado.
+- **Por reponer**: productos sin stock o bajo el mínimo; se comparte la lista por WhatsApp.
+- **Caja por teléfono**: apertura con efectivo inicial, ingresos y retiros con motivo, efectivo
+  esperado en vivo (inicial + ventas en efectivo + ingresos − retiros), cierre con efectivo
+  contado y diferencia (cuadra / sobra / falta), resumen compartible e historial de cierres.
+  Las ventas quedan ligadas a la caja abierta del teléfono. Si la caja está cerrada, Vender lo
+  avisa pero permite vender.
+- Pendiente: vencimientos por lote (opcional).
 
 **Entregable:** el dueño sabe qué tiene, qué perdió y si cada caja cuadra.
+
+**Estado:** 🚧 código listo; falta ejecutar el SQL de la fase 4 en Supabase y probar.
 
 ## Fase 5 — Suscripciones y administración del servicio
 

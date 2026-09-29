@@ -252,3 +252,91 @@ function limpiarCodigo(codigo: string | null): string | null {
   const limpio = codigo?.trim() ?? '';
   return limpio === '' ? null : limpio;
 }
+
+export const MOTIVOS_AJUSTE = [
+  'Merma',
+  'Rotura',
+  'Vencimiento',
+  'Consumo interno',
+  'Robo o pérdida',
+  'Corrección',
+];
+
+/** Ajusta el stock para que quede en `nuevoStock`, registrando la diferencia. */
+export async function ajustarStock(
+  db: BaseLocal,
+  datos: {
+    negocioId: string;
+    productoId: string;
+    nuevoStock: number;
+    tipo: 'ajuste' | 'conteo';
+    motivo: string;
+    autor: Autor;
+  },
+): Promise<number> {
+  const actual = await obtenerProducto(db, datos.productoId);
+  if (!actual) throw new Error('Producto no encontrado.');
+  const diferencia = Math.round((datos.nuevoStock - actual.stock) * 1000) / 1000;
+  if (diferencia !== 0) {
+    await registrarMovimiento(db, {
+      negocioId: datos.negocioId,
+      productoId: datos.productoId,
+      tipo: datos.tipo,
+      cantidad: diferencia,
+      motivo: datos.motivo,
+      autor: datos.autor,
+    });
+  }
+  return diferencia;
+}
+
+export type MovimientoStock = {
+  id: string;
+  tipo: TipoMovimiento;
+  cantidad: number;
+  motivo: string | null;
+  perfil: string | null;
+  creadoEn: string;
+};
+
+/** Historial de movimientos de un producto, del más reciente al más antiguo. */
+export async function listarMovimientos(
+  db: BaseLocal,
+  productoId: string,
+  limite = 30,
+): Promise<MovimientoStock[]> {
+  const filas = await db.getAllAsync<{
+    id: string;
+    tipo: TipoMovimiento;
+    cantidad: number;
+    motivo: string | null;
+    perfil: string | null;
+    creado_en: string;
+  }>(
+    `SELECT m.id, m.tipo, m.cantidad, m.motivo, p.nombre AS perfil, m.creado_en
+       FROM movimientos_stock m LEFT JOIN perfiles p ON p.id = m.perfil_id
+      WHERE m.producto_id = ? AND m.eliminado = 0
+      ORDER BY m.creado_en DESC, m.rowid DESC LIMIT ?`,
+    productoId,
+    limite,
+  );
+  return filas.map((f) => ({
+    id: f.id,
+    tipo: f.tipo,
+    cantidad: f.cantidad,
+    motivo: f.motivo,
+    perfil: f.perfil,
+    creadoEn: f.creado_en,
+  }));
+}
+
+/**
+ * Productos activos que hay que reponer: sin stock, o con stock igual o menor
+ * al mínimo definido.
+ */
+export async function listarParaReponer(db: BaseLocal, negocioId: string): Promise<Producto[]> {
+  const todos = await listarProductos(db, negocioId);
+  return todos
+    .filter((p) => p.stock <= 0 || (p.stockMinimo > 0 && p.stock <= p.stockMinimo))
+    .sort((a, b) => a.stock - a.stockMinimo - (b.stock - b.stockMinimo));
+}

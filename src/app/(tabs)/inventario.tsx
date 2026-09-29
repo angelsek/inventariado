@@ -2,7 +2,16 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Alert,
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Escaner } from '@/components/Escaner';
@@ -97,19 +106,36 @@ export default function InventarioScreen() {
       ) : null}
 
       {esDueno ? (
-        <View style={estilos.acciones}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={estilos.accionesScroll}
+          contentContainerStyle={estilos.acciones}
+        >
           <Accion icono="add" texto="Nuevo" onPress={() => router.push('/producto/nuevo')} />
+          <Accion icono="download-outline" texto="Ingreso" onPress={() => router.push('/compra')} />
+          <Accion
+            icono="alert-circle-outline"
+            texto="Reponer"
+            onPress={() => router.push('/reponer')}
+          />
+          <Accion icono="clipboard-outline" texto="Conteo" onPress={() => router.push('/conteo')} />
           <Accion
             icono="pricetags-outline"
             texto="Categorías"
             onPress={() => router.push('/categorias')}
           />
           <Accion
+            icono="people-outline"
+            texto="Proveedores"
+            onPress={() => router.push('/proveedores')}
+          />
+          <Accion
             icono="document-text-outline"
             texto="Importar"
             onPress={() => router.push('/importar')}
           />
-        </View>
+        </ScrollView>
       ) : null}
 
       <FlatList
@@ -216,7 +242,8 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.primario,
   },
   categorias: { paddingHorizontal: 12 },
-  acciones: { flexDirection: 'row', gap: 16, paddingHorizontal: 16, paddingVertical: 6 },
+  accionesScroll: { flexGrow: 0 },
+  acciones: { flexDirection: 'row', gap: 18, paddingHorizontal: 16, paddingVertical: 6 },
   accion: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 },
   textoAccion: { fontSize: 15, color: colores.primario },
   lista: { padding: 12, paddingTop: 4, flexGrow: 1 },

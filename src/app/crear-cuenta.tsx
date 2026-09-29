@@ -38,8 +38,9 @@ export default function CrearCuentaScreen() {
     setError(null);
     try {
       const resultado = await crearCuentaYNegocio(db, form.correo, form.contrasena, form);
-      if (resultado.tipo === 'confirmar_correo') {
-        router.replace({ pathname: '/ingresar', params: { aviso: 'confirmar' } });
+      if (resultado.tipo === 'confirmar_correo' || resultado.tipo === 'cuenta_existente') {
+        const aviso = resultado.tipo === 'confirmar_correo' ? 'confirmar' : 'existente';
+        router.replace({ pathname: '/ingresar', params: { aviso, correo: form.correo.trim() } });
       }
       // 'listo': la navegación cambia sola al vincularse el negocio.
     } catch (e) {

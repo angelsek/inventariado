@@ -41,8 +41,12 @@ export function mensajeDeError(error: unknown): string {
   const mensaje = error instanceof Error ? error.message : String(error);
   if (/invalid login credentials/i.test(mensaje)) return 'Correo o contraseña incorrectos.';
   if (/user already registered/i.test(mensaje)) return 'Ya existe una cuenta con ese correo.';
-  if (/password should be at least/i.test(mensaje))
-    return 'La contraseña debe tener al menos 6 caracteres.';
+  const largo = mensaje.match(/password should be at least (\d+)/i);
+  if (largo) return `La contraseña debe tener al menos ${largo[1]} caracteres.`;
+  if (/password should contain/i.test(mensaje))
+    return 'La contraseña debe combinar mayúsculas, minúsculas, números y símbolos.';
+  if (/weak|pwned|easy to guess/i.test(mensaje))
+    return 'Esa contraseña es muy fácil de adivinar. Elige otra.';
   if (/email not confirmed/i.test(mensaje))
     return 'Debes confirmar tu correo antes de iniciar sesión.';
   if (/invalid.*email|email.*invalid/i.test(mensaje)) return 'El correo no es válido.';

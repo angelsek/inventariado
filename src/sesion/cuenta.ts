@@ -25,6 +25,8 @@ export type Resultado =
   | { tipo: 'listo' }
   /** Supabase pide confirmar el correo antes de continuar. */
   | { tipo: 'confirmar_correo' }
+  /** El correo ya tenía cuenta (ej. en otra app del mismo proyecto Supabase). */
+  | { tipo: 'cuenta_existente' }
   /** La cuenta existe pero aún no tiene negocio (ej. se confirmó el correo después). */
   | { tipo: 'sin_negocio' };
 
@@ -40,6 +42,9 @@ export async function crearCuentaYNegocio(
     password: contrasena,
   });
   if (error) throw error;
+  // Si el correo ya existe, Supabase no da error (para no revelar qué correos
+  // están registrados): devuelve un usuario sin identidades y sin sesión.
+  if (data.user && data.user.identities?.length === 0) return { tipo: 'cuenta_existente' };
   if (!data.session) return { tipo: 'confirmar_correo' };
 
   await crearNegocio(db, datos);

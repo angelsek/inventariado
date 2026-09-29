@@ -5,15 +5,15 @@ vendida a otros negocios como **servicio con pago mensual** (SaaS).
 
 ## Decisiones tomadas
 
-| Tema | Decisión |
-|------|----------|
-| Plataforma | **Solo Android** por ahora |
-| Distribución | **APK instalable** directamente; Play Store más adelante |
-| Tecnología | **React Native + Expo** (TypeScript) |
-| Dispositivos | **Varios teléfonos por local**, compartiendo inventario y ventas |
-| Código de barras | **Cámara del teléfono** (sin lectores externos) |
-| Boleta electrónica | **Fuera del alcance** por ahora |
-| Modelo de negocio | **Suscripción mensual** por negocio |
+| Tema               | Decisión                                                         |
+| ------------------ | ---------------------------------------------------------------- |
+| Plataforma         | **Solo Android** por ahora                                       |
+| Distribución       | **APK instalable** directamente; Play Store más adelante         |
+| Tecnología         | **React Native + Expo** (TypeScript)                             |
+| Dispositivos       | **Varios teléfonos por local**, compartiendo inventario y ventas |
+| Código de barras   | **Cámara del teléfono** (sin lectores externos)                  |
+| Boleta electrónica | **Fuera del alcance** por ahora                                  |
+| Modelo de negocio  | **Suscripción mensual** por negocio                              |
 
 Consecuencia importante: como hay varios teléfonos por local y varios negocios clientes,
 la app necesita **backend en la nube y cuentas desde el principio**, y la base de datos
@@ -29,17 +29,17 @@ debe ser **multi-negocio** (cada negocio ve solo sus datos).
 
 ## Stack
 
-| Capa | Tecnología | Motivo |
-|------|-----------|--------|
-| App | React Native + Expo (TypeScript) | Rápido de desarrollar, cámara y escáner incluidos (expo-camera) |
-| Base local | SQLite (expo-sqlite) | Permite vender sin internet |
-| Backend | Supabase (Postgres + Auth + Row Level Security) | Cuentas, datos por negocio y sincronización sin montar servidor propio |
-| Sincronización | Capa propia sobre Supabase (evaluar PowerSync si crece la complejidad) | Offline-first entre varios teléfonos |
-| UI / estado | React Native Paper + Zustand | Livianos y fáciles de mantener |
-| Build del APK | EAS Build (perfil `apk`) | Genera el APK instalable sin Play Store |
-| Actualizaciones | EAS Update + aviso de nueva versión dentro de la app | Sin Play Store no hay actualización automática |
-| Cobro mensual | Mercado Pago o Flow (suscripciones / cobro recurrente) | Medios de pago usados en Chile |
-| Pruebas / CI | Jest + GitHub Actions | Revisiones automáticas en cada cambio |
+| Capa            | Tecnología                                                             | Motivo                                                                 |
+| --------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| App             | React Native + Expo (TypeScript)                                       | Rápido de desarrollar, cámara y escáner incluidos (expo-camera)        |
+| Base local      | SQLite (expo-sqlite)                                                   | Permite vender sin internet                                            |
+| Backend         | Supabase (Postgres + Auth + Row Level Security)                        | Cuentas, datos por negocio y sincronización sin montar servidor propio |
+| Sincronización  | Capa propia sobre Supabase (evaluar PowerSync si crece la complejidad) | Offline-first entre varios teléfonos                                   |
+| UI / estado     | React Native Paper + Zustand                                           | Livianos y fáciles de mantener                                         |
+| Build del APK   | EAS Build (perfil `apk`)                                               | Genera el APK instalable sin Play Store                                |
+| Actualizaciones | EAS Update + aviso de nueva versión dentro de la app                   | Sin Play Store no hay actualización automática                         |
+| Cobro mensual   | Mercado Pago o Flow (suscripciones / cobro recurrente)                 | Medios de pago usados en Chile                                         |
+| Pruebas / CI    | Jest + GitHub Actions                                                  | Revisiones automáticas en cada cambio                                  |
 
 ### Reglas de diseño para que la sincronización funcione
 

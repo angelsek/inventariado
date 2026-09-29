@@ -1,0 +1,53 @@
+name: Construir APK
+
+# Genera un APK instalable de Android y lo deja como archivo descargable
+# en la página de la ejecución (sección "Artifacts").
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, claude/fervent-franklin-regzl4]
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - run: npm ci
+
+      - name: Generar proyecto Android
+        env:
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+        run: npx expo prebuild --platform android --no-install --clean
+
+      - name: Compilar APK
+        working-directory: android
+        # Solo arquitecturas de teléfonos reales: APK más liviano y compilación más rápida.
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
+
+      - name: Nombrar APK
+        id: nombre
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          ARCHIVO="inventariado-v${VERSION}-${{ github.run_number }}.apk"
+          mv android/app/build/outputs/apk/release/app-release.apk "$ARCHIVO"
+          echo "archivo=$ARCHIVO" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.nombre.outputs.archivo }}
+          path: ${{ steps.nombre.outputs.archivo }}
+          retention-days: 30

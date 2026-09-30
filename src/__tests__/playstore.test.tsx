@@ -126,7 +126,7 @@ it('la versión de Play no muestra precios ni formas de pago externas', async ()
   await entrarComo('Ana', '1234');
   fireEvent.press(await screen.findByText('Suscripción'));
 
-  expect(await screen.findByText(/se gestiona directamente con Inventariado/)).toBeTruthy();
+  expect(await screen.findByText(/se gestiona directamente con Stockeao/)).toBeTruthy();
   expect(screen.queryByText('¿Cómo pagar?')).toBeNull();
   expect(screen.queryByText('Avisar que pagué')).toBeNull();
   expect(screen.queryByText('$9.990/mes')).toBeNull();

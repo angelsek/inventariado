@@ -120,7 +120,7 @@ export async function respaldoJson(db: BaseLocal, negocioId: string): Promise<st
     );
   }
   return JSON.stringify(
-    { app: 'Inventariado', exportado_en: new Date().toISOString(), datos },
+    { app: 'Stockeao', exportado_en: new Date().toISOString(), datos },
     null,
     1,
   );

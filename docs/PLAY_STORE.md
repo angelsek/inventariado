@@ -14,7 +14,7 @@ Todo lo que pide Play Console, en orden, con los textos listos para copiar.
    la clave como indica `docs/PILOTO.md` (sección 1) **antes** de la primera subida. Esa clave
    será tu _clave de subida_; Google guarda aparte la clave con que firma la app final
    ("Firma de apps de Play", viene activada por defecto: acéptala).
-3. **El nombre del paquete es para siempre:** `cl.inventariado.app`. El nombre visible de la
+3. **El nombre del paquete es para siempre:** `cl.stockeao.app`. El nombre visible de la
    app sí se puede cambiar después.
 4. **Pagos:** Google no permite que una app indique formas de pago fuera de Play (transferencia,
    WhatsApp para pagar) para desbloquear funciones. Por eso la versión de Play **no muestra
@@ -51,7 +51,7 @@ Para actualizarlas: regenera con el comando de arriba y copia los archivos de
 
 **Crear app**:
 
-- Nombre de la app: `Inventariado: ventas y stock`
+- Nombre de la app: `Stockeao: ventas y stock`
 - Idioma predeterminado: Español (Latinoamérica) – es-419
 - App o juego: **App**
 - Gratis o pagada: **Gratis** (la suscripción se contrata fuera de Play)
@@ -59,18 +59,18 @@ Para actualizarlas: regenera con el comando de arriba y copia los archivos de
 
 ## Paso 3: ficha de Play Store (Presencia en Play Store → Ficha principal)
 
-**Nombre de la app** (máx. 30): `Inventariado: ventas y stock`
+**Nombre de la app** (máx. 30): `Stockeao: ventas y stock`
 
 **Descripción breve** (máx. 80):
 
 ```
-Vende, controla stock y cuadra la caja de tu almacén o botillería, sin internet.
+Vende, controla stock y cuadra la caja de tu negocio de barrio, sin internet.
 ```
 
 **Descripción completa**:
 
 ```
-Inventariado es el punto de venta y control de inventario pensado para almacenes, botillerías y minimarkets de Chile.
+Stockeao es el punto de venta y control de inventario pensado para almacenes, botillerías, kioskos, bazares y minimarkets de Chile.
 
 VENDE RÁPIDO
 • Escanea los productos con la cámara del teléfono, uno tras otro, sin lector externo.
@@ -102,7 +102,7 @@ TUS DATOS SON TUYOS
 • Exporta productos y ventas a Excel cuando quieras.
 • Elimina tu cuenta y todos tus datos desde la misma app.
 
-Prueba gratis por 14 días. Inventariado no emite boletas electrónicas: los comprobantes son internos.
+Prueba gratis por 14 días. Stockeao no emite boletas electrónicas: los comprobantes son internos.
 ```
 
 **Gráficos**:

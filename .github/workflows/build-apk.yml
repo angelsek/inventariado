@@ -91,7 +91,7 @@ jobs:
         id: nombre
         run: |
           VERSION=$(node -p "require('./app.json').expo.version")
-          ARCHIVO="inventariado-v${VERSION}-${{ github.run_number }}.apk"
+          ARCHIVO="stockeao-v${VERSION}-${{ github.run_number }}.apk"
           mv android/app/build/outputs/apk/release/app-release.apk "$ARCHIVO"
           echo "archivo=$ARCHIVO" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -130,11 +130,11 @@ jobs:
               --data-binary @"$ARCHIVO"
             echo
           }
-          subir "inventariado-$CODIGO.apk"
+          subir "stockeao-$CODIGO.apk"
           # Nombre fijo para compartir un enlace que siempre descarga la última versión.
-          subir "inventariado.apk"
+          subir "stockeao.apk"
 
-          URL_APK="$SUPABASE_URL/storage/v1/object/public/apk/inventariado-$CODIGO.apk"
+          URL_APK="$SUPABASE_URL/storage/v1/object/public/apk/stockeao-$CODIGO.apk"
           jq -n --argjson codigo "$CODIGO" --arg version "$VERSION" --arg url "$URL_APK" \
             --arg notas "$NOTAS" --argjson obligatoria "$OBLIGATORIA" \
             '{version_code: $codigo, version: $version, url: $url, notas: (if $notas == "" then null else $notas end), obligatoria: $obligatoria}' \
@@ -145,4 +145,4 @@ jobs:
             --data @version.json
           echo
           echo "Publicado: $URL_APK"
-          echo "Enlace fijo a la última versión: $SUPABASE_URL/storage/v1/object/public/apk/inventariado.apk"
+          echo "Enlace fijo a la última versión: $SUPABASE_URL/storage/v1/object/public/apk/stockeao.apk"

@@ -1,4 +1,4 @@
-# Inventariado
+# Stockeao
 
 App móvil (Android) de inventario y punto de venta para pequeños almacenes y botillerías.
 

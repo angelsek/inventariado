@@ -8,7 +8,7 @@ Esta configuración se hace una sola vez.
 Se puede usar un proyecto **nuevo** o uno **existente** que ya tenga otra aplicación.
 
 - Proyecto nuevo: región **South America (São Paulo)**, la más cercana a Chile.
-- Proyecto compartido: todas las tablas de Inventariado viven en el esquema `inventariado`,
+- Proyecto compartido: todas las tablas de Stockeao viven en el esquema `inventariado`,
   separadas de las de la otra aplicación (que suelen estar en `public`). No se modifica nada
   existente. Ver [Compartir el proyecto](#compartir-el-proyecto-con-otra-aplicación).
 
@@ -94,9 +94,9 @@ Funciona sin problemas mientras el uso sea bajo. A tener en cuenta:
 
 - **Límites del plan gratuito compartidos**: base de datos de 500 MB, 50.000 usuarios activos
   al mes, transferencia mensual y almacenamiento de archivos se reparten entre ambas apps.
-  Inventariado usa muy poco en estas fases (texto; las fotos de productos llegan en la fase 2).
+  Stockeao usa muy poco en estas fases (texto; las fotos de productos llegan en la fase 2).
 - **Usuarios compartidos**: Supabase Auth es uno solo por proyecto. Una persona registrada en
-  la otra app podría iniciar sesión en Inventariado (llegaría a la pantalla "Datos del
+  la otra app podría iniciar sesión en Stockeao (llegaría a la pantalla "Datos del
   negocio" y no vería datos de nadie). La configuración de correo (confirmación, plantillas)
   también es común a ambas.
 - **Pausa por inactividad**: los proyectos gratuitos se pausan tras 7 días sin uso; si la otra

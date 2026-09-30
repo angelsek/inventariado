@@ -96,10 +96,10 @@ def grafico_destacado():
     d = ImageDraw.Draw(img)
     a = alto * ESCALA * 0.5
     dibujar_almacen(d, 90 * ESCALA, (alto * ESCALA - a) / 2, a, BLANCO, AZUL, CELESTE)
-    d.text((400 * ESCALA, 170 * ESCALA), 'Inventariado', font=fuente(72 * ESCALA), fill=BLANCO)
+    d.text((400 * ESCALA, 170 * ESCALA), 'Stockeao', font=fuente(72 * ESCALA), fill=BLANCO)
     d.text(
         (404 * ESCALA, 268 * ESCALA),
-        'Ventas, stock y caja para\ntu almacén o botillería',
+        'Ventas, stock y caja para\ntu negocio de barrio',
         font=fuente(32 * ESCALA),
         fill=CELESTE,
         spacing=10 * ESCALA,

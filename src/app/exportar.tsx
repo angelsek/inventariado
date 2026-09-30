@@ -114,7 +114,7 @@ export default function ExportarScreen() {
           variante="secundario"
           cargando={trabajando === 'respaldo'}
           onPress={() =>
-            compartir('respaldo', `respaldo-inventariado-${hoy()}.json`, 'application/json', () =>
+            compartir('respaldo', `respaldo-stockeao-${hoy()}.json`, 'application/json', () =>
               respaldoJson(db, negocioId!),
             )
           }

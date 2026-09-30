@@ -1,6 +1,6 @@
 name: Respaldo de la base de datos
 
-# Copia semanal de todos los datos de Inventariado (esquema "inventariado").
+# Copia semanal de todos los datos de Stockeao (esquema "inventariado").
 # El plan gratuito de Supabase no incluye respaldos automáticos.
 # El archivo queda 90 días en la página de la ejecución (sección "Artifacts").
 # Requiere el secreto SUPABASE_DB_URL (ver docs/PILOTO.md).
@@ -30,7 +30,7 @@ jobs:
             echo "::warning::Falta el secreto SUPABASE_DB_URL: no se hizo respaldo."
             exit 0
           fi
-          ARCHIVO="respaldo-inventariado-$(date -u +%Y-%m-%d).sql.gz"
+          ARCHIVO="respaldo-stockeao-$(date -u +%Y-%m-%d).sql.gz"
           /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" --schema=inventariado \
             --no-owner --no-privileges | gzip > "$ARCHIVO"
           ls -lh "$ARCHIVO"

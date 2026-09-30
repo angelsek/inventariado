@@ -113,7 +113,7 @@ export default function SuscripcionScreen() {
   const avisarPago = async () => {
     const negocio = negocioId ? await obtenerNegocio(db, negocioId) : null;
     const texto = encodeURIComponent(
-      `Hola, quiero pagar la suscripción de Inventariado para "${negocio?.nombre ?? ''}".`,
+      `Hola, quiero pagar la suscripción de Stockeao para "${negocio?.nombre ?? ''}".`,
     );
     const numero = CONTACTO.whatsapp.replace(/\D/g, '');
     Linking.openURL(
@@ -157,8 +157,7 @@ export default function SuscripcionScreen() {
       {CANAL === 'play' ? (
         <View style={estilos.tarjeta}>
           <Text style={estilos.nota}>
-            La suscripción de tu negocio se gestiona directamente con Inventariado, fuera de esta
-            app.
+            La suscripción de tu negocio se gestiona directamente con Stockeao, fuera de esta app.
           </Text>
         </View>
       ) : null}

@@ -74,7 +74,7 @@ function pagina(titulo, cuerpo) {
 </style>
 </head>
 <body>
-<nav><a href="index.html">Inventariado</a><a href="privacidad.html">Privacidad</a><a href="terminos.html">Términos</a><a href="eliminar-cuenta.html">Eliminar cuenta</a></nav>
+<nav><a href="index.html">Stockeao</a><a href="privacidad.html">Privacidad</a><a href="terminos.html">Términos</a><a href="eliminar-cuenta.html">Eliminar cuenta</a></nav>
 <h1>${escapar(titulo)}</h1>
 ${cuerpo}
 <div class="contacto">Contacto: <a href="mailto:${escapar(correo)}">${escapar(correo)}</a></div>
@@ -99,10 +99,10 @@ for (const [nombre, texto] of [
 escribir(
   'eliminar-cuenta.html',
   pagina(
-    'Eliminar tu cuenta de Inventariado',
+    'Eliminar tu cuenta de Stockeao',
     `<p>El dueño del negocio puede eliminar el negocio y <strong>todos sus datos</strong> en cualquier momento:</p>
 <ol>
-  <li>Abre Inventariado e ingresa con tu PIN de dueño.</li>
+  <li>Abre Stockeao e ingresa con tu PIN de dueño.</li>
   <li>Ve a la pestaña <strong>Más</strong> → <strong>Eliminar cuenta y datos</strong>.</li>
   <li>Escribe ELIMINAR, ingresa la contraseña de la cuenta y confirma.</li>
 </ol>
@@ -115,7 +115,7 @@ escribir(
 escribir(
   'index.html',
   pagina(
-    'Inventariado',
+    'Stockeao',
     `<p>Inventario, ventas y caja para almacenes, botillerías y minimarkets. Funciona sin internet y sincroniza entre los teléfonos del local.</p>
 <ul>
   <li><a href="privacidad.html">Política de privacidad</a></li>

@@ -1,4 +1,4 @@
-# Plan de desarrollo — Inventariado
+# Plan de desarrollo — Stockeao
 
 App móvil de **inventario y punto de venta (POS)** para pequeños almacenes y botillerías,
 vendida a otros negocios como **servicio con pago mensual** (SaaS).

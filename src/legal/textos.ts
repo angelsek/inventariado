@@ -7,30 +7,30 @@
 
 export const FECHA_LEGAL = '29 de septiembre de 2026';
 
-export const TERMINOS = `Términos y condiciones de uso de Inventariado
+export const TERMINOS = `Términos y condiciones de uso de Stockeao
 
 Última actualización: ${FECHA_LEGAL}
 
 1. El servicio
-Inventariado es una aplicación para administrar el inventario, las ventas y la caja de almacenes, botillerías y comercios similares. Se ofrece como servicio con pago mensual por negocio.
+Stockeao es una aplicación para administrar el inventario, las ventas y la caja de almacenes, botillerías y comercios similares. Se ofrece como servicio con pago mensual por negocio.
 
 2. Cuenta y usuarios
 El negocio se registra con un correo y contraseña, que son responsabilidad de quien los crea. Los usuarios del local (dueño y cajeros) se identifican con un PIN, que sirve para distinguir a las personas en el teléfono y no reemplaza la contraseña de la cuenta.
 
 3. Prueba gratis, planes y pagos
-Cada negocio nuevo tiene un período de prueba gratis. Luego debe contratar un plan mensual directamente con Inventariado. Los planes difieren, entre otras cosas, en la cantidad de teléfonos que se pueden usar. Los precios vigentes se informan al contratar y pueden cambiar con aviso previo de al menos 30 días.
+Cada negocio nuevo tiene un período de prueba gratis. Luego debe contratar un plan mensual directamente con Stockeao. Los planes difieren, entre otras cosas, en la cantidad de teléfonos que se pueden usar. Los precios vigentes se informan al contratar y pueden cambiar con aviso previo de al menos 30 días.
 
 4. Vencimiento y suspensión
 Si la suscripción vence, hay un período de gracia durante el cual la app sigue funcionando con avisos. Terminado ese período, la app queda en modo solo lectura: se pueden consultar los datos, pero no registrar ventas ni hacer cambios. Los datos no se borran por falta de pago y el servicio se reactiva al pagar.
 
 5. Uso correcto
-El cliente se compromete a usar la app para fines lícitos y a no intentar acceder a datos de otros negocios. Inventariado no es un sistema de facturación ni de boleta electrónica: los comprobantes que genera son internos y no tienen validez tributaria. El cumplimiento de las obligaciones tributarias es responsabilidad del cliente.
+El cliente se compromete a usar la app para fines lícitos y a no intentar acceder a datos de otros negocios. Stockeao no es un sistema de facturación ni de boleta electrónica: los comprobantes que genera son internos y no tienen validez tributaria. El cumplimiento de las obligaciones tributarias es responsabilidad del cliente.
 
 6. Disponibilidad
 La app funciona sin internet y sincroniza los datos cuando hay conexión. Se hacen esfuerzos razonables para que el servicio esté disponible y los datos respaldados, pero pueden ocurrir interrupciones. Se recomienda revisar periódicamente los reportes y cierres de caja.
 
 7. Responsabilidad
-El servicio se entrega "tal cual". Inventariado no responde por pérdidas derivadas de un mal uso, de datos ingresados incorrectamente, de fallas del teléfono o de la conexión, ni por decisiones comerciales tomadas con la información de la app, en la medida que la ley lo permita.
+El servicio se entrega "tal cual". Stockeao no responde por pérdidas derivadas de un mal uso, de datos ingresados incorrectamente, de fallas del teléfono o de la conexión, ni por decisiones comerciales tomadas con la información de la app, en la medida que la ley lo permita.
 
 8. Término del servicio
 El cliente puede dejar de usar el servicio en cualquier momento. Puede descargar una copia de sus datos (Más → Exportar datos) y eliminar el negocio con todos sus datos (Más → Eliminar cuenta y datos), según la Política de privacidad.
@@ -41,7 +41,7 @@ Estos términos pueden actualizarse. Los cambios relevantes se avisarán en la a
 10. Ley aplicable
 Estos términos se rigen por las leyes de la República de Chile.`;
 
-export const PRIVACIDAD = `Política de privacidad de Inventariado
+export const PRIVACIDAD = `Política de privacidad de Stockeao
 
 Última actualización: ${FECHA_LEGAL}
 

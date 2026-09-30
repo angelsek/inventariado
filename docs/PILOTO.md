@@ -1,6 +1,6 @@
 # Piloto con locales reales
 
-Guía para entregar Inventariado a los primeros locales y mantenerlo funcionando.
+Guía para entregar Stockeao a los primeros locales y mantenerlo funcionando.
 
 ## 1. Clave de firma definitiva (antes de entregar la app)
 
@@ -63,17 +63,17 @@ Esta clave nunca va dentro de la app; solo la usa GitHub para subir el APK.
 3. Al terminar (~15 min), las apps de los clientes muestran "Hay una versión nueva" y al
    tocarlo se descarga el APK.
 
-El enlace fijo `https://<tu-proyecto>.supabase.co/storage/v1/object/public/apk/inventariado.apk`
+El enlace fijo `https://<tu-proyecto>.supabase.co/storage/v1/object/public/apk/stockeao.apk`
 siempre descarga la última versión publicada: sirve para instalar la app en un teléfono nuevo.
 
 > El plan gratuito de Supabase tiene 1 GB de almacenamiento compartido con tu otra app y
 > 50 MB por archivo (cada APK pesa ~41 MB). Borra de vez en cuando los APK antiguos en
-> Storage → apk, dejando `inventariado.apk` y el último.
+> Storage → apk, dejando `stockeao.apk` y el último.
 
 ## 3. Respaldo semanal de la base de datos
 
 El plan gratuito de Supabase no hace respaldos automáticos. El workflow **Respaldo de la base
-de datos** copia todos los datos de Inventariado cada domingo y guarda el archivo 90 días en
+de datos** copia todos los datos de Stockeao cada domingo y guarda el archivo 90 días en
 GitHub (Actions → la ejecución → Artifacts).
 
 **Una sola vez:** crea el secreto `SUPABASE_DB_URL` con la cadena de conexión:

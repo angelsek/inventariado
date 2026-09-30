@@ -7,8 +7,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
   return {
     ...config,
-    name: config.name ?? 'Inventariado',
-    slug: config.slug ?? 'inventariado',
+    name: config.name ?? 'Stockeao',
+    slug: config.slug ?? 'stockeao',
     android: { ...config.android, versionCode },
   };
 };

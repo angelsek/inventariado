@@ -14,7 +14,7 @@ export default function BienvenidaScreen() {
     <SafeAreaView style={estilos.pantalla}>
       <View style={estilos.encabezado}>
         <Ionicons name="storefront-outline" size={72} color={colores.primario} />
-        <Text style={estilos.titulo}>Inventariado</Text>
+        <Text style={estilos.titulo}>Stockeao</Text>
         <Text style={estilos.subtitulo}>Inventario y ventas para tu almacén o botillería</Text>
       </View>
 

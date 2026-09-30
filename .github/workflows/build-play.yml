@@ -19,6 +19,10 @@ on:
         description: 'Novedades de esta versión (se muestran en Play Store)'
         type: string
         default: ''
+  # Mientras el flujo no esté en la rama principal, GitHub no deja lanzarlo a mano:
+  # se construye también con cada push a la rama de desarrollo.
+  push:
+    branches: [claude/fervent-franklin-regzl4]
 
 jobs:
   aab:
@@ -107,6 +111,6 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: cl.stockeao.app
           releaseFiles: ${{ steps.nombre.outputs.archivo }}
-          track: ${{ inputs.pista }}
+          track: ${{ inputs.pista || 'internal' }}
           status: ${{ inputs.pista == 'production' && 'draft' || 'completed' }}
           whatsNewDirectory: ${{ inputs.notas != '' && 'notas' || '' }}

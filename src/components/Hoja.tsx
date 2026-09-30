@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colores, radios } from '@/theme/colores';
 
@@ -12,11 +13,13 @@ type Props = {
 
 /** Panel que sube desde abajo para ediciones rápidas (cantidad, descuento, monto...). */
 export function Hoja({ visible, titulo, onCerrar, children }: Props) {
+  // Deja libre el espacio de los botones del sistema en teléfonos de pantalla completa.
+  const { bottom } = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onCerrar}>
       <KeyboardAvoidingView behavior="padding" style={estilos.fondo}>
         <Pressable accessibilityLabel="Cerrar" style={estilos.cerrar} onPress={onCerrar} />
-        <View style={estilos.hoja}>
+        <View style={[estilos.hoja, { paddingBottom: 32 + bottom }]}>
           <Text style={estilos.titulo}>{titulo}</Text>
           {children}
         </View>

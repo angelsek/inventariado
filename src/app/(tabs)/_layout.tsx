@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ComponentProps } from 'react';
 
 import { useActualizacion } from '@/features/actualizacion/actualizacion';
@@ -53,6 +53,9 @@ export default function TabsLayout() {
   const suscripcion = useSesion((s) => s.suscripcion);
   const hayActualizacion = useActualizacion((s) => s.nueva !== null);
   const hayAviso = hayActualizacion || (!!suscripcion && avisoSuscripcion(suscripcion) !== null);
+  // Espacio de los botones del sistema (atrás, inicio...), distinto en cada teléfono:
+  // 0 con gestos en algunos modelos, ~48 px con la barra de tres botones.
+  const { bottom } = useSafeAreaInsets();
   return (
     <View style={{ flex: 1 }}>
       {hayAviso ? (
@@ -68,7 +71,12 @@ export default function TabsLayout() {
           tabBarActiveTintColor: colores.primario,
           tabBarInactiveTintColor: colores.inactivo,
           tabBarLabelStyle: { fontSize: 13, fontWeight: '600' },
-          tabBarStyle: { height: 72, paddingTop: 6, borderTopColor: colores.borde },
+          tabBarStyle: {
+            height: 66 + bottom,
+            paddingTop: 6,
+            paddingBottom: Math.max(bottom, 8),
+            borderTopColor: colores.borde,
+          },
           headerStyle: { backgroundColor: colores.superficie },
           headerTitleStyle: { color: colores.texto, fontSize: 20, fontWeight: '700' },
           headerShadowVisible: false,

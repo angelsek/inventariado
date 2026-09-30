@@ -4,6 +4,7 @@ import { SQLiteProvider, useSQLiteContext } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AJUSTE_NEGOCIO, leerAjuste } from '@/db/ajustes';
 import { migrarBaseDeDatos, NOMBRE_BASE_DE_DATOS } from '@/db/migraciones';
@@ -93,10 +94,14 @@ function Navegacion() {
 
   useSincronizacionAutomatica();
 
+  // Las pantallas con encabezado dejan libre abajo el espacio de los botones del
+  // sistema, para que las listas y botones del final no queden debajo de ellos.
+  const { bottom } = useSafeAreaInsets();
   const conEncabezado = (title: string) => ({
     headerShown: true,
     title,
     headerStyle: { backgroundColor: colores.superficie },
+    contentStyle: { paddingBottom: bottom, backgroundColor: colores.fondo },
   });
 
   return (

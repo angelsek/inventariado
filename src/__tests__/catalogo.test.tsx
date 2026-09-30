@@ -204,3 +204,48 @@ it('el cajero ve el producto sin costo y sin poder editar ni crear', async () =>
   expect(screen.queryByText(/4\.500/)).toBeNull();
   expect(screen.queryByText('Guardar')).toBeNull();
 });
+
+it('el dueño crea un six-pack con promoción y envase', async () => {
+  const idLata = await crearProducto(
+    mockDb,
+    NEGOCIO,
+    {
+      nombre: 'Cerveza lata',
+      codigoBarras: null,
+      categoriaId: null,
+      precioVenta: 1000,
+      costo: 600,
+      stockMinimo: 0,
+      unidad: 'unidad',
+    },
+    30,
+    AUTOR,
+  );
+  await entrarComo('Ana', '1234');
+
+  fireEvent.press(await screen.findByText('Nuevo'));
+  fireEvent.changeText(await screen.findByLabelText('Nombre'), 'Six pack');
+  fireEvent.changeText(screen.getByLabelText('Precio de venta'), '5500');
+  fireEvent.press(screen.getByText('Elegir el producto que contiene'));
+  const buscadores = await screen.findAllByLabelText('Buscar producto');
+  fireEvent.changeText(buscadores[buscadores.length - 1], 'lata');
+  const resultados = await screen.findAllByText('Cerveza lata');
+  fireEvent.press(resultados[resultados.length - 1]);
+  fireEvent.changeText(await screen.findByLabelText('Unidades del pack'), '6');
+  fireEvent.changeText(screen.getByLabelText('Llevando'), '2');
+  fireEvent.changeText(screen.getByLabelText('Pagan'), '10000');
+  expect(screen.getByText('Promo: 2 x $10.000')).toBeTruthy();
+  fireEvent.changeText(screen.getByLabelText('Envase retornable (opcional)'), '0');
+  fireEvent.press(screen.getByText('Guardar'));
+
+  expect(await screen.findByText('Six pack')).toBeTruthy();
+  const six = (await listarProductos(mockDb, NEGOCIO)).find((p) => p.nombre === 'Six pack');
+  expect(six).toMatchObject({
+    packProductoId: idLata,
+    packCantidad: 6,
+    promoCantidad: 2,
+    promoPrecio: 10000,
+    precioEnvase: 0,
+    stock: 5,
+  });
+});

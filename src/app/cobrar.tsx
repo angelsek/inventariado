@@ -1,14 +1,18 @@
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Campo } from '@/components/Campo';
 import { Formulario } from '@/components/Formulario';
 import { Selector } from '@/components/Selector';
 import { obtenerCajaAbierta } from '@/db/cajas';
+import { type Cliente, obtenerCliente, revisarLimite } from '@/db/clientes';
+import { obtenerNegocio } from '@/db/negocio';
 import { registrarVenta } from '@/db/ventas';
+import { dentroDelHorario } from '@/features/alcohol/horario';
+import { ElegirCliente } from '@/features/fiado/ElegirCliente';
 import {
   calcularTotales,
   type MedioPago,
@@ -47,6 +51,14 @@ export default function CobrarScreen() {
   const [recibido, setRecibido] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const [cliente, setCliente] = useState<Cliente | null>(null);
+  const [eligiendoCliente, setEligiendoCliente] = useState(false);
+
+  // Al elegir "Fiado" se pregunta a quién.
+  const cambiarMedio = (valor: MedioPago, fijar: (v: MedioPago) => void) => {
+    fijar(valor);
+    if (valor === 'fiado' && !cliente) setEligiendoCliente(true);
+  };
 
   // Con pago mixto, el segundo medio cubre un monto y el primero el resto.
   const segundo = mixto ? Math.min(parsearMonto(montoSegundo || '0') ?? 0, total) : 0;
@@ -59,6 +71,7 @@ export default function CobrarScreen() {
     .filter((p) => p.medio === 'efectivo')
     .reduce((s, p) => s + p.monto, 0);
   const recibidoNumero = recibido ? parsearMonto(recibido) : null;
+  const montoFiado = pagos.filter((p) => p.medio === 'fiado').reduce((s, p) => s + p.monto, 0);
   const revision = revisarPagos(total, pagos, usaEfectivo ? recibidoNumero : null);
 
   if (carrito.items.length === 0) {
@@ -70,9 +83,7 @@ export default function CobrarScreen() {
     );
   }
 
-  const confirmar = async () => {
-    if (bloqueadoPorSuscripcion()) return;
-    if (!revision.ok) return setError(revision.error);
+  const registrar = async () => {
     setGuardando(true);
     setError(null);
     try {
@@ -82,10 +93,11 @@ export default function CobrarScreen() {
         negocioId: negocioId!,
         items: carrito.items,
         descuentoGeneral: descuentoAplicado,
-        pagos: revision.pagos,
-        efectivoRecibido: revision.efectivoRecibido,
-        vuelto: revision.vuelto,
+        pagos: revision.ok ? revision.pagos : [],
+        efectivoRecibido: revision.ok ? revision.efectivoRecibido : null,
+        vuelto: revision.ok ? revision.vuelto : null,
         cajaId: caja?.id ?? null,
+        clienteId: montoFiado > 0 ? cliente?.id : null,
         autor,
       });
       carrito.vaciar();
@@ -93,9 +105,46 @@ export default function CobrarScreen() {
       sincronizarAhora(db);
       router.replace({ pathname: '/venta/[id]', params: { id: ventaId, recien: '1' } });
     } catch (e) {
-      setError(String(e));
+      setError(e instanceof Error ? e.message : String(e));
       setGuardando(false);
     }
+  };
+
+  const confirmar = async () => {
+    if (bloqueadoPorSuscripcion()) return;
+    if (!revision.ok) return setError(revision.error);
+
+    if (montoFiado > 0) {
+      if (!cliente) {
+        setEligiendoCliente(true);
+        return setError('Elige a qué cliente se le fía.');
+      }
+      // Saldo al día (puede haber cambiado desde que se eligió).
+      const actual = await obtenerCliente(db, cliente.id);
+      const problema = actual && revisarLimite(actual, montoFiado);
+      if (problema) return setError(problema);
+    }
+
+    if (carrito.items.some((i) => i.alcohol)) {
+      const negocio = await obtenerNegocio(db, negocioId!);
+      const fuera = !dentroDelHorario(
+        new Date(),
+        negocio?.alcoholDesde ?? null,
+        negocio?.alcoholHasta ?? null,
+      );
+      Alert.alert(
+        'Venta de alcohol',
+        (fuera
+          ? `Atención: estás fuera del horario de venta de alcohol (${negocio?.alcoholDesde} a ${negocio?.alcoholHasta}).\n\n`
+          : '') + 'Confirma que el cliente es mayor de 18 años.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Es mayor de 18', onPress: registrar },
+        ],
+      );
+      return;
+    }
+    await registrar();
   };
 
   return (
@@ -118,12 +167,16 @@ export default function CobrarScreen() {
       />
 
       <Text style={estilos.etiqueta}>{mixto ? 'Primer medio de pago' : 'Medio de pago'}</Text>
-      <Selector opciones={MEDIOS_PAGO} valor={medio} onCambio={setMedio} />
+      <Selector opciones={MEDIOS_PAGO} valor={medio} onCambio={(v) => cambiarMedio(v, setMedio)} />
 
       {mixto ? (
         <View style={estilos.bloque}>
           <Text style={estilos.etiqueta}>Segundo medio de pago</Text>
-          <Selector opciones={MEDIOS_PAGO} valor={medioSegundo} onCambio={setMedioSegundo} />
+          <Selector
+            opciones={MEDIOS_PAGO}
+            valor={medioSegundo}
+            onCambio={(v) => cambiarMedio(v, setMedioSegundo)}
+          />
           <Campo
             etiqueta={`Monto con ${MEDIOS_PAGO.find((m) => m.valor === medioSegundo)?.etiqueta}`}
             keyboardType="number-pad"
@@ -144,6 +197,23 @@ export default function CobrarScreen() {
       >
         {mixto ? 'Pagar con un solo medio' : '+ Pago mixto (ej. parte débito y parte efectivo)'}
       </Text>
+
+      {montoFiado > 0 ? (
+        <View style={estilos.fiado}>
+          <Text style={estilos.textoFiado}>
+            {cliente
+              ? `Fiado a ${cliente.nombre}: ${formatearCLP(montoFiado)}${cliente.saldo > 0 ? ` (ya debe ${formatearCLP(cliente.saldo)})` : ''}`
+              : `Fiado: ${formatearCLP(montoFiado)}`}
+          </Text>
+          <Text
+            accessibilityRole="button"
+            style={estilos.enlace}
+            onPress={() => setEligiendoCliente(true)}
+          >
+            {cliente ? 'Cambiar cliente' : 'Elegir cliente'}
+          </Text>
+        </View>
+      ) : null}
 
       {usaEfectivo ? (
         <View style={estilos.bloque}>
@@ -191,6 +261,15 @@ export default function CobrarScreen() {
           deshabilitado={!revision.ok}
         />
       </View>
+      <ElegirCliente
+        visible={eligiendoCliente}
+        onCerrar={() => setEligiendoCliente(false)}
+        onElegir={(c) => {
+          setCliente(c);
+          setEligiendoCliente(false);
+          setError(null);
+        }}
+      />
     </Formulario>
   );
 }
@@ -236,5 +315,12 @@ const estilos = StyleSheet.create({
   textoVuelto: { fontSize: 18, color: colores.exito },
   montoVuelto: { fontSize: 28, fontWeight: '700', color: colores.exito },
   falta: { marginTop: 12, fontSize: 15, color: colores.error },
+  fiado: {
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#FFF3E0',
+  },
+  textoFiado: { fontSize: 15, fontWeight: '600', color: colores.aviso },
   confirmar: { marginTop: 24 },
 });

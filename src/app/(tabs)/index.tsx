@@ -8,9 +8,15 @@ import { Boton } from '@/components/Boton';
 import { Campo } from '@/components/Campo';
 import { Escaner } from '@/components/Escaner';
 import { Hoja } from '@/components/Hoja';
+import { Selector } from '@/components/Selector';
 import { obtenerCajaAbierta } from '@/db/cajas';
 import { buscarPorCodigo, listarProductos, type Producto } from '@/db/productos';
-import { calcularTotales, type ItemCarrito, totalItem } from '@/features/ventas/calculos';
+import {
+  calcularTotales,
+  descuentoPromo,
+  type ItemCarrito,
+  totalItem,
+} from '@/features/ventas/calculos';
 import { useCarrito } from '@/features/ventas/carrito';
 import { formatearCLP } from '@/lib/formato';
 import { formatearCantidad, parsearCantidad, parsearMonto } from '@/lib/numeros';
@@ -163,6 +169,8 @@ export default function VenderScreen() {
               item={item}
               onEditar={() => setEditando(item)}
               onCambiar={(cantidad) => carrito.cambiarCantidad(item.clave, cantidad)}
+              cobraEnvase={carrito.items.some((i) => i.clave === `envase-${item.clave}`)}
+              onEnvase={() => carrito.alternarEnvase(item.clave)}
             />
           )}
         />
@@ -220,13 +228,18 @@ function LineaCarrito({
   item,
   onEditar,
   onCambiar,
+  cobraEnvase,
+  onEnvase,
 }: {
   item: ItemCarrito;
   onEditar: () => void;
   onCambiar: (cantidad: number) => void;
+  cobraEnvase: boolean;
+  onEnvase: () => void;
 }) {
   const esKilo = item.unidad === 'kg';
   const sinStock = item.stock !== null && item.stock < item.cantidad;
+  const promo = descuentoPromo(item);
 
   return (
     <Pressable accessibilityRole="button" onPress={onEditar} style={estilos.linea}>
@@ -237,8 +250,26 @@ function LineaCarrito({
           {esKilo ? '/kg' : ' c/u'}
           {item.descuento ? ` · desc. ${formatearCLP(item.descuento)}` : ''}
         </Text>
+        {item.promo ? (
+          <Text style={[estilos.promo, !promo && estilos.promoInactiva]}>
+            Promo {item.promo.cantidad} x {formatearCLP(item.promo.precio)}
+            {promo ? ` · ahorro ${formatearCLP(promo)}` : ''}
+          </Text>
+        ) : null}
         {sinStock ? (
           <Text style={estilos.sinStock}>Stock registrado: {formatearCantidad(item.stock!)}</Text>
+        ) : null}
+        {item.precioEnvase ? (
+          <Text
+            accessibilityRole="button"
+            accessibilityLabel={`Envase de ${item.nombre}`}
+            onPress={onEnvase}
+            style={estilos.envase}
+          >
+            {cobraEnvase
+              ? '✓ Cobrando envase (toca si lo trajo)'
+              : `¿No trae envase? Cobrar ${formatearCLP(item.precioEnvase)}`}
+          </Text>
         ) : null}
       </View>
       <View style={estilos.cantidad}>
@@ -269,45 +300,81 @@ function LineaCarrito({
   );
 }
 
-/** Pide los kilos de un producto que se vende por peso. */
+/** Pide los kilos de un producto que se vende por peso, o el monto a vender ("$1.000 de queso"). */
 function HojaPeso({ producto, onCerrar }: { producto: Producto | null; onCerrar: () => void }) {
   const agregarProducto = useCarrito((s) => s.agregarProducto);
+  const [porMonto, setPorMonto] = useState(false);
   const [kilos, setKilos] = useState('');
-  const cantidad = parsearCantidad(kilos || '0') ?? 0;
+  const [monto, setMonto] = useState('');
+  const pesos = parsearMonto(monto || '0') ?? 0;
+  // Por monto: los kilos que alcanzan (redondeados al gramo).
+  const cantidad = porMonto
+    ? producto?.precioVenta
+      ? Math.round((pesos / producto.precioVenta) * 1000) / 1000
+      : 0
+    : (parsearCantidad(kilos || '0') ?? 0);
 
   const agregar = (valor: number) => {
     if (!producto || valor <= 0) return;
     agregarProducto(producto, valor);
     setKilos('');
+    setMonto('');
     onCerrar();
   };
 
   return (
     <Hoja visible={!!producto} titulo={producto?.nombre ?? ''} onCerrar={onCerrar}>
-      <Campo
-        etiqueta="Kilos"
-        keyboardType="decimal-pad"
-        placeholder="0,5"
-        autoFocus
-        value={kilos}
-        onChangeText={setKilos}
-        ayuda={
-          producto && cantidad > 0
-            ? `Total: ${formatearCLP(Math.round(cantidad * producto.precioVenta))}`
-            : undefined
-        }
+      <Selector
+        opciones={[
+          { valor: false, etiqueta: 'Por kilos' },
+          { valor: true, etiqueta: 'Por monto ($)' },
+        ]}
+        valor={porMonto}
+        onCambio={setPorMonto}
       />
-      <View style={estilos.rapidos}>
-        {[0.25, 0.5, 1].map((valor) => (
-          <View key={valor} style={estilos.flex}>
-            <Boton
-              variante="secundario"
-              titulo={`${formatearCantidad(valor)} kg`}
-              onPress={() => agregar(valor)}
-            />
+      <View style={estilos.espacio} />
+      {porMonto ? (
+        <Campo
+          etiqueta="Monto a vender"
+          keyboardType="number-pad"
+          placeholder="$1.000"
+          autoFocus
+          value={monto}
+          onChangeText={(v) => setMonto(v.replace(/\D/g, ''))}
+          ayuda={
+            producto && cantidad > 0
+              ? `${formatearCantidad(cantidad)} kg · Total: ${formatearCLP(Math.round(cantidad * producto.precioVenta))}`
+              : undefined
+          }
+        />
+      ) : (
+        <>
+          <Campo
+            etiqueta="Kilos"
+            keyboardType="decimal-pad"
+            placeholder="0,5"
+            autoFocus
+            value={kilos}
+            onChangeText={setKilos}
+            ayuda={
+              producto && cantidad > 0
+                ? `Total: ${formatearCLP(Math.round(cantidad * producto.precioVenta))}`
+                : undefined
+            }
+          />
+          <View style={estilos.rapidos}>
+            {[0.25, 0.5, 1].map((valor) => (
+              <View key={valor} style={estilos.flex}>
+                <Boton
+                  variante="secundario"
+                  titulo={`${formatearCantidad(valor)} kg`}
+                  onPress={() => agregar(valor)}
+                />
+              </View>
+            ))}
           </View>
-        ))}
-      </View>
+        </>
+      )}
       <Boton titulo="Agregar" deshabilitado={cantidad <= 0} onPress={() => agregar(cantidad)} />
     </Hoja>
   );
@@ -399,6 +466,7 @@ function HojaMontoLibre({ visible, onCerrar }: { visible: boolean; onCerrar: () 
 const estilos = StyleSheet.create({
   pantalla: { flex: 1, backgroundColor: colores.fondo },
   flex: { flex: 1 },
+  espacio: { height: 12 },
   barra: { flexDirection: 'row', gap: 8, padding: 12, paddingBottom: 4 },
   buscador: {
     flex: 1,
@@ -455,6 +523,9 @@ const estilos = StyleSheet.create({
   precio: { fontSize: 17, fontWeight: '700', color: colores.texto },
   vacioCarrito: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
   vacio: { textAlign: 'center', fontSize: 16, color: colores.textoSecundario },
+  promo: { marginTop: 2, fontSize: 13, fontWeight: '600', color: colores.exito },
+  promoInactiva: { fontWeight: '400', color: colores.textoSecundario },
+  envase: { marginTop: 4, fontSize: 13, color: colores.primario },
   linea: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -18,14 +18,27 @@ export type DatosProducto = {
   costo: number;
   stockMinimo: number;
   unidad: Unidad;
+  /** Fase 8. Opcionales: si no vienen, al actualizar se mantiene lo que había. */
+  precioEnvase?: number;
+  /** Pack de N unidades de otro producto: al venderlo se descuenta el stock de ese producto. */
+  packProductoId?: string | null;
+  packCantidad?: number | null;
+  /** Promoción por cantidad: `promoCantidad` unidades a `promoPrecio`. */
+  promoCantidad?: number | null;
+  promoPrecio?: number | null;
 };
 
-export type Producto = DatosProducto & {
+export type Producto = Required<DatosProducto> & {
   id: string;
   negocioId: string;
   activo: boolean;
   categoria: string | null;
-  /** Suma de los movimientos de stock. */
+  /** La categoría es de alcohol (pide confirmar mayoría de edad al vender). */
+  alcohol: boolean;
+  /**
+   * Suma de los movimientos de stock. En un pack, cuántos packs completos se
+   * pueden armar con el stock del producto base.
+   */
   stock: number;
 };
 
@@ -47,13 +60,24 @@ type FilaProducto = {
   unidad: Unidad;
   activo: number;
   stock: number;
+  precio_envase: number | null;
+  pack_producto_id: string | null;
+  pack_cantidad: number | null;
+  promo_cantidad: number | null;
+  promo_precio: number | null;
+  alcohol: number | null;
 };
 
 const SELECT_PRODUCTO = `
   SELECT p.id, p.negocio_id, p.nombre, p.codigo_barras, p.categoria_id, c.nombre AS categoria,
          p.precio_venta, p.costo, p.stock_minimo, p.unidad, p.activo,
+         p.precio_envase, p.pack_producto_id, p.pack_cantidad, p.promo_cantidad, p.promo_precio,
+         c.alcohol,
          COALESCE((SELECT SUM(m.cantidad) FROM movimientos_stock m
-                    WHERE m.producto_id = p.id AND m.eliminado = 0), 0) AS stock
+                    WHERE m.producto_id = CASE WHEN p.pack_producto_id IS NOT NULL AND p.pack_cantidad > 0
+                                               THEN p.pack_producto_id ELSE p.id END
+                      AND m.eliminado = 0), 0)
+           AS stock
     FROM productos p
     LEFT JOIN categorias c ON c.id = p.categoria_id AND c.eliminado = 0`;
 
@@ -69,7 +93,14 @@ const aProducto = (f: FilaProducto): Producto => ({
   stockMinimo: f.stock_minimo,
   unidad: f.unidad,
   activo: f.activo === 1,
-  stock: f.stock,
+  stock:
+    f.pack_producto_id && f.pack_cantidad ? Math.floor(f.stock / f.pack_cantidad + 1e-9) : f.stock,
+  precioEnvase: f.precio_envase ?? 0,
+  packProductoId: f.pack_producto_id && f.pack_cantidad ? f.pack_producto_id : null,
+  packCantidad: f.pack_producto_id && f.pack_cantidad ? f.pack_cantidad : null,
+  promoCantidad: f.promo_cantidad && f.promo_precio !== null ? f.promo_cantidad : null,
+  promoPrecio: f.promo_cantidad && f.promo_precio !== null ? f.promo_precio : null,
+  alcohol: f.categoria ? f.alcohol === 1 : false,
 });
 
 export type FiltroProductos = {
@@ -130,6 +161,23 @@ export async function buscarPorCodigo(
   return fila ? aProducto(fila) : null;
 }
 
+/** Columnas de fase 8 que vienen definidas en `datos` (las ausentes no se tocan). */
+function columnasFase8(datos: DatosProducto): [string, string | number | null][] {
+  const pack = datos.packProductoId && datos.packCantidad ? datos.packCantidad : null;
+  const promo = datos.promoCantidad && datos.promoPrecio != null ? datos.promoCantidad : null;
+  const columnas: [string, string | number | null | undefined][] = [
+    ['precio_envase', datos.precioEnvase === undefined ? undefined : datos.precioEnvase || null],
+    [
+      'pack_producto_id',
+      datos.packProductoId === undefined ? undefined : pack && datos.packProductoId,
+    ],
+    ['pack_cantidad', datos.packCantidad === undefined ? undefined : pack],
+    ['promo_cantidad', datos.promoCantidad === undefined ? undefined : promo],
+    ['promo_precio', datos.promoPrecio === undefined ? undefined : promo && datos.promoPrecio],
+  ];
+  return columnas.filter((c): c is [string, string | number | null] => c[1] !== undefined);
+}
+
 export async function crearProducto(
   db: BaseLocal,
   negocioId: string,
@@ -139,11 +187,13 @@ export async function crearProducto(
 ): Promise<string> {
   const id = randomUUID();
   const ahora = new Date().toISOString();
+  const extra = columnasFase8(datos);
   await db.withTransactionAsync(async () => {
     await db.runAsync(
       `INSERT INTO productos (id, negocio_id, nombre, codigo_barras, categoria_id, precio_venta,
-         costo, stock_minimo, unidad, activo, creado_en, actualizado_en, pendiente)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, 1)`,
+         costo, stock_minimo, unidad, activo, creado_en, actualizado_en, pendiente
+         ${extra.map(([c]) => `, ${c}`).join('')})
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, 1${extra.map(() => ', ?').join('')})`,
       id,
       negocioId,
       datos.nombre.trim(),
@@ -155,8 +205,10 @@ export async function crearProducto(
       datos.unidad,
       ahora,
       ahora,
+      ...extra.map(([, v]) => v),
     );
-    if (stockInicial !== 0) {
+    // El stock de un pack es el de su producto base: no lleva movimientos propios.
+    if (stockInicial !== 0 && !(datos.packProductoId && datos.packCantidad)) {
       await insertarMovimiento(db, negocioId, id, 'inicial', stockInicial, null, autor, ahora);
     }
   });
@@ -168,9 +220,11 @@ export async function actualizarProducto(
   id: string,
   datos: DatosProducto,
 ): Promise<void> {
+  const extra = columnasFase8(datos);
   await db.runAsync(
     `UPDATE productos SET nombre = ?, codigo_barras = ?, categoria_id = ?, precio_venta = ?,
-       costo = ?, stock_minimo = ?, unidad = ?, actualizado_en = ?, pendiente = pendiente + 1
+       costo = ?, stock_minimo = ?, unidad = ?${extra.map(([c]) => `, ${c} = ?`).join('')},
+       actualizado_en = ?, pendiente = pendiente + 1
      WHERE id = ?`,
     datos.nombre.trim(),
     limpiarCodigo(datos.codigoBarras),
@@ -179,6 +233,7 @@ export async function actualizarProducto(
     datos.costo,
     datos.stockMinimo,
     datos.unidad,
+    ...extra.map(([, v]) => v),
     new Date().toISOString(),
     id,
   );
@@ -276,6 +331,9 @@ export async function ajustarStock(
 ): Promise<number> {
   const actual = await obtenerProducto(db, datos.productoId);
   if (!actual) throw new Error('Producto no encontrado.');
+  if (actual.packProductoId) {
+    throw new Error('El stock de un pack se ajusta en su producto base.');
+  }
   const diferencia = Math.round((datos.nuevoStock - actual.stock) * 1000) / 1000;
   if (diferencia !== 0) {
     await registrarMovimiento(db, {

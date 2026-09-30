@@ -1,7 +1,9 @@
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
-import { Share } from 'react-native';
+import { Alert, Share } from 'react-native';
 
 import { AJUSTE_NEGOCIO, guardarAjuste } from '@/db/ajustes';
+import { crearCategoria } from '@/db/categorias';
+import { listarClientes } from '@/db/clientes';
 import { migrarBaseDeDatos } from '@/db/migraciones';
 import { crearPerfil } from '@/db/perfiles';
 import { crearProducto, obtenerProducto } from '@/db/productos';
@@ -211,4 +213,47 @@ it('pago mixto con débito y monto libre; el dueño anula y el stock vuelve', as
   fireEvent.press(await screen.findByText('Ventas del día'));
   expect(await screen.findByText('Anulada')).toBeTruthy();
   expect(screen.getByText('0 venta(s)')).toBeTruthy();
+});
+
+it('fiado: vende alcohol a un cliente nuevo y después el cliente paga', async () => {
+  const cervezas = await crearCategoria(mockDb, NEGOCIO, 'Cervezas');
+  await mockDb.runAsync(
+    'UPDATE productos SET categoria_id = ? WHERE id = ?',
+    cervezas.id,
+    cervezaId,
+  );
+  const alerta = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, botones) => {
+    botones?.find((b) => b.text === 'Es mayor de 18')?.onPress?.();
+  });
+  await entrarComo('Carla', '5678');
+
+  fireEvent.changeText(screen.getByLabelText('Buscar producto para vender'), 'cerveza');
+  fireEvent.press(await screen.findByText('Cerveza lata'));
+  fireEvent.press(await screen.findByText('Cobrar $1.290'));
+
+  // Al elegir Fiado se pregunta a quién; se crea el cliente en el momento.
+  fireEvent.press(await screen.findByText('Fiado'));
+  fireEvent.press(await screen.findByText('+ Cliente nuevo'));
+  fireEvent.changeText(screen.getByLabelText('Nombre del cliente nuevo'), 'Don Juan');
+  fireEvent.press(screen.getByText('Crear y fiar'));
+  expect(await screen.findByText('Fiado a Don Juan: $1.290')).toBeTruthy();
+
+  fireEvent.press(screen.getByText('Confirmar venta $1.290'));
+  expect(await screen.findByText('Venta registrada')).toBeTruthy();
+  expect(alerta.mock.calls[0][1]).toContain('mayor de 18');
+  expect(screen.getByText('Fiado · Don Juan')).toBeTruthy();
+  expect((await listarClientes(mockDb, NEGOCIO))[0]).toMatchObject({ saldo: 1290 });
+
+  await act(async () => {
+    fireEvent.press(screen.getByText('Nueva venta'));
+  });
+  fireEvent.press(await screen.findByText('Más'));
+  fireEvent.press(await screen.findByText('Clientes y fiado'));
+  fireEvent.press(await screen.findByText('Don Juan'));
+  fireEvent.press(await screen.findByText('Registrar pago'));
+  fireEvent.press(await screen.findByText('Paga todo ($1.290)'));
+  fireEvent.press(screen.getByText('Registrar pago $1.290'));
+
+  expect(await screen.findByText('Sin deuda')).toBeTruthy();
+  expect((await listarClientes(mockDb, NEGOCIO))[0]).toMatchObject({ saldo: 0 });
 });

@@ -226,7 +226,7 @@ describe('caja', () => {
       montoInicial: 20000,
       cantidadVentas: 2,
       totalVentas: 5160,
-      porMedio: { efectivo: 2580, debito: 2580, credito: 0, transferencia: 0 },
+      porMedio: { efectivo: 2580, debito: 2580, credito: 0, transferencia: 0, fiado: 0 },
       ingresos: 1000,
       retiros: 5000,
       efectivoEsperado: 18580,

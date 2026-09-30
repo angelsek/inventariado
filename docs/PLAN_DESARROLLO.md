@@ -228,6 +228,28 @@ con los datos sincronizados de todos los teléfonos (funciona sin internet, sin 
 - Productos a granel / por peso.
 - Aviso de horario legal de venta de alcohol y confirmación de mayoría de edad.
 
+**Estado:** ✅ código completado. Falta ejecutar en Supabase
+`supabase/migrations/20260930000100_fase8_rubro.sql` **antes** de instalar el APK nuevo (y
+exponer las tablas `clientes` y `movimientos_cliente`).
+
+- **Fiado:** Más → Clientes y fiado (lista con lo que debe cada uno y el total por cobrar).
+  Al cobrar, medio de pago **Fiado** (solo o mixto) → elegir o crear el cliente en el momento.
+  Límite de fiado opcional por cliente. Registrar pagos del cliente (si es en efectivo y la caja
+  está abierta, entra a la caja). Anular una venta fiada descuenta la deuda. Estado de cuenta por
+  WhatsApp. Movimientos de cliente solo se agregan (cargo, abono, anulación), como el stock.
+- **Envases retornables:** precio del envase en el producto. En Vender, "¿No trae envase?"
+  agrega una línea aparte con el cobro. La devolución de un envase sin compra se registra como
+  retiro de caja ("Devolución de envase").
+- **Packs:** un producto puede ser pack de N unidades de otro (six-pack con su código y precio).
+  Vender o comprar packs mueve el stock del producto base; el stock del pack es cuántos packs
+  completos alcanzan. El pack no se ajusta ni se cuenta directamente.
+- **Promociones por cantidad:** "3 x $2.000" en el producto; el carrito la aplica sola y se
+  guarda como descuento de la línea.
+- **Granel / por peso:** además de kilos, vender por monto ("$1.000 de queso").
+- **Alcohol:** categorías marcadas como alcohol (Cervezas, Vinos y Destilados vienen marcadas);
+  al cobrar pide confirmar que el cliente es mayor de 18. Horario de venta de la patente en
+  Más → Datos del negocio: fuera de horario, la confirmación lo advierte.
+
 ## Fase 9 — Play Store y crecimiento
 
 - **Preparación para Google Play (hecha):** eliminación de cuenta y datos desde la app (y

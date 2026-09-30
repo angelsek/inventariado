@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
+import { BuscadorProductos } from '@/components/BuscadorProductos';
 import { Campo } from '@/components/Campo';
 import { Escaner } from '@/components/Escaner';
 import { Formulario } from '@/components/Formulario';
+import { Hoja } from '@/components/Hoja';
 import { Selector } from '@/components/Selector';
 import { type Categoria, crearCategoria, listarCategorias } from '@/db/categorias';
 import {
@@ -38,6 +40,12 @@ type Form = {
   costo: string;
   stockInicial: string;
   stockMinimo: string;
+  precioEnvase: string;
+  promoCantidad: string;
+  promoPrecio: string;
+  packProductoId: string | null;
+  packNombre: string;
+  packCantidad: string;
 };
 
 type Errores = Partial<Record<keyof Form, string>>;
@@ -62,7 +70,14 @@ export default function ProductoScreen() {
     costo: '',
     stockInicial: '',
     stockMinimo: '',
+    precioEnvase: '',
+    promoCantidad: '',
+    promoPrecio: '',
+    packProductoId: null,
+    packNombre: '',
+    packCantidad: '',
   });
+  const [eligiendoBase, setEligiendoBase] = useState(false);
   const [errores, setErrores] = useState<Errores>({});
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
@@ -89,7 +104,17 @@ export default function ProductoScreen() {
           precioVenta: String(p.precioVenta),
           costo: String(p.costo),
           stockMinimo: p.stockMinimo ? formatearCantidad(p.stockMinimo) : '',
+          precioEnvase: p.precioEnvase ? String(p.precioEnvase) : '',
+          promoCantidad: p.promoCantidad ? String(p.promoCantidad) : '',
+          promoPrecio: p.promoPrecio !== null ? String(p.promoPrecio) : '',
+          packProductoId: p.packProductoId,
+          packCantidad: p.packCantidad ? formatearCantidad(p.packCantidad) : '',
         }));
+        if (p.packProductoId) {
+          obtenerProducto(db, p.packProductoId).then((base) =>
+            setForm((f) => ({ ...f, packNombre: base?.nombre ?? 'Producto eliminado' })),
+          );
+        }
       }
     });
     // Solo al abrir: una sincronización no debe borrar lo que se está editando.
@@ -131,6 +156,19 @@ export default function ProductoScreen() {
     if (stockInicial === null || stockInicial < 0) nuevos.stockInicial = 'Cantidad no válida.';
     if (stockMinimo === null || stockMinimo < 0) nuevos.stockMinimo = 'Cantidad no válida.';
 
+    const precioEnvase = parsearMonto(form.precioEnvase || '0');
+    if (precioEnvase === null) nuevos.precioEnvase = 'Precio no válido.';
+    const promoCantidad = form.promoCantidad ? Number(form.promoCantidad) : null;
+    const promoPrecio = form.promoPrecio ? parsearMonto(form.promoPrecio) : null;
+    if (form.promoCantidad || form.promoPrecio) {
+      if (!promoCantidad || promoCantidad < 2) nuevos.promoCantidad = 'Desde 2 unidades.';
+      if (promoPrecio === null) nuevos.promoPrecio = 'Ingresa el precio de la promo.';
+    }
+    const packCantidad = form.packProductoId ? parsearCantidad(form.packCantidad) : null;
+    if (form.packProductoId && (!packCantidad || packCantidad <= 0)) {
+      nuevos.packCantidad = '¿Cuántas unidades trae?';
+    }
+
     const codigoBarras = form.codigoBarras.trim() || null;
     if (codigoBarras) {
       const otro = await buscarPorCodigo(db, negocioId!, codigoBarras);
@@ -153,6 +191,11 @@ export default function ProductoScreen() {
         costo: costo!,
         stockMinimo: stockMinimo!,
         unidad: form.unidad,
+        precioEnvase: precioEnvase!,
+        promoCantidad: promoCantidad && promoPrecio !== null ? promoCantidad : null,
+        promoPrecio: promoCantidad && promoPrecio !== null ? promoPrecio : null,
+        packProductoId: form.packProductoId,
+        packCantidad: form.packProductoId ? packCantidad : null,
       };
       if (esNuevo) {
         await crearProducto(db, negocioId!, datos, stockInicial!, await obtenerAutor(db));
@@ -270,8 +313,91 @@ export default function ProductoScreen() {
         </View>
         {margen ? <Text style={estilos.margen}>{margen}</Text> : null}
 
+        <Text style={[estilos.etiqueta, estilos.separado]}>Pack de otro producto (opcional)</Text>
+        {form.packProductoId ? (
+          <View style={estilos.dosColumnas}>
+            <View style={estilos.columna}>
+              <Text style={estilos.nota}>Descuenta stock de:</Text>
+              <Text style={estilos.textoPack}>{form.packNombre}</Text>
+              <Text
+                accessibilityRole="button"
+                style={[estilos.enlace, estilos.peligro]}
+                onPress={() => cambiar({ packProductoId: null, packNombre: '', packCantidad: '' })}
+              >
+                No es un pack
+              </Text>
+            </View>
+            <View style={estilos.columna}>
+              <Campo
+                etiqueta="Unidades del pack"
+                keyboardType="decimal-pad"
+                placeholder="6"
+                value={form.packCantidad}
+                onChangeText={(packCantidad) => cambiar({ packCantidad })}
+                error={errores.packCantidad}
+              />
+            </View>
+          </View>
+        ) : (
+          <>
+            <Text style={estilos.nota}>
+              Ej: un six-pack con su propio código y precio, que al venderse descuenta 6 latas.
+            </Text>
+            <Text
+              accessibilityRole="button"
+              style={estilos.enlace}
+              onPress={() => setEligiendoBase(true)}
+            >
+              Elegir el producto que contiene
+            </Text>
+          </>
+        )}
+
+        <Text style={[estilos.etiqueta, estilos.separado]}>Promoción por cantidad (opcional)</Text>
         <View style={estilos.dosColumnas}>
-          {esNuevo ? (
+          <View style={estilos.columna}>
+            <Campo
+              etiqueta="Llevando"
+              keyboardType="number-pad"
+              placeholder="3"
+              value={form.promoCantidad}
+              onChangeText={(v) => cambiar({ promoCantidad: soloDigitos(v) })}
+              error={errores.promoCantidad}
+            />
+          </View>
+          <View style={estilos.columna}>
+            <Campo
+              etiqueta="Pagan"
+              keyboardType="number-pad"
+              placeholder="$2.000"
+              value={form.promoPrecio}
+              onChangeText={(v) => cambiar({ promoPrecio: soloDigitos(v) })}
+              error={errores.promoPrecio}
+            />
+          </View>
+        </View>
+        {form.promoCantidad && form.promoPrecio ? (
+          <Text style={estilos.margen}>
+            Promo: {form.promoCantidad} x {formatearCLP(parsearMonto(form.promoPrecio) ?? 0)}
+          </Text>
+        ) : null}
+
+        <Campo
+          etiqueta="Envase retornable (opcional)"
+          keyboardType="number-pad"
+          placeholder="$0"
+          value={form.precioEnvase}
+          onChangeText={(v) => cambiar({ precioEnvase: soloDigitos(v) })}
+          ayuda="Precio del envase: se cobra aparte si el cliente no trae el vacío."
+          error={errores.precioEnvase}
+        />
+
+        <View style={estilos.dosColumnas}>
+          {esNuevo && form.packProductoId ? (
+            <View style={estilos.columna}>
+              <Text style={estilos.nota}>El stock de un pack es el de su producto base.</Text>
+            </View>
+          ) : esNuevo ? (
             <View style={estilos.columna}>
               <Campo
                 etiqueta="Stock inicial"
@@ -289,13 +415,17 @@ export default function ProductoScreen() {
                 {formatearCantidad(producto!.stock)}
                 {producto!.unidad === 'kg' ? ' kg' : ''}
               </Text>
-              <Text
-                accessibilityRole="button"
-                style={estilos.enlace}
-                onPress={() => setAjustando(true)}
-              >
-                Ajustar stock
-              </Text>
+              {producto!.packProductoId ? (
+                <Text style={estilos.nota}>Packs completos según el stock del producto base.</Text>
+              ) : (
+                <Text
+                  accessibilityRole="button"
+                  style={estilos.enlace}
+                  onPress={() => setAjustando(true)}
+                >
+                  Ajustar stock
+                </Text>
+              )}
             </View>
           )}
           <View style={estilos.columna}>
@@ -333,6 +463,24 @@ export default function ProductoScreen() {
         {!esNuevo ? <HistorialStock productoId={producto!.id} version={versionStock} /> : null}
       </Formulario>
 
+      <Hoja
+        visible={eligiendoBase}
+        titulo="¿Qué producto trae el pack?"
+        onCerrar={() => setEligiendoBase(false)}
+      >
+        <BuscadorProductos
+          onElegir={(base) => {
+            if (base.id === producto?.id) return;
+            if (base.packProductoId) {
+              setError('Ese producto ya es un pack: elige el producto individual.');
+            } else {
+              cambiar({ packProductoId: base.id, packNombre: base.nombre });
+            }
+            setEligiendoBase(false);
+          }}
+        />
+      </Hoja>
+
       {!esNuevo ? (
         <AjusteStock
           producto={producto!}
@@ -368,6 +516,17 @@ function DetalleSoloLectura({ producto }: { producto: Producto }) {
     ['Stock', formatearCantidad(producto.stock) + (producto.unidad === 'kg' ? ' kg' : '')],
     ['Categoría', producto.categoria ?? 'Sin categoría'],
     ['Código de barras', producto.codigoBarras ?? '-'],
+    ...(producto.promoCantidad && producto.promoPrecio !== null
+      ? [
+          ['Promoción', `${producto.promoCantidad} x ${formatearCLP(producto.promoPrecio)}`] as [
+            string,
+            string,
+          ],
+        ]
+      : []),
+    ...(producto.precioEnvase
+      ? [['Envase', formatearCLP(producto.precioEnvase)] as [string, string]]
+      : []),
   ];
   return (
     <>
@@ -391,6 +550,8 @@ const estilos = StyleSheet.create({
   etiqueta: { marginBottom: 6, fontSize: 14, fontWeight: '500', color: colores.texto },
   separado: { marginTop: 16 },
   enlace: { marginTop: 8, fontSize: 15, color: colores.primario },
+  peligro: { color: colores.error },
+  textoPack: { marginTop: 2, fontSize: 15, fontWeight: '600', color: colores.texto },
   nuevaCategoria: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8 },
   entradaCategoria: {
     flex: 1,

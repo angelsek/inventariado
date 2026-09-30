@@ -24,6 +24,10 @@ export default function ConteoScreen() {
   const [resultado, setResultado] = useState<string | null>(null);
 
   const alElegir = (p: Producto) => {
+    if (p.packProductoId) {
+      setResultado(`"${p.nombre}" es un pack: cuenta las unidades sueltas de su producto base.`);
+      return;
+    }
     setResultado(null);
     // Cada escaneo suma 1; los productos por kilo se escriben a mano.
     sumar(

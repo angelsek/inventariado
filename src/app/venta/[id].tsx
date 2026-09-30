@@ -115,7 +115,10 @@ export default function VentaScreen() {
       <View style={estilos.tarjeta}>
         {venta.pagos.map((pago, i) => (
           <View key={i} style={estilos.item}>
-            <Text style={estilos.flex}>{etiquetaMedio(pago.medio)}</Text>
+            <Text style={estilos.flex}>
+              {etiquetaMedio(pago.medio)}
+              {pago.medio === 'fiado' && venta.cliente ? ` · ${venta.cliente}` : ''}
+            </Text>
             <Text style={estilos.monto}>{formatearCLP(pago.monto)}</Text>
           </View>
         ))}

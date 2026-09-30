@@ -77,6 +77,8 @@ VENDE RÁPIDO
 • Carrito con cantidades, descuentos y productos por kilo.
 • Cobra en efectivo (con cálculo de vuelto), débito, crédito o transferencia, o combinando medios de pago.
 • Comparte el comprobante por WhatsApp.
+• Fiado: lleva la cuenta de cada cliente, con límite y estado de cuenta por WhatsApp.
+• Promociones "3 x $2.000", packs, envases retornables y venta a granel.
 
 CONTROLA TU STOCK
 • El stock se descuenta solo con cada venta.
@@ -89,6 +91,7 @@ CUADRA LA CAJA
 • Abre y cierra caja por turno, con ingresos y retiros de efectivo.
 • La app te dice cuánto efectivo debería haber y si sobra o falta.
 • Ventas del día por medio de pago.
+• Reportes: ventas por día, hora, cajero y categoría, productos más vendidos y ganancia.
 
 VARIOS TELÉFONOS, SIN INTERNET
 • Todos los teléfonos del local comparten productos, ventas y stock.

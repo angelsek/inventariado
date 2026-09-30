@@ -29,7 +29,8 @@ export function textoComprobante(negocio: string, venta: DetalleVenta): string {
   }
   lineas.push(`TOTAL: ${formatearCLP(venta.total)}`);
   for (const pago of venta.pagos) {
-    lineas.push(`${etiquetaMedio(pago.medio)}: ${formatearCLP(pago.monto)}`);
+    const cliente = pago.medio === 'fiado' && venta.cliente ? ` (${venta.cliente})` : '';
+    lineas.push(`${etiquetaMedio(pago.medio)}${cliente}: ${formatearCLP(pago.monto)}`);
   }
   if (venta.efectivoRecibido !== null && venta.vuelto) {
     lineas.push(

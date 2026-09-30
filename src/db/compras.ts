@@ -77,14 +77,20 @@ export async function registrarCompra(
         ahora,
         ahora,
       );
+      // Comprar packs suma unidades a su producto base (ej. 4 six-pack = 24 latas).
+      const pack = await db.getFirstAsync<{
+        pack_producto_id: string | null;
+        pack_cantidad: number | null;
+      }>('SELECT pack_producto_id, pack_cantidad FROM productos WHERE id = ?', item.productoId);
+      const esPack = !!pack?.pack_producto_id && !!pack.pack_cantidad;
       await db.runAsync(
         `INSERT INTO movimientos_stock (id, negocio_id, producto_id, tipo, cantidad, referencia_id,
            perfil_id, dispositivo_id, creado_en, actualizado_en, pendiente)
          VALUES (?, ?, ?, 'compra', ?, ?, ?, ?, ?, ?, 1)`,
         randomUUID(),
         negocioId,
-        item.productoId,
-        item.cantidad,
+        esPack ? pack.pack_producto_id : item.productoId,
+        esPack ? item.cantidad * pack.pack_cantidad! : item.cantidad,
         compraId,
         autor.perfilId,
         autor.dispositivoId,
@@ -100,6 +106,18 @@ export async function registrarCompra(
           item.productoId,
           item.costoUnitario,
         );
+        if (esPack) {
+          // Costo por unidad del producto base.
+          const costoBase = Math.round(item.costoUnitario / pack.pack_cantidad!);
+          await db.runAsync(
+            `UPDATE productos SET costo = ?, actualizado_en = ?, pendiente = pendiente + 1
+              WHERE id = ? AND costo <> ?`,
+            costoBase,
+            ahora,
+            pack.pack_producto_id,
+            costoBase,
+          );
+        }
       }
     }
   });

@@ -39,6 +39,7 @@ En la misma página, si aparecen **Exposed tables** y **Exposed functions**, act
 - Tablas de la fase 3: `ventas`, `venta_items`, `pagos`.
 - Tablas de la fase 4: `proveedores`, `compras`, `compra_items`, `cajas`, `movimientos_caja`.
 - Tablas de la fase 5: `planes`, `suscripciones`, `pagos_suscripcion`.
+- Tablas de la fase 8: `clientes`, `movimientos_cliente`.
 - Funciones de la fase 5: `registrar_dispositivo`, `mis_dispositivos`, `desvincular_dispositivo`,
   `es_admin`, `admin_listar_negocios`, `admin_registrar_pago`, `admin_actualizar_suscripcion`.
 - Funciones de la fase 6: `ultima_version`, `registrar_error`, `enviar_comentario`,

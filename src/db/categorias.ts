@@ -2,7 +2,15 @@ import { randomUUID } from 'expo-crypto';
 
 import type { BaseLocal } from './tipos';
 
-export type Categoria = { id: string; nombre: string };
+export type Categoria = {
+  id: string;
+  nombre: string;
+  /** Sus productos son alcohol: al venderlos se pide confirmar la mayoría de edad. */
+  alcohol: boolean;
+};
+
+/** Categorías sugeridas que se crean marcadas como alcohol. */
+export const CATEGORIAS_ALCOHOL = ['Cervezas', 'Vinos', 'Destilados'];
 
 export const CATEGORIAS_SUGERIDAS = [
   'Bebidas',
@@ -18,10 +26,20 @@ export const CATEGORIAS_SUGERIDAS = [
 ];
 
 export async function listarCategorias(db: BaseLocal, negocioId: string): Promise<Categoria[]> {
-  return db.getAllAsync<Categoria>(
-    `SELECT id, nombre FROM categorias WHERE negocio_id = ? AND eliminado = 0
+  const filas = await db.getAllAsync<{ id: string; nombre: string; alcohol: number | null }>(
+    `SELECT id, nombre, alcohol FROM categorias WHERE negocio_id = ? AND eliminado = 0
       ORDER BY nombre COLLATE NOCASE`,
     negocioId,
+  );
+  return filas.map((f) => ({ id: f.id, nombre: f.nombre, alcohol: f.alcohol === 1 }));
+}
+
+export async function marcarAlcohol(db: BaseLocal, id: string, alcohol: boolean): Promise<void> {
+  await db.runAsync(
+    `UPDATE categorias SET alcohol = ?, actualizado_en = ?, pendiente = pendiente + 1 WHERE id = ?`,
+    alcohol ? 1 : 0,
+    new Date().toISOString(),
+    id,
   );
 }
 
@@ -32,26 +50,28 @@ export async function crearCategoria(
   nombre: string,
 ): Promise<Categoria> {
   const limpio = nombre.trim();
-  const existente = await db.getFirstAsync<Categoria>(
-    `SELECT id, nombre FROM categorias
+  const existente = await db.getFirstAsync<{ id: string; nombre: string; alcohol: number | null }>(
+    `SELECT id, nombre, alcohol FROM categorias
       WHERE negocio_id = ? AND eliminado = 0 AND nombre = ? COLLATE NOCASE`,
     negocioId,
     limpio,
   );
-  if (existente) return existente;
+  if (existente) return { ...existente, alcohol: existente.alcohol === 1 };
 
   const id = randomUUID();
   const ahora = new Date().toISOString();
+  const alcohol = CATEGORIAS_ALCOHOL.some((c) => c.toLowerCase() === limpio.toLowerCase());
   await db.runAsync(
-    `INSERT INTO categorias (id, negocio_id, nombre, creado_en, actualizado_en, pendiente)
-     VALUES (?, ?, ?, ?, ?, 1)`,
+    `INSERT INTO categorias (id, negocio_id, nombre, alcohol, creado_en, actualizado_en, pendiente)
+     VALUES (?, ?, ?, ?, ?, ?, 1)`,
     id,
     negocioId,
     limpio,
+    alcohol ? 1 : 0,
     ahora,
     ahora,
   );
-  return { id, nombre: limpio };
+  return { id, nombre: limpio, alcohol };
 }
 
 export async function renombrarCategoria(db: BaseLocal, id: string, nombre: string): Promise<void> {

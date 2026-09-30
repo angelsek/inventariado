@@ -60,15 +60,20 @@ export default function MasScreen() {
         </Text>
       </View>
 
-      {esDueno ? (
-        <View style={[estilos.tarjeta, { marginTop: 12 }]}>
+      <View style={[estilos.tarjeta, { marginTop: 12 }]}>
+        {esDueno ? (
           <Opcion
             icono="bar-chart-outline"
             texto="Reportes del negocio"
             onPress={() => router.push('/estadisticas')}
           />
-        </View>
-      ) : null}
+        ) : null}
+        <Opcion
+          icono="people-circle-outline"
+          texto="Clientes y fiado"
+          onPress={() => router.push('/clientes')}
+        />
+      </View>
 
       <Text style={estilos.seccion}>Sincronización</Text>
       <View style={estilos.tarjeta}>
@@ -83,6 +88,13 @@ export default function MasScreen() {
       <Text style={estilos.seccion}>Cuenta</Text>
       <View style={estilos.tarjeta}>
         <Opcion icono="people-outline" texto="Cambiar de usuario" onPress={salir} />
+        {esDueno ? (
+          <Opcion
+            icono="storefront-outline"
+            texto="Datos del negocio"
+            onPress={() => router.push('/negocio')}
+          />
+        ) : null}
         {esDueno ? (
           <Opcion
             icono="person-add-outline"

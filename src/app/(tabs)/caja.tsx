@@ -322,6 +322,15 @@ function HojaMovimiento({
         value={motivo}
         onChangeText={setMotivo}
       />
+      {tipo === 'retiro' ? (
+        <Text
+          accessibilityRole="button"
+          style={estilos.sugerencia}
+          onPress={() => setMotivo('Devolución de envase')}
+        >
+          Devolución de envase
+        </Text>
+      ) : null}
       <Boton
         titulo="Guardar"
         deshabilitado={valor <= 0}
@@ -388,6 +397,7 @@ function HojaCierre({
 }
 
 const estilos = StyleSheet.create({
+  sugerencia: { marginTop: -8, marginBottom: 16, fontSize: 14, color: colores.primario },
   pantalla: { flex: 1, backgroundColor: colores.fondo },
   contenido: { padding: 16, paddingBottom: 40 },
   flex: { flex: 1 },

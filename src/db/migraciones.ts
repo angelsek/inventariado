@@ -238,6 +238,48 @@ export const migraciones: string[] = [
      eliminado INTEGER NOT NULL DEFAULT 0,
      pendiente INTEGER NOT NULL DEFAULT 0
    );`,
+
+  // 7 (fase 8): fiado, envases, packs, promociones y control de venta de alcohol.
+  // Las columnas nuevas aceptan NULL: al descargar de un servidor sin la migración
+  // llegan vacías y el código las trata como 0 / sin valor.
+  `CREATE TABLE clientes (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     nombre TEXT NOT NULL,
+     telefono TEXT,
+     limite_credito INTEGER,
+     activo INTEGER NOT NULL DEFAULT 1,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE TABLE movimientos_cliente (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     cliente_id TEXT NOT NULL,
+     tipo TEXT NOT NULL,
+     monto INTEGER NOT NULL,
+     venta_id TEXT,
+     medio TEXT,
+     notas TEXT,
+     perfil_id TEXT,
+     dispositivo_id TEXT,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE INDEX movimientos_cliente_cliente ON movimientos_cliente (cliente_id);
+   ALTER TABLE ventas ADD COLUMN cliente_id TEXT;
+   ALTER TABLE productos ADD COLUMN precio_envase INTEGER;
+   ALTER TABLE productos ADD COLUMN pack_producto_id TEXT;
+   ALTER TABLE productos ADD COLUMN pack_cantidad REAL;
+   ALTER TABLE productos ADD COLUMN promo_cantidad INTEGER;
+   ALTER TABLE productos ADD COLUMN promo_precio INTEGER;
+   ALTER TABLE categorias ADD COLUMN alcohol INTEGER;
+   ALTER TABLE negocios ADD COLUMN alcohol_desde TEXT;
+   ALTER TABLE negocios ADD COLUMN alcohol_hasta TEXT;`,
 ];
 
 /** Aplica las migraciones pendientes usando PRAGMA user_version. */

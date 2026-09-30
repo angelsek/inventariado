@@ -1,4 +1,4 @@
-import type { MedioPago } from '@/features/ventas/calculos';
+import { type MedioPago, porMedioVacio } from '@/features/ventas/calculos';
 import { claveDia, esPeriodoActual, moverPeriodo, type Periodo } from '@/features/reportes/periodo';
 
 import { listarProductos } from './productos';
@@ -188,12 +188,7 @@ export async function generarReporte(
     cajeros.set(nombre, cajero);
   }
 
-  const porMedio: Record<MedioPago, number> = {
-    efectivo: 0,
-    debito: 0,
-    credito: 0,
-    transferencia: 0,
-  };
+  const porMedio = porMedioVacio();
   for (const m of medios) porMedio[m.medio] = m.monto;
 
   const ganancia = total - Math.round(costos?.costo ?? 0);

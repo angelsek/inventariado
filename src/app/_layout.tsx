@@ -130,6 +130,9 @@ function Navegacion() {
         <Stack.Screen name="admin" options={conEncabezado('Administración')} />
         <Stack.Screen name="reportes" options={conEncabezado('Reportes')} />
         <Stack.Screen name="estadisticas" options={conEncabezado('Reportes del negocio')} />
+        <Stack.Screen name="clientes" options={conEncabezado('Clientes y fiado')} />
+        <Stack.Screen name="cliente/[id]" options={conEncabezado('Cliente')} />
+        <Stack.Screen name="negocio" options={conEncabezado('Datos del negocio')} />
         <Stack.Screen name="exportar" options={conEncabezado('Exportar datos')} />
         <Stack.Screen name="comentario" options={conEncabezado('Enviar comentario')} />
         <Stack.Screen name="eliminar-cuenta" options={conEncabezado('Eliminar cuenta')} />

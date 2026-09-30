@@ -10,6 +10,11 @@ type Carrito = {
   /** Suma `cantidad` al producto si ya está en el carrito; si no, lo agrega. */
   agregarProducto(producto: Producto, cantidad?: number): void;
   agregarMontoLibre(nombre: string, monto: number): void;
+  /**
+   * Agrega (o quita) la línea que cobra los envases de un producto retornable,
+   * para cuando el cliente no trae el envase vacío.
+   */
+  alternarEnvase(clave: string): void;
   cambiarCantidad(clave: string, cantidad: number): void;
   cambiarDescuentoItem(clave: string, descuento: number): void;
   quitar(clave: string): void;
@@ -44,6 +49,13 @@ export const useCarrito = create<Carrito>((set) => ({
         costoUnitario: producto.costo,
         descuento: 0,
         stock: producto.stock,
+        // Las promos por cantidad son para productos por unidad (no por kilo).
+        promo:
+          producto.promoCantidad && producto.promoPrecio !== null && producto.unidad !== 'kg'
+            ? { cantidad: producto.promoCantidad, precio: producto.promoPrecio }
+            : null,
+        precioEnvase: producto.precioEnvase,
+        alcohol: producto.alcohol,
       };
       return { items: [...s.items, item] };
     }),
@@ -66,11 +78,34 @@ export const useCarrito = create<Carrito>((set) => ({
       ],
     })),
 
+  alternarEnvase: (clave) =>
+    set((s) => {
+      const claveEnvase = `envase-${clave}`;
+      if (s.items.some((i) => i.clave === claveEnvase)) {
+        return { items: s.items.filter((i) => i.clave !== claveEnvase) };
+      }
+      const item = s.items.find((i) => i.clave === clave);
+      if (!item?.precioEnvase) return {};
+      const envase: ItemCarrito = {
+        clave: claveEnvase,
+        productoId: null,
+        nombre: `Envase ${item.nombre}`,
+        unidad: 'unidad',
+        cantidad: Math.ceil(item.cantidad),
+        precioUnitario: item.precioEnvase,
+        costoUnitario: 0,
+        descuento: 0,
+        stock: null,
+      };
+      const indice = s.items.indexOf(item);
+      return { items: [...s.items.slice(0, indice + 1), envase, ...s.items.slice(indice + 1)] };
+    }),
+
   cambiarCantidad: (clave, cantidad) =>
     set((s) => ({
       items:
         cantidad <= 0
-          ? s.items.filter((i) => i.clave !== clave)
+          ? s.items.filter((i) => i.clave !== clave && i.clave !== `envase-${clave}`)
           : s.items.map((i) => (i.clave === clave ? { ...i, cantidad: redondear(cantidad) } : i)),
     })),
 
@@ -81,7 +116,10 @@ export const useCarrito = create<Carrito>((set) => ({
       ),
     })),
 
-  quitar: (clave) => set((s) => ({ items: s.items.filter((i) => i.clave !== clave) })),
+  quitar: (clave) =>
+    set((s) => ({
+      items: s.items.filter((i) => i.clave !== clave && i.clave !== `envase-${clave}`),
+    })),
 
   cambiarDescuentoGeneral: (descuento) =>
     set({ descuentoGeneral: Math.max(0, Math.round(descuento)) }),

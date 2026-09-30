@@ -108,7 +108,7 @@ it('resume las ventas de la semana: totales, ganancia, días, horas, cajeros y c
     itemsSinCosto: 1,
     anuladas: { cantidad: 1, monto: 5000 },
     anterior: { total: 4000, cantidad: 1 },
-    porMedio: { efectivo: 4000, debito: 7000, credito: 0, transferencia: 0 },
+    porMedio: { efectivo: 4000, debito: 7000, credito: 0, transferencia: 0, fiado: 0 },
   });
   expect(r.porDia).toHaveLength(7);
   expect(r.porDia.map((d) => d.monto)).toEqual([10000, 0, 1000, 0, 0, 0, 0]);

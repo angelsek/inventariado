@@ -15,7 +15,7 @@ const control = ['creado_en', 'actualizado_en', 'eliminado'] as const;
 export const TABLAS_SYNC: readonly TablaSync[] = [
   {
     nombre: 'negocios',
-    columnas: ['id', 'nombre', 'rut', 'direccion', ...control],
+    columnas: ['id', 'nombre', 'rut', 'direccion', 'alcohol_desde', 'alcohol_hasta', ...control],
     booleanas: ['eliminado'],
   },
   {
@@ -30,8 +30,8 @@ export const TABLAS_SYNC: readonly TablaSync[] = [
   },
   {
     nombre: 'categorias',
-    columnas: ['id', 'negocio_id', 'nombre', ...control],
-    booleanas: ['eliminado'],
+    columnas: ['id', 'negocio_id', 'nombre', 'alcohol', ...control],
+    booleanas: ['alcohol', 'eliminado'],
   },
   {
     nombre: 'productos',
@@ -46,6 +46,11 @@ export const TABLAS_SYNC: readonly TablaSync[] = [
       'stock_minimo',
       'unidad',
       'activo',
+      'precio_envase',
+      'pack_producto_id',
+      'pack_cantidad',
+      'promo_cantidad',
+      'promo_precio',
       ...control,
     ],
     booleanas: ['activo', 'eliminado'],
@@ -90,6 +95,11 @@ export const TABLAS_SYNC: readonly TablaSync[] = [
     booleanas: ['eliminado'],
   },
   {
+    nombre: 'clientes',
+    columnas: ['id', 'negocio_id', 'nombre', 'telefono', 'limite_credito', 'activo', ...control],
+    booleanas: ['activo', 'eliminado'],
+  },
+  {
     nombre: 'ventas',
     columnas: [
       'id',
@@ -106,6 +116,7 @@ export const TABLAS_SYNC: readonly TablaSync[] = [
       'anulada_por',
       'motivo_anulacion',
       'caja_id',
+      'cliente_id',
       ...control,
     ],
     booleanas: ['eliminado'],
@@ -130,6 +141,23 @@ export const TABLAS_SYNC: readonly TablaSync[] = [
   {
     nombre: 'pagos',
     columnas: ['id', 'negocio_id', 'venta_id', 'medio', 'monto', ...control],
+    booleanas: ['eliminado'],
+  },
+  {
+    nombre: 'movimientos_cliente',
+    columnas: [
+      'id',
+      'negocio_id',
+      'cliente_id',
+      'tipo',
+      'monto',
+      'venta_id',
+      'medio',
+      'notas',
+      'perfil_id',
+      'dispositivo_id',
+      ...control,
+    ],
     booleanas: ['eliminado'],
   },
   {

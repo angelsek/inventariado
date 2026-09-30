@@ -16,6 +16,12 @@ const producto = (cambios: Partial<Producto>): Producto => ({
   unidad: 'unidad',
   activo: true,
   stock: 10,
+  precioEnvase: 0,
+  packProductoId: null,
+  packCantidad: null,
+  promoCantidad: null,
+  promoPrecio: null,
+  alcohol: false,
   ...cambios,
 });
 

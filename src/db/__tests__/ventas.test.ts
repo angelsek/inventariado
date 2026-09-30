@@ -121,7 +121,7 @@ it('anular devuelve el stock una sola vez y saca la venta del resumen', async ()
   expect(await resumirVentas(db, NEGOCIO, hoy.desde, hoy.hasta)).toEqual({
     cantidad: 1,
     total: 8480,
-    porMedio: { efectivo: 5480, debito: 3000, credito: 0, transferencia: 0 },
+    porMedio: { efectivo: 5480, debito: 3000, credito: 0, transferencia: 0, fiado: 0 },
   });
 
   await anularVenta(db, id, 'Cliente se arrepintió', AUTOR);

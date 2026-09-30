@@ -10,6 +10,7 @@ import {
   crearCategoria,
   eliminarCategoria,
   listarCategorias,
+  marcarAlcohol,
   renombrarCategoria,
 } from '@/db/categorias';
 import { useSesion } from '@/sesion/store';
@@ -70,7 +71,10 @@ export default function CategoriasScreen() {
     );
 
   return (
-    <Formulario titulo="Categorías" subtitulo="Agrupan los productos para encontrarlos más rápido.">
+    <Formulario
+      titulo="Categorías"
+      subtitulo="Agrupan los productos para encontrarlos más rápido. Al vender productos de una categoría de alcohol, la app pide confirmar que el cliente es mayor de edad."
+    >
       {categorias.map((c) => (
         <View key={c.id} style={estilos.fila}>
           {editando?.id === c.id ? (
@@ -84,7 +88,21 @@ export default function CategoriasScreen() {
               style={[estilos.nombre, estilos.entrada]}
             />
           ) : (
-            <Text style={estilos.nombre}>{c.nombre}</Text>
+            <View style={estilos.nombre}>
+              <Text style={estilos.textoNombre}>{c.nombre}</Text>
+              <Text
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: c.alcohol }}
+                accessibilityLabel={`${c.nombre} es alcohol`}
+                style={[estilos.alcohol, c.alcohol && estilos.alcoholActivo]}
+                onPress={async () => {
+                  await marcarAlcohol(db, c.id, !c.alcohol);
+                  listo();
+                }}
+              >
+                {c.alcohol ? '✓ Alcohol (pide mayoría de edad)' : 'Marcar como alcohol'}
+              </Text>
+            </View>
           )}
           <Text
             accessibilityRole="button"
@@ -138,6 +156,9 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.superficie,
   },
   nombre: { flex: 1, fontSize: 16, color: colores.texto },
+  textoNombre: { fontSize: 16, color: colores.texto },
+  alcohol: { marginTop: 4, fontSize: 13, color: colores.textoSecundario },
+  alcoholActivo: { color: colores.aviso, fontWeight: '600' },
   entrada: {
     minHeight: 44,
     borderWidth: 1,

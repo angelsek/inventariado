@@ -1,8 +1,14 @@
 import { randomUUID } from 'expo-crypto';
 
 import type { ItemCarrito, MedioPago, Pago } from '@/features/ventas/calculos';
-import { calcularTotales, totalItem } from '@/features/ventas/calculos';
+import {
+  calcularTotales,
+  descuentoPromo,
+  porMedioVacio,
+  totalItem,
+} from '@/features/ventas/calculos';
 
+import { insertarMovimientoCliente } from './clientes';
 import type { Autor } from './productos';
 import type { BaseLocal } from './tipos';
 
@@ -31,6 +37,8 @@ export type DetalleVenta = {
   anuladaEn: string | null;
   anuladaPor: string | null;
   motivoAnulacion: string | null;
+  /** Cliente de una venta fiada. */
+  cliente: string | null;
   items: {
     id: string;
     productoId: string | null;
@@ -58,10 +66,14 @@ export async function registrarVenta(
     vuelto: number | null;
     /** Caja abierta del teléfono, si hay (fase 4). */
     cajaId?: string | null;
+    /** Cliente al que se le fía (obligatorio si hay un pago con medio 'fiado'). */
+    clienteId?: string | null;
     autor: Autor;
   },
 ): Promise<string> {
   if (datos.items.length === 0) throw new Error('La venta no tiene productos.');
+  const fiado = datos.pagos.filter((p) => p.medio === 'fiado').reduce((s, p) => s + p.monto, 0);
+  if (fiado > 0 && !datos.clienteId) throw new Error('Elige a qué cliente se le fía.');
 
   const ventaId = randomUUID();
   const ahora = new Date().toISOString();
@@ -71,8 +83,8 @@ export async function registrarVenta(
   await db.withTransactionAsync(async () => {
     await db.runAsync(
       `INSERT INTO ventas (id, negocio_id, subtotal, descuento, total, efectivo_recibido, vuelto,
-         estado, perfil_id, dispositivo_id, caja_id, creado_en, actualizado_en, pendiente)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'completada', ?, ?, ?, ?, ?, 1)`,
+         estado, perfil_id, dispositivo_id, caja_id, cliente_id, creado_en, actualizado_en, pendiente)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'completada', ?, ?, ?, ?, ?, ?, 1)`,
       ventaId,
       negocioId,
       subtotal,
@@ -83,6 +95,7 @@ export async function registrarVenta(
       autor.perfilId,
       autor.dispositivoId,
       datos.cajaId ?? null,
+      datos.clienteId ?? null,
       ahora,
       ahora,
     );
@@ -100,23 +113,42 @@ export async function registrarVenta(
         item.cantidad,
         item.precioUnitario,
         item.costoUnitario,
-        item.descuento,
+        // La promoción se guarda como descuento de la línea: total = precio × cantidad − descuento.
+        item.descuento + descuentoPromo(item),
         totalItem(item),
         ahora,
         ahora,
       );
       if (item.productoId) {
+        // Un pack descuenta el stock de su producto base (ej. six-pack = 6 latas).
+        const pack = await db.getFirstAsync<{
+          pack_producto_id: string | null;
+          pack_cantidad: number | null;
+        }>('SELECT pack_producto_id, pack_cantidad FROM productos WHERE id = ?', item.productoId);
+        const esPack = !!pack?.pack_producto_id && !!pack.pack_cantidad;
         await insertarMovimiento(
           db,
           negocioId,
-          item.productoId,
+          esPack ? pack.pack_producto_id! : item.productoId,
           'venta',
-          -item.cantidad,
+          -(esPack ? item.cantidad * pack.pack_cantidad! : item.cantidad),
           ventaId,
           autor,
           ahora,
         );
       }
+    }
+
+    if (fiado > 0) {
+      await insertarMovimientoCliente(db, {
+        negocioId,
+        clienteId: datos.clienteId!,
+        tipo: 'cargo',
+        monto: fiado,
+        ventaId,
+        autor,
+        fecha: ahora,
+      });
     }
 
     for (const pago of datos.pagos) {
@@ -145,10 +177,11 @@ export async function anularVenta(
   autor: Autor,
 ): Promise<void> {
   await db.withTransactionAsync(async () => {
-    const venta = await db.getFirstAsync<{ negocio_id: string; estado: string }>(
-      'SELECT negocio_id, estado FROM ventas WHERE id = ?',
-      ventaId,
-    );
+    const venta = await db.getFirstAsync<{
+      negocio_id: string;
+      estado: string;
+      cliente_id: string | null;
+    }>('SELECT negocio_id, estado, cliente_id FROM ventas WHERE id = ?', ventaId);
     if (!venta || venta.estado === 'anulada') return;
 
     const ahora = new Date().toISOString();
@@ -163,22 +196,43 @@ export async function anularVenta(
       ventaId,
     );
 
-    const items = await db.getAllAsync<{ producto_id: string | null; cantidad: number }>(
-      'SELECT producto_id, cantidad FROM venta_items WHERE venta_id = ? AND eliminado = 0',
+    // Devuelve exactamente lo que descontó la venta (incluye los packs, que
+    // descuentan de su producto base).
+    const movimientos = await db.getAllAsync<{ producto_id: string; cantidad: number }>(
+      `SELECT producto_id, cantidad FROM movimientos_stock
+        WHERE referencia_id = ? AND tipo = 'venta' AND eliminado = 0`,
       ventaId,
     );
-    for (const item of items) {
-      if (item.producto_id) {
-        await insertarMovimiento(
-          db,
-          venta.negocio_id,
-          item.producto_id,
-          'anulacion',
-          item.cantidad,
+    for (const m of movimientos) {
+      await insertarMovimiento(
+        db,
+        venta.negocio_id,
+        m.producto_id,
+        'anulacion',
+        -m.cantidad,
+        ventaId,
+        autor,
+        ahora,
+      );
+    }
+
+    // Si era fiada, se descuenta de la deuda del cliente.
+    if (venta.cliente_id) {
+      const fiado = await db.getFirstAsync<{ monto: number | null }>(
+        `SELECT SUM(monto) AS monto FROM pagos
+          WHERE venta_id = ? AND medio = 'fiado' AND eliminado = 0`,
+        ventaId,
+      );
+      if (fiado?.monto) {
+        await insertarMovimientoCliente(db, {
+          negocioId: venta.negocio_id,
+          clienteId: venta.cliente_id,
+          tipo: 'anulacion',
+          monto: fiado.monto,
           ventaId,
           autor,
-          ahora,
-        );
+          fecha: ahora,
+        });
       }
     }
   });
@@ -247,12 +301,7 @@ export async function resumirVentas(
     desde,
     hasta,
   );
-  const porMedio: Record<MedioPago, number> = {
-    efectivo: 0,
-    debito: 0,
-    credito: 0,
-    transferencia: 0,
-  };
+  const porMedio = porMedioVacio();
   for (const m of medios) porMedio[m.medio] = m.monto;
   return { cantidad: totales?.cantidad ?? 0, total: totales?.total ?? 0, porMedio };
 }
@@ -271,11 +320,13 @@ export async function obtenerVenta(db: BaseLocal, id: string): Promise<DetalleVe
     anulada_en: string | null;
     anulada_por: string | null;
     motivo_anulacion: string | null;
+    cliente: string | null;
   }>(
-    `SELECT v.*, p.nombre AS vendedor, a.nombre AS anulada_por
+    `SELECT v.*, p.nombre AS vendedor, a.nombre AS anulada_por, c.nombre AS cliente
        FROM ventas v
        LEFT JOIN perfiles p ON p.id = v.perfil_id
        LEFT JOIN perfiles a ON a.id = v.anulada_por
+       LEFT JOIN clientes c ON c.id = v.cliente_id
       WHERE v.id = ? AND v.eliminado = 0`,
     id,
   );
@@ -312,6 +363,7 @@ export async function obtenerVenta(db: BaseLocal, id: string): Promise<DetalleVe
     anuladaEn: v.anulada_en,
     anuladaPor: v.anulada_por,
     motivoAnulacion: v.motivo_anulacion,
+    cliente: v.cliente,
     items: items.map((i) => ({
       id: i.id,
       productoId: i.producto_id,

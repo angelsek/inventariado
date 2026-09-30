@@ -76,6 +76,8 @@ jobs:
         # Datos del proyecto Supabase (Settings → Secrets and variables → Actions → Variables).
         # Son públicos por diseño: la seguridad la dan las reglas RLS de la base.
         env:
+          # Cobro con Google Play Billing (expo-iap también soporta otras tiendas).
+          ORG_GRADLE_PROJECT_openiapStore: play
           EXPO_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           # Opcionales: dónde avisar los pagos de la suscripción (pantalla Suscripción).

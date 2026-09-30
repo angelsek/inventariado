@@ -11,9 +11,11 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ComponentProps } from 'react';
 
+import { CANAL } from '@/config';
 import { useActualizacion } from '@/features/actualizacion/actualizacion';
 import { AvisoActualizacion } from '@/features/actualizacion/AvisoActualizacion';
 import { AvisoSuscripcion } from '@/features/suscripcion/AvisoSuscripcion';
+import { ElegirPlan } from '@/features/suscripcion/ElegirPlan';
 import { avisoSuscripcion } from '@/features/suscripcion/estado';
 import { useSesion } from '@/sesion/store';
 import { colores } from '@/theme/colores';
@@ -56,6 +58,10 @@ export default function TabsLayout() {
   // Espacio de los botones del sistema (atrás, inicio...), distinto en cada teléfono:
   // 0 con gestos en algunos modelos, ~48 px con la barra de tres botones.
   const { bottom } = useSafeAreaInsets();
+
+  // Versión de Play: un negocio que nunca ha pagado (solo la prueba sin tarjeta
+  // del servidor) elige plan primero; la prueba de 14 días la da Google.
+  if (CANAL === 'play' && suscripcion?.estado === 'prueba') return <ElegirPlan />;
   return (
     <View style={{ flex: 1 }}>
       {hayAviso ? (

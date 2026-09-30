@@ -8,6 +8,8 @@ import { CANAL, CONTACTO } from '@/config';
 import { AJUSTE_DISPOSITIVO, leerAjuste } from '@/db/ajustes';
 import { obtenerNegocio } from '@/db/negocio';
 import { type Estado, NOMBRE_PLAN } from '@/features/suscripcion/estado';
+import { administrarEnPlay } from '@/features/suscripcion/googlePlay';
+import { PlanesPlay } from '@/features/suscripcion/PlanesPlay';
 import { formatearCLP, formatearFecha, formatearFechaHora } from '@/lib/formato';
 import { mensajeDeError, supabase } from '@/lib/supabase';
 import { useSesion } from '@/sesion/store';
@@ -151,15 +153,23 @@ export default function SuscripcionScreen() {
       )}
 
       {/*
-        En la versión de Google Play no se muestran precios ni formas de pago externas
-        (política de pagos de Play): la suscripción se gestiona fuera de la app.
+        Versión de Google Play: el pago es con Google Play Billing (política de pagos
+        de Play); no se muestran transferencias ni otras formas de pago externas.
       */}
       {CANAL === 'play' ? (
-        <View style={estilos.tarjeta}>
-          <Text style={estilos.nota}>
-            La suscripción de tu negocio se gestiona directamente con Stockeao, fuera de esta app.
-          </Text>
-        </View>
+        <>
+          <Text style={estilos.seccion}>Planes</Text>
+          <PlanesPlay />
+          {esDueno && suscripcion?.estado !== 'prueba' ? (
+            <View style={estilos.boton}>
+              <Boton
+                titulo="Cambiar tarjeta o cancelar (Google Play)"
+                variante="secundario"
+                onPress={() => administrarEnPlay().catch(() => {})}
+              />
+            </View>
+          ) : null}
+        </>
       ) : null}
 
       {CANAL !== 'play' && planes.length ? (

@@ -25,6 +25,9 @@ function consulta(tabla: string) {
 export const supabase = {
   rpc: jest.fn((nombre: string) => Promise.resolve(respuestasRpc[nombre] ?? sinRespuesta)),
   from: jest.fn((tabla: string) => consulta(tabla)),
+  functions: {
+    invoke: jest.fn(() => Promise.resolve({ data: { ok: true }, error: null })),
+  },
   auth: {
     getSession: jest.fn(() => Promise.resolve({ data: { session: null } })),
     signInWithPassword: jest.fn(() => Promise.resolve({ data: {}, error: null })),

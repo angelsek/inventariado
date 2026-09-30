@@ -257,6 +257,9 @@ exponer las tablas `clientes` y `movimientos_cliente`).
   permisos mínimos (cámara e internet), ícono e imagen destacada propios, páginas legales
   públicas generadas desde la app, canal "play" que oculta pagos externos (política de pagos)
   y deja las actualizaciones a Play. Guía completa: `docs/PLAY_STORE.md`.
+- **Cobro con Google Play (hecho):** suscripción Básico $9.990 / Pro $14.990 con 14 días
+  gratis con tarjeta, verificación de compras en Supabase (funciones `verificar-compra-play`
+  y `notificaciones-play`) y pantalla "Elige tu plan". Configuración: `docs/COBRO_GOOGLE_PLAY.md`.
 - Pendiente: verificación de la cuenta de Play, clave de firma, prueba cerrada (12 personas,
   14 días si la cuenta es personal), capturas de pantalla y publicación.
 - Más adelante: conexión con terminales POS (Transbank, Getnet, etc.), panel web para el

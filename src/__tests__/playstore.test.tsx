@@ -6,6 +6,7 @@ import { crearPerfil } from '@/db/perfiles';
 import type { BaseLocal } from '@/db/tipos';
 import { useSesion } from '@/sesion/store';
 import { crearBaseEnMemoria } from '@/test/baseEnMemoria';
+import * as iap from '@/test/mockExpoIap';
 import { respuestasRpc, respuestasTabla, supabase } from '@/test/mockSupabase';
 
 jest.mock('expo-crypto', () => require('@/test/mockExpoCrypto'));
@@ -122,22 +123,106 @@ it('un cajero no ve la opción de eliminar la cuenta', async () => {
   expect(screen.queryByText('Eliminar cuenta y datos')).toBeNull();
 });
 
-it('la versión de Play no muestra precios ni formas de pago externas', async () => {
-  mockCanal = 'play';
-  await entrarComo('Ana', '1234');
-  fireEvent.press(await screen.findByText('Suscripción'));
+// Productos de suscripción como los entrega Google Play (con la oferta de 14 días gratis).
+const productoPlay = (id: string, precio: string) => ({
+  id,
+  displayPrice: precio,
+  subscriptionOffers: [
+    {
+      offerTokenAndroid: `oferta-${id}`,
+      pricingPhasesAndroid: {
+        pricingPhaseList: [
+          { priceAmountMicros: '0', formattedPrice: 'Gratis', billingPeriod: 'P14D' },
+          { priceAmountMicros: '9990000000', formattedPrice: precio, billingPeriod: 'P1M' },
+        ],
+      },
+    },
+  ],
+});
 
-  expect(await screen.findByText(/se gestiona directamente con Stockeao/)).toBeTruthy();
-  expect(screen.queryByText('¿Cómo pagar?')).toBeNull();
-  expect(screen.queryByText('Avisar que pagué')).toBeNull();
-  expect(screen.queryByText('$9.990/mes')).toBeNull();
+async function prepararPlay(pruebaHasta: string | null, pagadoHasta: string | null) {
+  mockCanal = 'play';
+  const ahora = new Date().toISOString();
+  await mockDb.runAsync(
+    `INSERT INTO suscripciones (id, negocio_id, plan_id, prueba_hasta, pagado_hasta, creado_en, actualizado_en)
+     VALUES (?, ?, 'pro', ?, ?, ?, ?)`,
+    NEGOCIO,
+    NEGOCIO,
+    pruebaHasta,
+    pagadoHasta,
+    ahora,
+    ahora,
+  );
+  (iap.fetchProducts as jest.Mock).mockResolvedValue([
+    productoPlay('stockeao_basico', '$9.990'),
+    productoPlay('stockeao_pro', '$14.990'),
+  ]);
+}
+
+afterEach(() => {
   mockCanal = 'apk';
 });
 
-it('el APK directo sí muestra cómo pagar', async () => {
-  mockCanal = 'apk';
+it('Play: un negocio sin plan elige uno y se suscribe con Google (14 días gratis)', async () => {
+  const enUnMes = new Date(Date.now() + 30 * 86400000).toISOString();
+  await prepararPlay(enUnMes, null);
+  renderRouter('src/app');
+  fireEvent.press(await screen.findByText('Ana'));
+  for (const digito of '1234') fireEvent.press(screen.getByLabelText(digito));
+
+  expect(await screen.findByText('Elige tu plan')).toBeTruthy();
+  expect(await screen.findByText('$9.990/mes')).toBeTruthy();
+  expect(screen.getByText('$14.990/mes')).toBeTruthy();
+  // Sin transferencias ni formas de pago externas (política de Play).
+  expect(screen.queryByText('¿Cómo pagar?')).toBeNull();
+
+  fireEvent.press(screen.getAllByText('Probar 14 días gratis')[1]);
+  await waitFor(() =>
+    expect(iap.requestPurchase).toHaveBeenCalledWith({
+      type: 'subs',
+      request: {
+        google: {
+          skus: ['stockeao_pro'],
+          subscriptionOffers: [{ sku: 'stockeao_pro', offerToken: 'oferta-stockeao_pro' }],
+          obfuscatedAccountId: NEGOCIO,
+        },
+      },
+    }),
+  );
+
+  // Google aprueba la compra: se verifica en el servidor y se cierra la transacción.
+  const compra = {
+    purchaseState: 'purchased',
+    purchaseToken: 'token-1',
+    productId: 'stockeao_pro',
+  };
+  iap.oyentes.compras.forEach((fn) => fn(compra));
+  expect(await screen.findByText('¡Listo! Tu plan quedó activo.')).toBeTruthy();
+  expect(supabase.functions.invoke).toHaveBeenCalledWith('verificar-compra-play', {
+    body: { purchaseToken: 'token-1', negocioId: NEGOCIO },
+  });
+  expect(iap.finishTransaction).toHaveBeenCalledWith({ purchase: compra, isConsumable: false });
+});
+
+it('Play: un cajero de un negocio sin plan no puede comprar', async () => {
+  await prepararPlay(new Date(Date.now() + 86400000).toISOString(), null);
+  renderRouter('src/app');
+  fireEvent.press(await screen.findByText('Carla'));
+  for (const digito of '5678') fireEvent.press(screen.getByLabelText(digito));
+  expect(await screen.findByText(/Pídele al dueño del negocio que active un plan/)).toBeTruthy();
+  expect(screen.queryByText('Probar 14 días gratis')).toBeNull();
+});
+
+it('Play: con el plan pagado se usa la app normal y se administra en Google Play', async () => {
+  await prepararPlay(null, new Date(Date.now() + 20 * 86400000).toISOString());
   await entrarComo('Ana', '1234');
   fireEvent.press(await screen.findByText('Suscripción'));
-  expect(await screen.findByText('¿Cómo pagar?')).toBeTruthy();
-  expect(screen.getByText('Avisar que pagué')).toBeTruthy();
+  expect(await screen.findByText('Activa')).toBeTruthy();
+  fireEvent.press(await screen.findByText('Cambiar tarjeta o cancelar (Google Play)'));
+  await waitFor(() =>
+    expect(iap.deepLinkToSubscriptions).toHaveBeenCalledWith({
+      skuAndroid: 'stockeao_basico',
+      packageNameAndroid: 'cl.stockeao.app',
+    }),
+  );
 });

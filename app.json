@@ -46,6 +46,7 @@
           "recordAudioAndroid": false
         }
       ],
+      "expo-iap",
       "./plugins/firma-android"
     ]
   }

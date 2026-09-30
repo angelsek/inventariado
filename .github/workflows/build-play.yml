@@ -73,6 +73,8 @@ jobs:
       - name: Compilar App Bundle
         working-directory: android
         env:
+          # Cobro con Google Play Billing (expo-iap también soporta otras tiendas).
+          ORG_GRADLE_PROJECT_openiapStore: play
           EXPO_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           EXPO_PUBLIC_CONTACTO_WHATSAPP: ${{ vars.CONTACTO_WHATSAPP }}

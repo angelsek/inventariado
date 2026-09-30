@@ -12,6 +12,14 @@ module.exports = defineConfig([
     rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
   {
-    ignores: ['node_modules/*', '.expo/*', 'android/*', 'ios/*', 'dist/*'],
+    ignores: [
+      'node_modules/*',
+      '.expo/*',
+      'android/*',
+      'ios/*',
+      'dist/*',
+      // Código Deno (imports jsr:, Deno.serve).
+      'supabase/functions/*/index.ts',
+    ],
   },
 ]);

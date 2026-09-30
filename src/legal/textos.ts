@@ -5,7 +5,7 @@
  * Al cambiarlos, actualizar la fecha.
  */
 
-export const FECHA_LEGAL = '29 de septiembre de 2026';
+export const FECHA_LEGAL = '1 de octubre de 2026';
 
 export const TERMINOS = `Términos y condiciones de uso de Stockeao
 
@@ -18,7 +18,9 @@ Stockeao es una aplicación para administrar el inventario, las ventas y la caja
 El negocio se registra con un correo y contraseña, que son responsabilidad de quien los crea. Los usuarios del local (dueño y cajeros) se identifican con un PIN, que sirve para distinguir a las personas en el teléfono y no reemplaza la contraseña de la cuenta.
 
 3. Prueba gratis, planes y pagos
-Cada negocio nuevo tiene un período de prueba gratis. Luego debe contratar un plan mensual directamente con Stockeao. Los planes difieren, entre otras cosas, en la cantidad de teléfonos que se pueden usar. Los precios vigentes se informan al contratar y pueden cambiar con aviso previo de al menos 30 días.
+Los planes difieren, entre otras cosas, en la cantidad de teléfonos que se pueden usar. Los precios vigentes se informan al contratar y pueden cambiar con aviso previo de al menos 30 días.
+En la app descargada desde Google Play, la suscripción se contrata y se paga con Google Play: incluye una prueba gratis de 14 días (una vez por cuenta de Google) y, si no se cancela antes de que termine, Google cobra el plan elegido cada mes con el medio de pago de la cuenta de Google, hasta que se cancele desde Play Store (Suscripciones). Al cancelar, el plan sigue activo hasta el fin del período pagado. Los reembolsos se rigen por las políticas de Google Play.
+En la app instalada por otros medios, cada negocio nuevo tiene un período de prueba gratis y luego contrata el plan directamente con Stockeao.
 
 4. Vencimiento y suspensión
 Si la suscripción vence, hay un período de gracia durante el cual la app sigue funcionando con avisos. Terminado ese período, la app queda en modo solo lectura: se pueden consultar los datos, pero no registrar ventas ni hacer cambios. Los datos no se borran por falta de pago y el servicio se reactiva al pagar.
@@ -49,7 +51,8 @@ export const PRIVACIDAD = `Política de privacidad de Stockeao
 - Datos de la cuenta: correo del dueño y datos del negocio (nombre, RUT y dirección, si se ingresan).
 - Datos de uso del local: usuarios y sus PIN (guardados cifrados con una función hash, nunca en texto), productos, precios, costos, stock, ventas, pagos, cajas, proveedores e ingresos de mercadería.
 - Datos técnicos: modelo del teléfono y fecha de la última sincronización.
-La app no pide ni guarda datos de los clientes finales del local ni datos de tarjetas.
+- Clientes con fiado: si el negocio usa el fiado, el nombre y teléfono de esos clientes y lo que deben, datos que ingresa el propio negocio.
+- Suscripción: el plan contratado y el identificador de la compra en Google Play. Los datos de la tarjeta los maneja Google; la app nunca los ve ni los guarda.
 
 2. Para qué se usan
 Para prestar el servicio (guardar y sincronizar la información entre los teléfonos del negocio), administrar la suscripción y dar soporte. No se venden ni se ceden los datos a terceros.

@@ -16,12 +16,11 @@ Todo lo que pide Play Console, en orden, con los textos listos para copiar.
    ("Firma de apps de Play", viene activada por defecto: acéptala).
 3. **El nombre del paquete es para siempre:** `cl.stockeao.app`. El nombre visible de la
    app sí se puede cambiar después.
-4. **Pagos:** Google no permite que una app indique formas de pago fuera de Play (transferencia,
-   WhatsApp para pagar) para desbloquear funciones. Por eso la versión de Play **no muestra
-   precios ni cómo pagar**: el cliente contrata y paga contigo por fuera, y la app solo se usa
-   con la cuenta. La versión APK directa sigue mostrando esa información. Si más adelante
-   quieres cobrar dentro de la app, habría que usar la facturación de Google Play (Google cobra
-   una comisión de 15 %).
+4. **Pagos:** la versión de Play cobra la suscripción con **Google Play Billing** (Básico
+   $9.990 y Pro $14.990 al mes, 14 días gratis con tarjeta; Google cobra una comisión de 15 %).
+   No muestra transferencias ni otras formas de pago externas (política de pagos de Google).
+   La versión APK directa sigue con el pago manual. Configuración paso a paso:
+   `docs/COBRO_GOOGLE_PLAY.md`.
 
 ## Archivos que ya están listos
 
@@ -170,6 +169,10 @@ _Funcionalidad de la app_ y _Administración de la cuenta_):
   app informa, con modelo de teléfono). Finalidad: _Análisis_.
 - **Dispositivo u otros identificadores** (identificador del teléfono generado por la app para
   el límite de teléfonos del plan).
+- **Información financiera → Historial de compras** (plan contratado e identificador de la
+  compra en Google Play). Finalidad: _Funcionalidad de la app_.
+- **Información personal → Nombre** y **Teléfono** también incluyen a los clientes con fiado
+  que registra el negocio.
 
 **Eliminación de cuentas**: URL de `eliminar-cuenta.html`.
 

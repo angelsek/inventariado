@@ -40,8 +40,18 @@ jest.mock('expo-camera', () => {
   const { Pressable, Text } = jest.requireActual('react-native');
   return {
     useCameraPermissions: () => [{ granted: true, canAskAgain: true }, jest.fn()],
-    CameraView: ({ onBarcodeScanned }: { onBarcodeScanned: (r: { data: string }) => void }) => (
-      <Pressable onPress={() => onBarcodeScanned({ data: mockCodigos.shift() ?? '' })}>
+    CameraView: ({
+      onBarcodeScanned,
+    }: {
+      onBarcodeScanned: (r: { type: string; data: string }) => void;
+    }) => (
+      <Pressable
+        onPress={() => {
+          // El escáner pide varias lecturas iguales seguidas antes de aceptar un código.
+          const data = mockCodigos.shift() ?? '';
+          for (let i = 0; i < 3; i++) onBarcodeScanned({ type: 'code128', data });
+        }}
+      >
         <Text>Simular lectura</Text>
       </Pressable>
     ),

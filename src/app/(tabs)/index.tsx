@@ -66,8 +66,9 @@ export default function VenderScreen() {
       return;
     }
     setAviso(null);
+    // Vuelve a Vender apenas se agrega el producto.
+    setEscaneando(false);
     agregar(producto);
-    setMensajeEscaner(`✓ ${producto.nombre}`);
   };
 
   return (
@@ -200,6 +201,7 @@ export default function VenderScreen() {
         />
       </View>
 
+      {/* Continuo: si el código no está en el catálogo, sigue abierto para probar otro. */}
       <Escaner
         visible={escaneando}
         continuo

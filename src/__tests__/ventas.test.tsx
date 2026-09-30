@@ -39,8 +39,18 @@ jest.mock('expo-camera', () => {
   const { Pressable, Text } = jest.requireActual('react-native');
   return {
     useCameraPermissions: () => [{ granted: true, canAskAgain: true }, jest.fn()],
-    CameraView: ({ onBarcodeScanned }: { onBarcodeScanned: (r: { data: string }) => void }) => (
-      <Pressable onPress={() => onBarcodeScanned({ data: mockCodigos.shift() ?? '' })}>
+    CameraView: ({
+      onBarcodeScanned,
+    }: {
+      onBarcodeScanned: (r: { type: string; data: string }) => void;
+    }) => (
+      <Pressable
+        onPress={() => {
+          // El escáner pide varias lecturas iguales seguidas antes de aceptar un código.
+          const data = mockCodigos.shift() ?? '';
+          for (let i = 0; i < 3; i++) onBarcodeScanned({ type: 'code128', data });
+        }}
+      >
         <Text>Simular lectura</Text>
       </Pressable>
     ),
@@ -105,16 +115,17 @@ async function entrarComo(nombre: string, pin: string) {
 it('vende escaneando, cobra en efectivo con vuelto y descuenta stock', async () => {
   await entrarComo('Carla', '5678');
 
-  // Dos lecturas seguidas del mismo código suman 2 unidades (se simula el paso del tiempo).
-  mockCodigos = ['780111'];
-  fireEvent.press(screen.getByLabelText('Escanear para vender'));
-  fireEvent.press(await screen.findByText('Simular lectura'));
-  await screen.findByText('✓ Cerveza lata');
-  jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 5000);
-  mockCodigos = ['780111'];
-  fireEvent.press(screen.getByText('Simular lectura'));
-  jest.restoreAllMocks();
-  fireEvent.press(screen.getByText('Listo'));
+  // Cada escaneo agrega el producto y vuelve a Vender; dos escaneos suman 2 unidades.
+  for (const cantidad of [1, 2]) {
+    // El escáner ignora el mismo código por un momento: se simula el paso del tiempo.
+    jest.spyOn(Date, 'now').mockReturnValue(Date.now() + cantidad * 5000);
+    mockCodigos = ['780111'];
+    fireEvent.press(screen.getByLabelText('Escanear para vender'));
+    fireEvent.press(await screen.findByText('Simular lectura'));
+    await waitFor(() => expect(useCarrito.getState().items[0]?.cantidad).toBe(cantidad));
+    expect(screen.queryByLabelText('Cerrar escáner')).toBeNull();
+    jest.restoreAllMocks();
+  }
 
   expect(await screen.findByText('$2.580')).toBeTruthy();
 
@@ -149,13 +160,13 @@ it('vende escaneando, cobra en efectivo con vuelto y descuenta stock', async () 
 it('un código que no está en el catálogo avisa sin agregar nada', async () => {
   await entrarComo('Carla', '5678');
 
-  mockCodigos = ['000'];
+  mockCodigos = ['00000'];
   fireEvent.press(screen.getByLabelText('Escanear para vender'));
   fireEvent.press(await screen.findByText('Simular lectura'));
-  expect(await screen.findByText('Código 000 no está en el catálogo')).toBeTruthy();
+  expect(await screen.findByText('Código 00000 no está en el catálogo')).toBeTruthy();
   fireEvent.press(screen.getByText('Listo'));
 
-  expect(await screen.findByText('El código 000 no está en el catálogo.')).toBeTruthy();
+  expect(await screen.findByText('El código 00000 no está en el catálogo.')).toBeTruthy();
   expect(useCarrito.getState().items).toEqual([]);
 });
 

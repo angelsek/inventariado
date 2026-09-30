@@ -12,7 +12,7 @@ import { versionActual } from '@/lib/version';
 import { cerrarSesion } from '@/sesion/cuenta';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
-import { colores } from '@/theme/colores';
+import { colores, radios } from '@/theme/colores';
 
 export default function MasScreen() {
   const db = useSQLiteContext();
@@ -209,8 +209,11 @@ function Opcion({
       onPress={onPress}
       style={({ pressed }) => [estilos.opcion, pressed && estilos.presionada]}
     >
-      <Ionicons name={icono} size={22} color={color} />
+      <View style={[estilos.iconoOpcion, peligro && estilos.iconoPeligro]}>
+        <Ionicons name={icono} size={22} color={peligro ? colores.error : colores.primario} />
+      </View>
       <Text style={[estilos.opcionTexto, { color }]}>{texto}</Text>
+      <Ionicons name="chevron-forward" size={20} color={colores.inactivo} />
     </Pressable>
   );
 }
@@ -219,19 +222,24 @@ const estilos = StyleSheet.create({
   pantalla: { flex: 1, backgroundColor: colores.fondo },
   contenido: { padding: 16 },
   tarjeta: {
-    borderRadius: 12,
+    borderRadius: radios.medio,
     borderWidth: 1,
     borderColor: colores.borde,
     backgroundColor: colores.superficie,
     overflow: 'hidden',
   },
-  negocio: { paddingHorizontal: 16, paddingTop: 16, fontSize: 18, fontWeight: '600' },
-  usuario: { paddingHorizontal: 16, paddingBottom: 16, color: colores.textoSecundario },
+  negocio: { paddingHorizontal: 16, paddingTop: 16, fontSize: 20, fontWeight: '700' },
+  usuario: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    fontSize: 15,
+    color: colores.textoSecundario,
+  },
   seccion: {
     marginTop: 24,
     marginBottom: 8,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     textTransform: 'uppercase',
     color: colores.textoSecundario,
   },
@@ -241,13 +249,24 @@ const estilos = StyleSheet.create({
   opcion: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 16,
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 64,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colores.borde,
   },
   presionada: { backgroundColor: colores.fondo },
-  opcionTexto: { fontSize: 16 },
+  opcionTexto: { flex: 1, fontSize: 17 },
+  iconoOpcion: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colores.primarioSuave,
+  },
+  iconoPeligro: { backgroundColor: colores.fondoError },
   version: { marginTop: 24, textAlign: 'center', color: colores.inactivo },
   nuevaVersion: { marginTop: 8, textAlign: 'center', fontSize: 15, color: colores.primario },
 });

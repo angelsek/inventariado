@@ -86,6 +86,7 @@ it('con negocio pide elegir usuario y PIN antes de entrar', async () => {
 
   marcarPin('5678');
   await waitFor(() => expect(useSesion.getState().perfil?.nombre).toBe('Carla'));
+  fireEvent.press(await screen.findByLabelText('Vender'));
   expect(await screen.findByText(/Escanea o busca productos/)).toBeTruthy();
 });
 

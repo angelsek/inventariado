@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
-import { colores } from '@/theme/colores';
+import { colores, radios } from '@/theme/colores';
 
 type Opcion<T> = { valor: T; etiqueta: string };
 
@@ -49,14 +49,15 @@ const estilos = StyleSheet.create({
   fila: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
   envolver: { flexWrap: 'wrap' },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    minHeight: 42,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    borderRadius: radios.pastilla,
     borderWidth: 1,
     borderColor: colores.borde,
     backgroundColor: colores.superficie,
   },
   chipActivo: { backgroundColor: colores.primario, borderColor: colores.primario },
-  texto: { fontSize: 15, color: colores.texto },
+  texto: { fontSize: 16, color: colores.texto },
   textoActivo: { color: colores.superficie, fontWeight: '600' },
 });

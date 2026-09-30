@@ -8,10 +8,10 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 RAIZ = Path(__file__).resolve().parent.parent
-AZUL = (21, 101, 192, 255)
-AZUL_OSCURO = (13, 71, 161, 255)
+VERDE = (31, 78, 69, 255)
+VERDE_OSCURO = (22, 58, 51, 255)
 BLANCO = (255, 255, 255, 255)
-CELESTE = (187, 222, 251, 255)
+VERDE_CLARO = (207, 224, 219, 255)
 TRANSPARENTE = (0, 0, 0, 0)
 ESCALA = 4  # se dibuja más grande y se reduce, para bordes suaves
 
@@ -63,11 +63,11 @@ def guardar(img: Image.Image, ruta: Path, tamano, sin_alfa=False):
 
 def icono_completo(lado: int, proporcion=0.56):
     """Fondo azul con el almacén en blanco (ícono clásico / Play Store)."""
-    img = lienzo(lado, lado, AZUL)
+    img = lienzo(lado, lado, VERDE)
     d = ImageDraw.Draw(img)
     a = lado * ESCALA * proporcion
     x = (lado * ESCALA - a) / 2
-    dibujar_almacen(d, x, x - a * 0.04, a, BLANCO, AZUL, CELESTE)
+    dibujar_almacen(d, x, x - a * 0.04, a, BLANCO, VERDE, VERDE_CLARO)
     return img
 
 
@@ -92,16 +92,16 @@ def fuente(tamano: int):
 def grafico_destacado():
     """Imagen destacada de Google Play (1024x500, sin transparencia)."""
     ancho, alto = 1024, 500
-    img = lienzo(ancho, alto, AZUL)
+    img = lienzo(ancho, alto, VERDE)
     d = ImageDraw.Draw(img)
     a = alto * ESCALA * 0.5
-    dibujar_almacen(d, 90 * ESCALA, (alto * ESCALA - a) / 2, a, BLANCO, AZUL, CELESTE)
+    dibujar_almacen(d, 90 * ESCALA, (alto * ESCALA - a) / 2, a, BLANCO, VERDE, VERDE_CLARO)
     d.text((400 * ESCALA, 170 * ESCALA), 'Stockeao', font=fuente(72 * ESCALA), fill=BLANCO)
     d.text(
         (404 * ESCALA, 268 * ESCALA),
         'Ventas, stock y caja para\ntu negocio de barrio',
         font=fuente(32 * ESCALA),
-        fill=CELESTE,
+        fill=VERDE_CLARO,
         spacing=10 * ESCALA,
     )
     return img
@@ -112,10 +112,10 @@ if __name__ == '__main__':
     play = RAIZ / 'docs' / 'play-store'
     guardar(icono_completo(1024), assets / 'icon.png', (1024, 1024), sin_alfa=True)
     # Ícono adaptable de Android: el sistema recorta el centro (~66 %).
-    guardar(glifo(1024, 0.46, BLANCO, AZUL, CELESTE), assets / 'android-icon-foreground.png', (512, 512))
-    guardar(lienzo(512, 512, AZUL), assets / 'android-icon-background.png', (512, 512))
+    guardar(glifo(1024, 0.46, BLANCO, VERDE, VERDE_CLARO), assets / 'android-icon-foreground.png', (512, 512))
+    guardar(lienzo(512, 512, VERDE), assets / 'android-icon-background.png', (512, 512))
     guardar(glifo(1024, 0.46, BLANCO, TRANSPARENTE, BLANCO), assets / 'android-icon-monochrome.png', (432, 432))
-    guardar(glifo(1024, 0.8, AZUL, BLANCO, CELESTE), assets / 'splash-icon.png', (1024, 1024))
+    guardar(glifo(1024, 0.8, VERDE, BLANCO, VERDE_CLARO), assets / 'splash-icon.png', (1024, 1024))
     guardar(icono_completo(256), assets / 'favicon.png', (48, 48))
     guardar(icono_completo(512), play / 'icono-512.png', (512, 512), sin_alfa=True)
     guardar(grafico_destacado(), play / 'grafico-destacado-1024x500.png', (1024, 500), sin_alfa=True)

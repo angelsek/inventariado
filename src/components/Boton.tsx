@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 
-import { colores } from '@/theme/colores';
+import { colores, radios } from '@/theme/colores';
 
 type Props = {
   titulo: string;
@@ -43,19 +43,19 @@ export function Boton({ titulo, onPress, variante = 'primario', cargando, deshab
 
 const estilos = StyleSheet.create({
   base: {
-    minHeight: 50,
-    borderRadius: 10,
+    minHeight: 56,
+    borderRadius: radios.pastilla,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
   primario: { backgroundColor: colores.primario },
   secundario: {
     backgroundColor: colores.superficie,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colores.primario,
   },
   peligro: { borderColor: colores.error },
   presionado: { opacity: 0.6 },
-  texto: { fontSize: 16, fontWeight: '600' },
+  texto: { fontSize: 17, fontWeight: '600' },
 });

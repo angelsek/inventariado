@@ -12,7 +12,7 @@
       "package": "cl.stockeao.app",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#1565C0",
+        "backgroundColor": "#1F4E45",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

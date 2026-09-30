@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 
-import { colores } from '@/theme/colores';
+import { colores, radios } from '@/theme/colores';
 
 type Props = TextInputProps & {
   etiqueta: string;
@@ -29,18 +29,18 @@ export function Campo({ etiqueta, error, ayuda, style, ...props }: Props) {
 
 const estilos = StyleSheet.create({
   contenedor: { marginBottom: 16 },
-  etiqueta: { marginBottom: 6, fontSize: 14, fontWeight: '500', color: colores.texto },
+  etiqueta: { marginBottom: 6, fontSize: 15, fontWeight: '600', color: colores.texto },
   entrada: {
-    minHeight: 48,
+    minHeight: 54,
     borderWidth: 1,
     borderColor: colores.borde,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    fontSize: 16,
+    borderRadius: radios.chico,
+    paddingHorizontal: 14,
+    fontSize: 17,
     color: colores.texto,
     backgroundColor: colores.superficie,
   },
   entradaError: { borderColor: colores.error },
-  error: { marginTop: 4, fontSize: 13, color: colores.error },
-  ayuda: { marginTop: 4, fontSize: 13, color: colores.textoSecundario },
+  error: { marginTop: 4, fontSize: 14, color: colores.error },
+  ayuda: { marginTop: 4, fontSize: 14, color: colores.textoSecundario },
 });

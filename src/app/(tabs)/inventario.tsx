@@ -21,7 +21,7 @@ import { buscarPorCodigo, listarProductos, type Producto } from '@/db/productos'
 import { formatearCLP } from '@/lib/formato';
 import { formatearCantidad } from '@/lib/numeros';
 import { useSesion } from '@/sesion/store';
-import { colores } from '@/theme/colores';
+import { colores, radios } from '@/theme/colores';
 
 export default function InventarioScreen() {
   const db = useSQLiteContext();
@@ -171,11 +171,20 @@ export default function InventarioScreen() {
   );
 }
 
+// Color de fondo del círculo con la inicial, según el nombre (siempre el mismo por producto).
+const TONOS = ['#E6EFEC', '#E8F0FB', '#FFF3E0', '#F3E8FA', '#FDECEA', '#EAF6E9'];
+const tono = (texto: string) =>
+  TONOS[[...texto].reduce((suma, letra) => suma + letra.charCodeAt(0), 0) % TONOS.length];
+
 function FilaProducto({ producto }: { producto: Producto }) {
   const sinStock = producto.stock <= 0;
   const stockBajo = !sinStock && producto.stockMinimo > 0 && producto.stock <= producto.stockMinimo;
-  const colorStock = sinStock ? colores.error : stockBajo ? colores.aviso : colores.textoSecundario;
   const unidad = producto.unidad === 'kg' ? ' kg' : '';
+  const insignia = sinStock
+    ? { fondo: colores.fondoError, texto: colores.error }
+    : stockBajo
+      ? { fondo: colores.fondoAviso, texto: colores.aviso }
+      : { fondo: colores.fondoExito, texto: colores.exito };
 
   return (
     <Pressable
@@ -183,6 +192,9 @@ function FilaProducto({ producto }: { producto: Producto }) {
       onPress={() => router.push(`/producto/${producto.id}`)}
       style={({ pressed }) => [estilos.fila, pressed && estilos.presionada]}
     >
+      <View style={[estilos.inicial, { backgroundColor: tono(producto.nombre) }]}>
+        <Text style={estilos.textoInicial}>{producto.nombre.trim().charAt(0).toUpperCase()}</Text>
+      </View>
       <View style={estilos.datos}>
         <Text style={[estilos.nombre, !producto.activo && estilos.inactivo]} numberOfLines={2}>
           {producto.nombre}
@@ -194,9 +206,11 @@ function FilaProducto({ producto }: { producto: Producto }) {
       </View>
       <View style={estilos.derecha}>
         <Text style={estilos.precio}>{formatearCLP(producto.precioVenta)}</Text>
-        <Text style={[estilos.stock, { color: colorStock }]}>
-          {sinStock ? 'Sin stock' : `Stock: ${formatearCantidad(producto.stock)}${unidad}`}
-        </Text>
+        <View style={[estilos.insignia, { backgroundColor: insignia.fondo }]}>
+          <Text style={[estilos.stock, { color: insignia.texto }]}>
+            {sinStock ? 'Sin stock' : `Stock: ${formatearCantidad(producto.stock)}${unidad}`}
+          </Text>
+        </View>
       </View>
     </Pressable>
   );
@@ -227,44 +241,62 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    paddingHorizontal: 14,
+    borderRadius: radios.pastilla,
     borderWidth: 1,
     borderColor: colores.borde,
     backgroundColor: colores.superficie,
   },
-  entrada: { flex: 1, minHeight: 46, fontSize: 16, color: colores.texto },
+  entrada: { flex: 1, minHeight: 50, fontSize: 17, color: colores.texto },
   botonIcono: {
-    width: 48,
-    borderRadius: 10,
+    width: 52,
+    borderRadius: radios.pastilla,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colores.primario,
   },
   categorias: { paddingHorizontal: 12 },
   accionesScroll: { flexGrow: 0 },
-  acciones: { flexDirection: 'row', gap: 18, paddingHorizontal: 16, paddingVertical: 6 },
-  accion: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 },
-  textoAccion: { fontSize: 15, color: colores.primario },
+  acciones: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingVertical: 8 },
+  accion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radios.pastilla,
+    backgroundColor: colores.primarioSuave,
+  },
+  textoAccion: { fontSize: 15, fontWeight: '600', color: colores.primario },
   lista: { padding: 12, paddingTop: 4, flexGrow: 1 },
   fila: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    marginBottom: 8,
-    borderRadius: 12,
+    marginBottom: 10,
+    borderRadius: radios.medio,
     borderWidth: 1,
     borderColor: colores.borde,
     backgroundColor: colores.superficie,
   },
   presionada: { opacity: 0.6 },
   datos: { flex: 1, paddingRight: 8 },
-  nombre: { fontSize: 16, fontWeight: '600', color: colores.texto },
+  inicial: {
+    width: 48,
+    height: 48,
+    marginRight: 12,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textoInicial: { fontSize: 20, fontWeight: '700', color: colores.primario },
+  nombre: { fontSize: 17, fontWeight: '600', color: colores.texto },
   inactivo: { color: colores.inactivo },
-  detalle: { marginTop: 2, fontSize: 13, color: colores.textoSecundario },
-  derecha: { alignItems: 'flex-end' },
-  precio: { fontSize: 17, fontWeight: '700', color: colores.texto },
-  stock: { marginTop: 2, fontSize: 13 },
+  detalle: { marginTop: 2, fontSize: 14, color: colores.textoSecundario },
+  derecha: { alignItems: 'flex-end', gap: 4 },
+  precio: { fontSize: 18, fontWeight: '700', color: colores.texto },
+  insignia: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: radios.pastilla },
+  stock: { fontSize: 13, fontWeight: '600' },
   vacio: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
   textoVacio: { fontSize: 16, color: colores.textoSecundario },
   botonesVacio: { alignSelf: 'stretch', gap: 10, marginTop: 8 },

@@ -92,6 +92,7 @@ async function entrar() {
   renderRouter('src/app');
   fireEvent.press(await screen.findByText('Ana'));
   for (const digito of '1234') fireEvent.press(screen.getByLabelText(digito));
+  fireEvent.press(await screen.findByLabelText('Vender'));
   await screen.findByText(/Escanea o busca productos/);
 }
 

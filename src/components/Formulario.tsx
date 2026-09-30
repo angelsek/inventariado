@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colores } from '@/theme/colores';
+import { colores, radios } from '@/theme/colores';
 
 type Props = {
   titulo: string;
@@ -36,12 +36,12 @@ const estilos = StyleSheet.create({
   contenido: { padding: 20, paddingBottom: 40 },
   cuerpo: { marginTop: 24 },
   titulo: { fontSize: 26, fontWeight: '700', color: colores.texto },
-  subtitulo: { marginTop: 6, fontSize: 15, color: colores.textoSecundario },
+  subtitulo: { marginTop: 6, fontSize: 16, lineHeight: 22, color: colores.textoSecundario },
   error: {
     marginTop: 16,
-    padding: 12,
-    borderRadius: 10,
+    padding: 14,
+    borderRadius: radios.chico,
     backgroundColor: colores.fondoError,
   },
-  textoError: { fontSize: 14, color: colores.error },
+  textoError: { fontSize: 15, color: colores.error },
 });

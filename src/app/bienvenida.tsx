@@ -13,9 +13,14 @@ export default function BienvenidaScreen() {
   return (
     <SafeAreaView style={estilos.pantalla}>
       <View style={estilos.encabezado}>
-        <Ionicons name="storefront-outline" size={72} color={colores.primario} />
+        <View style={estilos.logo}>
+          <Ionicons name="storefront" size={56} color={colores.primario} />
+        </View>
         <Text style={estilos.titulo}>Stockeao</Text>
-        <Text style={estilos.subtitulo}>Inventario y ventas para tu almacén o botillería</Text>
+        <Text style={estilos.subtitulo}>Tus ventas y tu stock, siempre en orden.</Text>
+        <Text style={estilos.detalle}>
+          Para almacenes, botillerías, kioskos, bazares y todo negocio de barrio.
+        </Text>
       </View>
 
       {avisoSalida ? <Text style={estilos.aviso}>{avisoSalida}</Text> : null}
@@ -45,12 +50,28 @@ export default function BienvenidaScreen() {
 }
 
 const estilos = StyleSheet.create({
-  pantalla: { flex: 1, padding: 24, backgroundColor: colores.fondo },
+  pantalla: { flex: 1, padding: 24, backgroundColor: colores.superficie },
   encabezado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  titulo: { marginTop: 16, fontSize: 32, fontWeight: '700', color: colores.texto },
+  logo: {
+    width: 104,
+    height: 104,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colores.primarioSuave,
+  },
+  titulo: { marginTop: 20, fontSize: 36, fontWeight: '700', color: colores.texto },
   subtitulo: {
     marginTop: 8,
+    fontSize: 18,
+    textAlign: 'center',
+    color: colores.texto,
+  },
+  detalle: {
+    marginTop: 24,
+    marginHorizontal: 16,
     fontSize: 16,
+    lineHeight: 23,
     textAlign: 'center',
     color: colores.textoSecundario,
   },

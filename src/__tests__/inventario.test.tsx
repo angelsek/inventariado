@@ -108,6 +108,7 @@ async function entrar() {
   renderRouter('src/app');
   fireEvent.press(await screen.findByText('Ana'));
   for (const digito of '1234') fireEvent.press(screen.getByLabelText(digito));
+  fireEvent.press(await screen.findByLabelText('Vender'));
   await screen.findByText(/Escanea o busca productos/);
 }
 
@@ -151,7 +152,7 @@ it('abrir caja, vender en efectivo, retirar y cerrar con diferencia', async () =
 
 it('ingreso de mercadería con proveedor nuevo suma stock y actualiza costo', async () => {
   await entrar();
-  fireEvent.press(screen.getByText('Inventario'));
+  fireEvent.press(screen.getByText('Productos'));
   fireEvent.press(await screen.findByText('Ingreso'));
 
   fireEvent.press(await screen.findByText('+ Nuevo proveedor'));
@@ -175,7 +176,7 @@ it('ingreso de mercadería con proveedor nuevo suma stock y actualiza costo', as
 
 it('ajuste de stock con motivo aparece en el historial del producto', async () => {
   await entrar();
-  fireEvent.press(screen.getByText('Inventario'));
+  fireEvent.press(screen.getByText('Productos'));
   fireEvent.press(await screen.findByText('Cerveza lata'));
   fireEvent.press(await screen.findByText('Ajustar stock'));
   fireEvent.changeText(await screen.findByLabelText('¿Cuánto hay realmente?'), '7');
@@ -193,7 +194,7 @@ it('conteo: escanear suma unidades y al aplicar el stock queda igual a lo contad
     botones?.find((b) => b.text === 'Aplicar')?.onPress?.();
   });
   await entrar();
-  fireEvent.press(screen.getByText('Inventario'));
+  fireEvent.press(screen.getByText('Productos'));
   fireEvent.press(await screen.findByText('Conteo'));
 
   mockCodigos = ['780111', '780111'];
@@ -213,7 +214,7 @@ it('conteo: escanear suma unidades y al aplicar el stock queda igual a lo contad
 
 it('reponer lista los productos bajo el mínimo', async () => {
   await entrar();
-  fireEvent.press(screen.getByText('Inventario'));
+  fireEvent.press(screen.getByText('Productos'));
   fireEvent.press(await screen.findByText('Reponer'));
   expect(await screen.findByText('Quedan 10')).toBeTruthy();
   expect(screen.getByText('Mínimo 12')).toBeTruthy();
@@ -259,11 +260,27 @@ it('reportes del negocio: ventas de hoy, productos e inventario', async () => {
   expect(screen.getByText('$1.470')).toBeTruthy();
   expect(screen.getByText('Débito')).toBeTruthy();
 
-  fireEvent.press(screen.getByText('Productos'));
+  // La pestaña de abajo también dice "Productos": se toca el selector del reporte (el último).
+  fireEvent.press(screen.getAllByText('Productos').at(-1)!);
   expect(await screen.findByText('3 u. · ganancia $1.470')).toBeTruthy();
 
   fireEvent.press(screen.getByText('Inventario'));
   // 7 cervezas en bodega a $800.
   expect(await screen.findByText('$5.600')).toBeTruthy();
   expect(screen.getByText('38 %')).toBeTruthy();
+});
+
+it('inicio: saludo, resumen del día y atajos grandes', async () => {
+  renderRouter('src/app');
+  fireEvent.press(await screen.findByText('Ana'));
+  for (const digito of '1234') fireEvent.press(screen.getByLabelText(digito));
+
+  expect(await screen.findByText('Hola, Ana')).toBeTruthy();
+  expect(await screen.findByText('Botillería Ana')).toBeTruthy();
+  expect(screen.getByText('La caja está cerrada. Toca aquí para abrirla.')).toBeTruthy();
+  // La cerveza (10) está bajo su mínimo (12).
+  await waitFor(() => expect(screen.getByLabelText('Stock bajo 1')).toBeTruthy());
+
+  fireEvent.press(screen.getByText('Por reponer'));
+  expect(await screen.findByText('Quedan 10')).toBeTruthy();
 });

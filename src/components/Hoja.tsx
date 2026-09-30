@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colores } from '@/theme/colores';
+import { colores, radios } from '@/theme/colores';
 
 type Props = {
   visible: boolean;
@@ -31,9 +31,9 @@ const estilos = StyleSheet.create({
   hoja: {
     padding: 20,
     paddingBottom: 32,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: radios.grande,
+    borderTopRightRadius: radios.grande,
     backgroundColor: colores.fondo,
   },
-  titulo: { marginBottom: 16, fontSize: 20, fontWeight: '700', color: colores.texto },
+  titulo: { marginBottom: 16, fontSize: 22, fontWeight: '700', color: colores.texto },
 });

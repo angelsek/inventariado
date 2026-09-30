@@ -83,7 +83,7 @@ async function entrarComo(nombre: string, pin: string) {
   renderRouter('src/app');
   fireEvent.press(await screen.findByText(nombre));
   for (const digito of pin) fireEvent.press(screen.getByLabelText(digito));
-  fireEvent.press(await screen.findByText('Inventario'));
+  fireEvent.press(await screen.findByText('Productos'));
 }
 
 beforeEach(async () => {

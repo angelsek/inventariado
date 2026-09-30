@@ -7,6 +7,7 @@ import { migrarBaseDeDatos } from '@/db/migraciones';
 import { crearPerfil } from '@/db/perfiles';
 import { crearProducto, obtenerProducto } from '@/db/productos';
 import type { BaseLocal } from '@/db/tipos';
+import { registrarVenta } from '@/db/ventas';
 import { useConteo } from '@/features/inventario/conteo';
 import { useCarrito } from '@/features/ventas/carrito';
 import { useSesion } from '@/sesion/store';
@@ -222,4 +223,47 @@ it('reponer lista los productos bajo el mínimo', async () => {
       message: expect.stringContaining('Cerveza lata: quedan 10'),
     }),
   );
+});
+
+it('reportes del negocio: ventas de hoy, productos e inventario', async () => {
+  const cerveza = (await obtenerProducto(mockDb, cervezaId))!;
+  await registrarVenta(mockDb, {
+    negocioId: NEGOCIO,
+    items: [
+      {
+        clave: cerveza.id,
+        productoId: cerveza.id,
+        nombre: cerveza.nombre,
+        unidad: cerveza.unidad,
+        cantidad: 3,
+        precioUnitario: cerveza.precioVenta,
+        costoUnitario: cerveza.costo,
+        descuento: 0,
+        stock: cerveza.stock,
+      },
+    ],
+    descuentoGeneral: 0,
+    pagos: [{ medio: 'debito', monto: 3870 }],
+    efectivoRecibido: null,
+    vuelto: null,
+    autor: AUTOR,
+  });
+
+  await entrar();
+  fireEvent.press(screen.getByText('Más'));
+  fireEvent.press(await screen.findByText('Reportes del negocio'));
+
+  expect(await screen.findByText('Hoy')).toBeTruthy();
+  expect(await screen.findAllByText('$3.870')).not.toHaveLength(0);
+  // Ganancia: 3 × (1.290 − 800).
+  expect(screen.getByText('$1.470')).toBeTruthy();
+  expect(screen.getByText('Débito')).toBeTruthy();
+
+  fireEvent.press(screen.getByText('Productos'));
+  expect(await screen.findByText('3 u. · ganancia $1.470')).toBeTruthy();
+
+  fireEvent.press(screen.getByText('Inventario'));
+  // 7 cervezas en bodega a $800.
+  expect(await screen.findByText('$5.600')).toBeTruthy();
+  expect(screen.getByText('38 %')).toBeTruthy();
 });

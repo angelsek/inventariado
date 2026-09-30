@@ -129,6 +129,7 @@ function Navegacion() {
         <Stack.Screen name="suscripcion" options={conEncabezado('Suscripción')} />
         <Stack.Screen name="admin" options={conEncabezado('Administración')} />
         <Stack.Screen name="reportes" options={conEncabezado('Reportes')} />
+        <Stack.Screen name="estadisticas" options={conEncabezado('Reportes del negocio')} />
         <Stack.Screen name="exportar" options={conEncabezado('Exportar datos')} />
         <Stack.Screen name="comentario" options={conEncabezado('Enviar comentario')} />
         <Stack.Screen name="eliminar-cuenta" options={conEncabezado('Eliminar cuenta')} />

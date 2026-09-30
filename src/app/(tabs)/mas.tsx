@@ -60,6 +60,16 @@ export default function MasScreen() {
         </Text>
       </View>
 
+      {esDueno ? (
+        <View style={[estilos.tarjeta, { marginTop: 12 }]}>
+          <Opcion
+            icono="bar-chart-outline"
+            texto="Reportes del negocio"
+            onPress={() => router.push('/estadisticas')}
+          />
+        </View>
+      ) : null}
+
       <Text style={estilos.seccion}>Sincronización</Text>
       <View style={estilos.tarjeta}>
         <EstadoSync />

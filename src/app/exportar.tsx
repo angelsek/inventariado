@@ -1,11 +1,10 @@
-import { File, Paths } from 'expo-file-system';
-import { shareAsync } from 'expo-sharing';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Formulario } from '@/components/Formulario';
+import { compartirArchivo } from '@/features/exportar/compartir';
 import { csvProductos, csvVentas, respaldoJson } from '@/features/exportar/exportar';
 import { informarError } from '@/lib/errores';
 import { useSesion } from '@/sesion/store';
@@ -32,11 +31,7 @@ export default function ExportarScreen() {
     setTrabajando(clave);
     setError(null);
     try {
-      const archivo = new File(Paths.cache, nombre);
-      if (archivo.exists) archivo.delete();
-      archivo.create();
-      archivo.write(await generar());
-      await shareAsync(archivo.uri, { mimeType: tipo, dialogTitle: nombre });
+      await compartirArchivo(nombre, tipo, await generar());
     } catch (e) {
       setError('No se pudo exportar. Inténtalo de nuevo.');
       informarError(e, 'Exportar');

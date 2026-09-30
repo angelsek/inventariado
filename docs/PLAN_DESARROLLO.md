@@ -196,7 +196,7 @@ compartido) y negocio creado desde el teléfono.
 - **Respaldo semanal** de la base de datos con GitHub Actions (pg_dump, 90 días).
 - Pendiente del dueño del proyecto: crear la clave de firma, los secretos y elegir los locales.
 
-**Estado:** ✅ código completado (SQL ejecutado). Falta crear la clave de firma y los secretos.
+**Estado:** ✅ completada (SQL ejecutado, clave de firma y secretos creados).
 
 ## Fase 7 — Reportes
 
@@ -205,6 +205,20 @@ compartido) y negocio creado desde el teléfono.
 - Productos más y menos vendidos; productos sin movimiento.
 - Margen por producto y valorización del inventario.
 - Exportar a Excel/PDF.
+
+**Estado:** ✅ completada. Más → Reportes del negocio (solo dueño), calculado en el teléfono
+con los datos sincronizados de todos los teléfonos (funciona sin internet, sin SQL nuevo):
+
+- **Ventas:** día / semana / mes con flechas para ir a períodos anteriores. Total, número de
+  ventas, ticket promedio, ganancia y margen; comparación con el período anterior (si el período
+  está en curso, contra el mismo tramo: hoy hasta esta hora vs. ayer hasta la misma hora).
+  Barras por día, por hora (hora de más venta), medio de pago, cajero y categoría. Aviso de
+  productos vendidos sin costo (la ganancia real es menor), descuentos y anuladas.
+- **Productos:** 10 más vendidos (con ganancia), menos vendidos y productos con stock sin ventas
+  en el período (con su valor a costo).
+- **Inventario:** valor de la mercadería a costo y a precio de venta, ganancia posible, avisos de
+  productos sin costo o con stock negativo, y margen por producto (primero los más bajos).
+- **Exportar a Excel:** el reporte del período en CSV. (PDF queda para más adelante.)
 
 ## Fase 8 — Funciones del rubro
 

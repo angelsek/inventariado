@@ -1,11 +1,14 @@
 # Stockeao
 
-App móvil (Android) de inventario y punto de venta para pequeños almacenes y botillerías.
+App móvil (Android) de inventario y punto de venta para negocios de barrio: almacenes,
+botillerías, kioskos y bazares.
 
 - [Plan de desarrollo por fases](docs/PLAN_DESARROLLO.md)
 - [Configurar Supabase](docs/SUPABASE.md) (servidor: cuentas y sincronización)
 - [Piloto con locales reales](docs/PILOTO.md) (firma, publicar versiones, respaldos)
 - [Publicar en Google Play](docs/PLAY_STORE.md) (ficha, formularios y App Bundle)
+- [Cobro con Google Play](docs/COBRO_GOOGLE_PLAY.md) (suscripción con 14 días gratis)
+- [Trabajar en tu computador](docs/TRABAJAR_EN_MI_EQUIPO.md) · [Estado actual](docs/ESTADO_ACTUAL.md)
 
 ## Tecnología
 
@@ -17,7 +20,7 @@ entre teléfonos. Ver el plan para el detalle.
 ```
 src/
   app/          Pantallas (cada archivo es una ruta de Expo Router)
-    (tabs)/     Pestañas: Vender, Inventario, Caja, Más
+    (tabs)/     Pestañas: Inicio, Productos, Vender, Caja, Más
   components/   Componentes reutilizables
   db/           Base de datos local, migraciones y consultas
   features/     Piezas de pantallas agrupadas por función
@@ -36,7 +39,8 @@ Requisitos: Node.js 22.
 
 ```bash
 npm install
-npm start          # abre el servidor de desarrollo; escanear el QR con Expo Go en Android
+npm start          # servidor de desarrollo (requiere un build de desarrollo: Expo Go no sirve
+                   # porque la app usa módulos nativos; lo normal es probar con el APK de Actions)
 npm run check      # lint + formato + tipos + pruebas
 ./scripts/probar-sql.sh   # pruebas de la base del servidor (requiere Postgres)
 ```

@@ -16,7 +16,15 @@ winget install OpenJS.NodeJS.LTS
 winget install GitHub.cli
 ```
 
-Cierra y vuelve a abrir PowerShell. Luego instala Claude Code:
+Cierra y vuelve a abrir PowerShell (normal, **sin** "Ejecutar como administrador"). Permite que
+PowerShell ejecute scripts como `npm` (una sola vez; si pregunta, responde **S**):
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+Sin esto aparece el error _"No se puede cargar el archivo ...\npm.ps1 porque la ejecución de
+scripts está deshabilitada en este sistema"_. Luego instala Claude Code:
 
 ```powershell
 npm install -g @anthropic-ai/claude-code

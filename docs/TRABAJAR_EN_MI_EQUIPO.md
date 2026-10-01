@@ -43,6 +43,10 @@ git checkout claude/fervent-franklin-regzl4
 npm ci
 ```
 
+(El repositorio fija los saltos de línea en formato Linux con `.gitattributes`. Si alguna vez
+`npm run check` marca "Code style issues" en casi todos los archivos, es eso: ejecuta
+`git rm -r --cached -q .` y luego `git reset --hard`, sin cambios pendientes.)
+
 Comprueba que todo funciona:
 
 ```powershell

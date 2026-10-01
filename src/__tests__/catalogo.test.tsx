@@ -133,7 +133,7 @@ it('no permite dos productos con el mismo código de barras', async () => {
   );
   await entrarComo('Ana', '1234');
 
-  fireEvent.press(await screen.findByText('Nuevo'));
+  fireEvent.press(await screen.findByText('Nuevo producto'));
   fireEvent.changeText(await screen.findByLabelText('Nombre'), 'Otro');
   fireEvent.changeText(screen.getByLabelText('Código de barras (opcional)'), '111');
   fireEvent.press(screen.getByText('Guardar'));
@@ -196,7 +196,7 @@ it('el cajero ve el producto sin costo y sin poder editar ni crear', async () =>
   );
   await entrarComo('Carla', '5678');
 
-  expect(screen.queryByText('Nuevo')).toBeNull();
+  expect(screen.queryByText('Nuevo producto')).toBeNull();
   expect(screen.queryByText('Importar')).toBeNull();
   fireEvent.press(await screen.findByText('Pisco 35°'));
 
@@ -223,7 +223,7 @@ it('el dueño crea un six-pack con promoción y envase', async () => {
   );
   await entrarComo('Ana', '1234');
 
-  fireEvent.press(await screen.findByText('Nuevo'));
+  fireEvent.press(await screen.findByText('Nuevo producto'));
   fireEvent.changeText(await screen.findByLabelText('Nombre'), 'Six pack');
   fireEvent.changeText(screen.getByLabelText('Precio de venta'), '5500');
   fireEvent.press(screen.getByText('Elegir el producto que contiene'));

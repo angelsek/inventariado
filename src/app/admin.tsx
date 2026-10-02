@@ -28,7 +28,7 @@ type NegocioAdmin = {
   dispositivos: number;
   ultimo_sync: string | null;
 };
-type Plan = { id: string; nombre: string; precio_mensual: number };
+type Plan = { id: string; nombre: string; precio_mensual: number; precio_anual: number | null };
 
 const COLOR_ESTADO: Record<Estado, string> = {
   prueba: colores.primario,
@@ -54,7 +54,8 @@ export default function AdminScreen() {
   const obtener = useCallback(async () => {
     const [n, p] = await Promise.all([
       supabase.rpc('admin_listar_negocios'),
-      supabase.from('planes').select('id, nombre, precio_mensual').order('orden'),
+      // '*': precio_anual existe recién desde la migración de pago anual.
+      supabase.from('planes').select('*').order('orden'),
     ]);
     const fallo = n.error ?? p.error;
     return fallo
@@ -178,8 +179,11 @@ function HojaNegocio({
 
   if (!negocio) return null;
 
-  const precio = planes.find((p) => p.id === planId)?.precio_mensual ?? 0;
-  const montoFinal = monto ? (parsearMonto(monto) ?? 0) : precio * meses;
+  const plan = planes.find((p) => p.id === planId);
+  // 12 meses = pago anual (12 por el precio de 10), si el plan lo ofrece.
+  const sugerido =
+    meses === 12 && plan?.precio_anual ? plan.precio_anual : (plan?.precio_mensual ?? 0) * meses;
+  const montoFinal = monto ? (parsearMonto(monto) ?? 0) : sugerido;
 
   const ejecutar = async (accion: () => PromiseLike<{ error: unknown }>, exito: string) => {
     setTrabajando(true);
@@ -227,7 +231,7 @@ function HojaNegocio({
         <Selector
           opciones={[1, 3, 6, 12].map((m) => ({
             valor: m,
-            etiqueta: m === 1 ? '1 mes' : `${m} meses`,
+            etiqueta: m === 1 ? '1 mes' : m === 12 ? '1 año' : `${m} meses`,
           }))}
           valor={meses}
           onCambio={setMeses}
@@ -235,9 +239,9 @@ function HojaNegocio({
       </View>
       <View style={estilos.espacio}>
         <Campo
-          etiqueta={`Monto (sugerido ${formatearCLP(precio * meses)})`}
+          etiqueta={`Monto (sugerido ${formatearCLP(sugerido)})`}
           keyboardType="number-pad"
-          placeholder={formatearCLP(precio * meses)}
+          placeholder={formatearCLP(sugerido)}
           value={monto}
           onChangeText={(v) => setMonto(v.replace(/\D/g, ''))}
         />

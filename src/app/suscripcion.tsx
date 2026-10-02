@@ -20,6 +20,8 @@ type Plan = {
   id: string;
   nombre: string;
   precio_mensual: number;
+  /** Pago anual (12 meses por el precio de 10); null si el plan no lo ofrece. */
+  precio_anual: number | null;
   max_dispositivos: number;
   reportes_avanzados: boolean;
 };
@@ -188,6 +190,11 @@ export default function SuscripcionScreen() {
                 Hasta {p.max_dispositivos} teléfonos
                 {p.reportes_avanzados ? ' · reportes avanzados' : ''}
               </Text>
+              {p.precio_anual ? (
+                <Text style={estilos.anual}>
+                  o {formatearCLP(p.precio_anual)} al año (2 meses gratis)
+                </Text>
+              ) : null}
             </View>
           ))}
         </>
@@ -284,6 +291,7 @@ const estilos = StyleSheet.create({
   nombre: { fontSize: 15, fontWeight: '600', color: colores.texto },
   nota: { marginTop: 4, fontSize: 14, color: colores.textoSecundario },
   aviso: { marginTop: 8, fontSize: 14, color: colores.aviso },
+  anual: { marginTop: 4, fontSize: 14, fontWeight: '600', color: colores.primario },
   peligro: { fontSize: 14, color: colores.error },
   seccion: {
     marginTop: 12,

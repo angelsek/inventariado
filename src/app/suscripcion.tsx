@@ -117,7 +117,9 @@ export default function SuscripcionScreen() {
   const avisarPago = async () => {
     const negocio = negocioId ? await obtenerNegocio(db, negocioId) : null;
     const texto = encodeURIComponent(
-      `Hola, quiero pagar la suscripción de Stockeao para "${negocio?.nombre ?? ''}".`,
+      CONTACTO.datosTransferencia
+        ? `Hola, pagué la suscripción de Stockeao para "${negocio?.nombre ?? ''}".`
+        : `Hola, quiero pagar la suscripción de Stockeao para "${negocio?.nombre ?? ''}". ¿Me envías los datos para transferir?`,
     );
     const numero = CONTACTO.whatsapp.replace(/\D/g, '');
     Linking.openURL(
@@ -205,11 +207,15 @@ export default function SuscripcionScreen() {
           <Text style={estilos.plan}>¿Cómo pagar?</Text>
           <Text style={estilos.nota}>
             {CONTACTO.datosTransferencia ||
-              'Transfiere el valor del plan y avísanos. Activamos tu suscripción apenas recibamos el pago.'}
+              'Escríbenos por WhatsApp y te enviamos los datos para pagar. Activamos tu suscripción apenas recibamos el pago.'}
           </Text>
           {CONTACTO.whatsapp || CONTACTO.correo ? (
             <View style={estilos.boton}>
-              <Boton titulo="Avisar que pagué" variante="secundario" onPress={avisarPago} />
+              {/* Sin datos de transferencia en la app: el dueño de Stockeao los entrega por WhatsApp. */}
+              <Boton
+                titulo={CONTACTO.datosTransferencia ? 'Avisar que pagué' : 'Escribir por WhatsApp'}
+                onPress={avisarPago}
+              />
             </View>
           ) : null}
         </View>

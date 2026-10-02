@@ -134,4 +134,6 @@ En GitHub (Settings → Secrets and variables → Actions → Variables) puedes 
 | `CONTACTO_CORREO`     | `contacto@tu-dominio.cl`                         |
 | `DATOS_TRANSFERENCIA` | `Banco X, cuenta vista 123456, RUT 11.111.111-1` |
 
-Aparecen en la pantalla Suscripción de tus clientes, con un botón "Avisar que pagué".
+Aparecen en la pantalla Suscripción de tus clientes. Sin `DATOS_TRANSFERENCIA` (lo que se usa
+hoy), la pantalla pide escribir por WhatsApp y los datos para pagar se entregan en el chat; con
+ella, muestra los datos y un botón "Avisar que pagué".

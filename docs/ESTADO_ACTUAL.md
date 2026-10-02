@@ -31,7 +31,8 @@ Play Store). El cobro con Google Play queda programado pero en pausa (`docs/COBR
 - Publicar versión: Actions → **Construir APK** → Run workflow → marcar **Publicar**. Queda como
   Release de GitHub (el APK pesa ~70 MB; Supabase gratis acepta 50 MB) y las apps muestran
   "Hay una versión nueva → Actualizar", que descarga e instala con un toque.
-- El cliente avisa el pago con "Avisar que pagué" (WhatsApp) y se registra en Más →
+- El cliente toca "Escribir por WhatsApp", se le dan los datos para transferir en el chat (no van
+  en la app) y el pago se registra en Más →
   Administración (1 mes, 3, 6 o 1 año).
 - El teléfono se reconoce aunque se reinstale la app (id derivado del ANDROID_ID).
 
@@ -49,15 +50,9 @@ Play Store). El cobro con Google Play queda programado pero en pausa (`docs/COBR
 
 ## Pendiente (en orden)
 
-1. Ejecutar en Supabase el SQL `20261002000100_precios_pago_anual.sql` (Pro a $14.990 y precios
-   anuales).
-2. Marcar la cuenta del dueño como administradora (tabla `inventariado.administradores`): hoy no
-   aparece Más → Administración.
-3. Crear la variable de GitHub `DATOS_TRANSFERENCIA` (banco, cuenta, RUT, correo) y publicar una
-   versión nueva para que aparezca en "¿Cómo pagar?".
-4. Cuando se formalice la empresa: retomar el cobro con Google Play (`docs/COBRO_GOOGLE_PLAY.md`),
+1. Cuando se formalice la empresa: retomar el cobro con Google Play (`docs/COBRO_GOOGLE_PLAY.md`),
    ficha de Play Store, cuenta demo y prueba cerrada.
-5. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**
+2. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**
    (ver abajo).
 
 ## Idea a futuro: cobrar con la máquina POS desde Stockeao

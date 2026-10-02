@@ -54,7 +54,7 @@ function objetivos() {
 }
 
 function revisar({ sha, rama }) {
-  if (rama === 'main') {
+  if (rama === 'main' && process.argv.includes('--pre-push')) {
     console.error(
       `${ROJO}✖ Push directo a main bloqueado.${FIN} La regla del equipo exige trabajar en una rama y abrir un PR.\n` +
         `  Si es una urgencia: EQUIPO_OMITIR=1 git push`,
@@ -134,6 +134,7 @@ ${recorte}`;
   const salida = intentar(() => JSON.parse(r.stdout));
   const bloque = salida?.result?.match(/```json\s*([\s\S]*?)```(?![\s\S]*```json)/);
   const leido = bloque ? intentar(() => JSON.parse(bloque[1])) : null;
+  if (leido && !Array.isArray(leido.hallazgos)) leido.hallazgos = [];
   const veredicto = ['aprobado', 'cambios_menores', 'bloqueado'].includes(leido?.veredicto)
     ? leido
     : null;

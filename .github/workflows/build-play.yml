@@ -47,6 +47,9 @@ jobs:
 
       # Los números de versión de Play parten en 1001 para no confundirse con los APK directos.
       - name: Generar proyecto Android
+        env:
+          # Sin el permiso para instalar APK (ver app.config.ts): Play no lo acepta.
+          EXPO_PUBLIC_CANAL: play
         run: |
           echo "VERSION_CODE=$((1000 + ${{ github.run_number }}))" >> "$GITHUB_ENV"
           ANDROID_VERSION_CODE=$((1000 + ${{ github.run_number }})) npx expo prebuild --platform android --no-install --clean

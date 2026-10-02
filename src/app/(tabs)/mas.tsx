@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { obtenerNegocio } from '@/db/negocio';
 import { formatearFechaHora } from '@/lib/formato';
@@ -22,6 +22,7 @@ export default function MasScreen() {
 
   const [esAdmin, setEsAdmin] = useState(false);
   const nueva = useActualizacion((s) => s.nueva);
+  const actualizar = useActualizacion((s) => s.actualizar);
 
   useEffect(() => {
     if (negocioId) obtenerNegocio(db, negocioId).then((n) => setNegocio(n?.nombre ?? ''));
@@ -155,12 +156,8 @@ export default function MasScreen() {
 
       <Text style={estilos.version}>Versión {versionActual().texto}</Text>
       {nueva ? (
-        <Text
-          accessibilityRole="button"
-          style={estilos.nuevaVersion}
-          onPress={() => Linking.openURL(nueva.url)}
-        >
-          Descargar versión {nueva.version} ({nueva.version_code})
+        <Text accessibilityRole="button" style={estilos.nuevaVersion} onPress={actualizar}>
+          Actualizar a la versión {nueva.version} ({nueva.version_code})
         </Text>
       ) : null}
     </ScrollView>

@@ -1,17 +1,22 @@
 import { fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
-import { Linking } from 'react-native';
+import { Alert } from 'react-native';
 
 import { AJUSTE_NEGOCIO, guardarAjuste } from '@/db/ajustes';
 import { migrarBaseDeDatos } from '@/db/migraciones';
 import { crearPerfil } from '@/db/perfiles';
 import type { BaseLocal } from '@/db/tipos';
 import { useActualizacion } from '@/features/actualizacion/actualizacion';
+import { descargarEInstalar } from '@/features/actualizacion/instalar';
 import { informarError } from '@/lib/errores';
 import { useSesion } from '@/sesion/store';
 import { crearBaseEnMemoria } from '@/test/baseEnMemoria';
 import { respuestasRpc, respuestasTabla, supabase } from '@/test/mockSupabase';
 
 jest.mock('expo-crypto', () => require('@/test/mockExpoCrypto'));
+jest.mock('@/features/actualizacion/instalar', () => ({
+  descargarEInstalar: jest.fn(async (_url: string, _codigo: number, alAvanzar) => alAvanzar(1)),
+  limpiarDescargas: jest.fn(),
+}));
 jest.mock('expo-application', () => ({
   nativeApplicationVersion: '0.1.0',
   nativeBuildVersion: '12',
@@ -79,8 +84,7 @@ async function entrar() {
   await screen.findByText(/Escanea o busca productos/);
 }
 
-it('avisa cuando hay un APK más nuevo y abre la descarga', async () => {
-  const abrir = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+it('avisa cuando hay un APK más nuevo y lo instala con un toque', async () => {
   respuestasRpc.ultima_version = {
     data: {
       version_code: 15,
@@ -93,12 +97,41 @@ it('avisa cuando hay un APK más nuevo y abre la descarga', async () => {
   };
   await entrar();
 
-  fireEvent.press(await screen.findByText(/Hay una versión nueva \(0\.1\.1\)/));
-  expect(abrir).toHaveBeenCalledWith('https://x/apk/inventariado.apk');
+  await screen.findByText(/Hay una versión nueva \(0\.1\.1\)/);
+  fireEvent.press(screen.getByText('Actualizar'));
+  await waitFor(() =>
+    expect(descargarEInstalar).toHaveBeenCalledWith(
+      'https://x/apk/inventariado.apk',
+      15,
+      expect.any(Function),
+    ),
+  );
+  await waitFor(() => expect(useActualizacion.getState().progreso).toBeNull());
 
   fireEvent.press(screen.getByText('Más'));
   expect(await screen.findByText('Versión 0.1.0 (12)')).toBeTruthy();
-  expect(screen.getByText('Descargar versión 0.1.1 (15)')).toBeTruthy();
+  expect(screen.getByText('Actualizar a la versión 0.1.1 (15)')).toBeTruthy();
+});
+
+it('si la descarga falla ofrece abrirla en el navegador', async () => {
+  jest.mocked(descargarEInstalar).mockRejectedValueOnce(new Error('sin señal'));
+  const alerta = jest.spyOn(Alert, 'alert');
+  respuestasRpc.ultima_version = {
+    data: {
+      version_code: 15,
+      version: '0.1.1',
+      url: 'https://x/a.apk',
+      notas: null,
+      obligatoria: false,
+    },
+    error: null,
+  };
+  await entrar();
+
+  fireEvent.press(await screen.findByText('Actualizar'));
+  await waitFor(() => expect(alerta).toHaveBeenCalled());
+  expect(alerta.mock.calls[0][0]).toBe('No se pudo descargar');
+  expect(useActualizacion.getState().progreso).toBeNull();
 });
 
 it('sin versión nueva no muestra aviso', async () => {

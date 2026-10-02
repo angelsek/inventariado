@@ -1,5 +1,6 @@
 // Funciones puras de la puerta del equipo (sin git, sin claude, sin consola).
-// Las usa equipo-revision.mjs y se prueban en equipo-lib.test.mjs.
+// Las usa equipo-revision.mjs. Copia de dev-monitor/equipo-global/equipo-lib.mjs: los tests viven allí
+// (equipo-lib.test.mjs); cambia el original y vuelve a copiarlo aquí.
 
 export const MAX_DIFF = 150_000; // caracteres por tanda
 export const MAX_TANDAS = 5;

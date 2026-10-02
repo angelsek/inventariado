@@ -1,7 +1,11 @@
 {
   "extraKnownMarketplaces": {
     "angelsek-herramientas": {
-      "source": { "source": "github", "repo": "angelsek/dev-monitor" }
+      "source": {
+        "source": "github",
+        "repo": "angelsek/dev-monitor",
+        "ref": "equipo-dev--v0.2.0"
+      }
     }
   },
   "enabledPlugins": {

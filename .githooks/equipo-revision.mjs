@@ -86,10 +86,16 @@ function revisar({ sha, rama }) {
 
   const stat = git('diff', '--stat', base, sha, '--', '.', ...excl);
   const commits = git('log', '--oneline', `${base}..${sha}`);
-  const recorte =
-    diff.length > MAX_DIFF
-      ? diff.slice(0, MAX_DIFF) + `\n\n[... diff truncado: ${diff.length} caracteres en total]`
-      : diff;
+  const truncado = diff.length > MAX_DIFF;
+  const recorte = truncado
+    ? diff.slice(0, MAX_DIFF) + `\n\n[... diff truncado: ${diff.length} caracteres en total]`
+    : diff;
+  if (truncado) {
+    console.log(
+      `${AMARILLO}⚠ El diff es muy grande (${diff.length} caracteres): solo se revisan los primeros ${MAX_DIFF}. ` +
+        `Divide el trabajo en PRs más pequeños.${FIN}`,
+    );
+  }
   const prompt = `Eres la puerta de revisión del equipo de agentes de este repositorio. Revisa los cambios de la rama "${rama}" contra main.
 Combina dos papeles: revisor de código (bugs, datos, convenciones de CLAUDE.md/AGENTS.md, tests) y auditor de seguridad (secretos, inyección, autorización/RLS, datos personales, dependencias, permisos de workflows).
 Puedes leer archivos del repo para entender el contexto. No modifiques nada.
@@ -127,7 +133,10 @@ ${recorte}`;
   );
   const salida = intentar(() => JSON.parse(r.stdout));
   const bloque = salida?.result?.match(/```json\s*([\s\S]*?)```(?![\s\S]*```json)/);
-  const veredicto = bloque ? intentar(() => JSON.parse(bloque[1])) : null;
+  const leido = bloque ? intentar(() => JSON.parse(bloque[1])) : null;
+  const veredicto = ['aprobado', 'cambios_menores', 'bloqueado'].includes(leido?.veredicto)
+    ? leido
+    : null;
   if (!veredicto) {
     // Si el equipo no está disponible (sin claude, sin red, sin cuota) no se bloquea el trabajo: se avisa y se registra.
     console.error(
@@ -181,7 +190,8 @@ ${recorte}`;
     );
     return false;
   }
-  fs.writeFileSync(aprobado, new Date().toISOString());
+  // Un diff truncado no se marca como aprobado: lo que quedó fuera no se revisó.
+  if (!truncado) fs.writeFileSync(aprobado, new Date().toISOString());
   return true;
 }
 

@@ -16,3 +16,5 @@ Todo desarrollo nuevo (funcionalidad, corrección o refactor) pasa por el equipo
   `EQUIPO_OMITIR=1` salvo que el usuario lo pida explícitamente.
 - Cada PR tiene además la revisión "Equipo de agentes" en GitHub; no se fusiona con ese check en rojo.
 - Cambios triviales (erratas, textos, formato) pueden saltarse el plan del arquitecto, pero no la revisión.
+- Configuración que vive fuera del repo: el secret `CLAUDE_CODE_OAUTH_TOKEN` (para el workflow) y la protección de
+  `main` en GitHub con el check «Revisión del equipo» como obligatorio.

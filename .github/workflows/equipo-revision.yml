@@ -66,10 +66,13 @@ jobs:
           RESULTADO: ${{ steps.revision.outputs.structured_output }}
         run: |
           echo "$RESULTADO"
-          veredicto=$(echo "$RESULTADO" | jq -r '.veredicto // "sin_veredicto"')
-          altos=$(echo "$RESULTADO" | jq -r '.criticos_o_altos // 0')
-          echo "### Equipo de agentes: $veredicto" >> "$GITHUB_STEP_SUMMARY"
-          echo "$RESULTADO" | jq -r '.resumen // ""' >> "$GITHUB_STEP_SUMMARY"
+          # Falla cerrado: sin un JSON válido con veredicto conocido, el check queda en rojo.
+          veredicto=$(echo "$RESULTADO" | jq -r '.veredicto // "sin_veredicto"' 2>/dev/null || echo sin_veredicto)
+          altos=$(echo "$RESULTADO" | jq -r '.criticos_o_altos // 0' 2>/dev/null || echo 0)
+          case "$altos" in ''|*[!0-9]*) altos=0 ;; esac
+          echo "### Equipo de agentes: ${veredicto:-sin_veredicto}" >> "$GITHUB_STEP_SUMMARY"
+          echo "$RESULTADO" | jq -r '.resumen // ""' >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+          case "$veredicto" in aprobado|cambios_menores|bloqueado) ;; *) veredicto=sin_veredicto ;; esac
           if [ "$veredicto" = "sin_veredicto" ]; then
             echo "::error::El equipo no entregó un veredicto. Vuelve a ejecutar el job."
             exit 1

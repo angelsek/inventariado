@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Formato
+        run: npm run format:check
+      - name: Tipos
+        run: npm run typecheck
+      - name: Pruebas
+        run: npm test -- --ci
+
+  base-de-datos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Migraciones y pruebas SQL de Supabase
+        run: ./scripts/probar-sql.sh

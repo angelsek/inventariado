@@ -1,0 +1,10 @@
+# Saltos de línea de Linux (LF) en todos los computadores, también en Windows:
+# el revisor de formato (Prettier) y los scripts de compilación los esperan así.
+* text=auto eol=lf
+
+# Archivos binarios: no tocar.
+*.png binary
+*.jpg binary
+*.ico binary
+*.keystore binary
+*.jar binary

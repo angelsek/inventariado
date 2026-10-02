@@ -1,0 +1,8 @@
+# Configuración mínima para publicar las funciones con la CLI de Supabase
+# (workflow "Publicar funciones de Supabase"). La base se configura con los SQL
+# de supabase/migrations, no con este archivo.
+project_id = "stockeao"
+
+[functions.notificaciones-play]
+# Google Pub/Sub no envía sesión de Supabase: la función valida ?token=PLAY_RTDN_TOKEN.
+verify_jwt = false

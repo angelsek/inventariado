@@ -1,0 +1,44 @@
+name: Respaldo de la base de datos
+
+# Copia semanal de todos los datos de Stockeao (esquema "inventariado").
+# El plan gratuito de Supabase no incluye respaldos automáticos.
+# El archivo queda 90 días en la página de la ejecución (sección "Artifacts").
+# Requiere el secreto SUPABASE_DB_URL (ver docs/PILOTO.md).
+on:
+  workflow_dispatch:
+  schedule:
+    # Domingos a las 06:17 UTC (madrugada en Chile).
+    - cron: '17 6 * * 0'
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar pg_dump 17
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -sSo /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Respaldar esquema inventariado
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::warning::Falta el secreto SUPABASE_DB_URL: no se hizo respaldo."
+            exit 0
+          fi
+          ARCHIVO="respaldo-stockeao-$(date -u +%Y-%m-%d).sql.gz"
+          /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" --schema=inventariado \
+            --no-owner --no-privileges | gzip > "$ARCHIVO"
+          ls -lh "$ARCHIVO"
+          echo "ARCHIVO=$ARCHIVO" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        if: env.ARCHIVO != ''
+        with:
+          name: ${{ env.ARCHIVO }}
+          path: ${{ env.ARCHIVO }}
+          retention-days: 90

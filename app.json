@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Stockeao",
+    "slug": "stockeao",
+    "scheme": "stockeao",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "platforms": ["android"],
+    "android": {
+      "package": "cl.stockeao.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#1F4E45",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "La cámara se usa para escanear los códigos de barras de los productos.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-iap",
+      "./plugins/firma-android"
+    ]
+  }
+}

@@ -1,0 +1,144 @@
+name: Construir APK
+
+# Genera un APK instalable de Android y lo deja como archivo descargable
+# en la página de la ejecución (sección "Artifacts").
+#
+# Al ejecutarlo a mano (Actions → Construir APK → Run workflow) con "publicar"
+# marcado, además lo publica como Release de GitHub y las apps de los clientes
+# avisan que hay una versión nueva. Ver docs/PILOTO.md.
+on:
+  workflow_dispatch:
+    inputs:
+      publicar:
+        description: 'Publicar para los clientes (la app avisará que hay versión nueva)'
+        type: boolean
+        default: false
+      notas:
+        description: 'Novedades de esta versión (opcional)'
+        type: string
+        default: ''
+      obligatoria:
+        description: 'Actualización obligatoria'
+        type: boolean
+        default: false
+  push:
+    branches: [main, claude/fervent-franklin-regzl4]
+
+# Publicar crea un Release de GitHub con el APK.
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - run: npm ci
+
+      - name: Generar proyecto Android
+        env:
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+        run: npx expo prebuild --platform android --no-install --clean
+
+      # Clave de firma definitiva (secretos del repositorio, ver docs/PILOTO.md).
+      # Sin ella se firma con la clave de desarrollo.
+      - name: Preparar clave de firma
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::Sin clave de firma propia: se usa la clave de desarrollo."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+          {
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore"
+            echo "ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+            echo "ANDROID_KEY_ALIAS=$KEY_ALIAS"
+            echo "ANDROID_KEY_PASSWORD=${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+          } >> "$GITHUB_ENV"
+
+      - name: Compilar APK
+        working-directory: android
+        # Datos del proyecto Supabase (Settings → Secrets and variables → Actions → Variables).
+        # Son públicos por diseño: la seguridad la dan las reglas RLS de la base.
+        env:
+          # Cobro con Google Play Billing (expo-iap también soporta otras tiendas).
+          ORG_GRADLE_PROJECT_openiapStore: play
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          # Opcionales: dónde avisar los pagos de la suscripción (pantalla Suscripción).
+          EXPO_PUBLIC_CONTACTO_WHATSAPP: ${{ vars.CONTACTO_WHATSAPP }}
+          EXPO_PUBLIC_CONTACTO_CORREO: ${{ vars.CONTACTO_CORREO }}
+          EXPO_PUBLIC_DATOS_TRANSFERENCIA: ${{ vars.DATOS_TRANSFERENCIA }}
+          # Instalación directa: la app avisa de versiones nuevas publicadas en Supabase.
+          EXPO_PUBLIC_CANAL: apk
+        # Solo arquitecturas de teléfonos reales: APK más liviano y compilación más rápida.
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
+
+      - name: Nombrar APK
+        id: nombre
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          ARCHIVO="stockeao-v${VERSION}-${{ github.run_number }}.apk"
+          mv android/app/build/outputs/apk/release/app-release.apk "$ARCHIVO"
+          echo "archivo=$ARCHIVO" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.nombre.outputs.archivo }}
+          path: ${{ steps.nombre.outputs.archivo }}
+          retention-days: 30
+
+      # Publica el APK como Release de GitHub (el repo es público y acepta archivos de hasta
+      # 2 GB; Supabase gratis solo acepta 50 MB y el APK pesa ~70 MB) y registra la versión en
+      # Supabase para que las apps avisen. Requiere el secreto SUPABASE_SERVICE_ROLE_KEY.
+      - name: Publicar para los clientes
+        if: ${{ inputs.publicar }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          CLAVE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ARCHIVO: ${{ steps.nombre.outputs.archivo }}
+          VERSION: ${{ steps.nombre.outputs.version }}
+          CODIGO: ${{ github.run_number }}
+          NOTAS: ${{ inputs.notas }}
+          OBLIGATORIA: ${{ inputs.obligatoria }}
+        run: |
+          if [ -z "$CLAVE" ] || [ -z "$SUPABASE_URL" ]; then
+            echo "::error::Falta el secreto SUPABASE_SERVICE_ROLE_KEY o la variable SUPABASE_URL."
+            exit 1
+          fi
+          # Siempre con el mismo nombre: así el enlace .../releases/latest/download/stockeao.apk
+          # descarga la última versión (es el que usa la página de descarga).
+          cp "$ARCHIVO" stockeao.apk
+          ETIQUETA="apk-$CODIGO"
+          gh release create "$ETIQUETA" stockeao.apk --target "$GITHUB_SHA" --latest             --title "Stockeao $VERSION ($CODIGO)" --notes "${NOTAS:-Versión $VERSION ($CODIGO).}"
+
+          URL_APK="https://github.com/$GITHUB_REPOSITORY/releases/download/$ETIQUETA/stockeao.apk"
+          # Las claves nuevas (sb_secret_...) van solo en "apikey"; las antiguas (JWT) también como Bearer.
+          CABECERAS=(-H "apikey: $CLAVE")
+          case "$CLAVE" in sb_*) ;; *) CABECERAS+=(-H "Authorization: Bearer $CLAVE") ;; esac
+          jq -n --argjson codigo "$CODIGO" --arg version "$VERSION" --arg url "$URL_APK"             --arg notas "$NOTAS" --argjson obligatoria "$OBLIGATORIA"             '{version_code: $codigo, version: $version, url: $url, notas: (if $notas == "" then null else $notas end), obligatoria: $obligatoria}'             > version.json
+          curl --fail-with-body -sS -X POST "$SUPABASE_URL/rest/v1/versiones_app"             "${CABECERAS[@]}" -H "Content-Type: application/json"             -H "Content-Profile: inventariado" -H "Prefer: resolution=merge-duplicates"             --data @version.json
+          echo
+          echo "Publicado: $URL_APK"
+          echo "Enlace fijo a la última versión: https://github.com/$GITHUB_REPOSITORY/releases/latest/download/stockeao.apk"

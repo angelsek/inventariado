@@ -1,0 +1,14 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "types": ["jest"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  // Las funciones de Supabase corren en Deno (se revisan al publicarlas); su lógica
+  // compartida (supabase/functions/_compartido) sí se revisa y se prueba aquí.
+  "exclude": ["node_modules", "supabase/functions/*/index.ts"]
+}

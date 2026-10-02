@@ -18,3 +18,6 @@ Todo desarrollo nuevo (funcionalidad, corrección o refactor) pasa por el equipo
 - Cambios triviales (erratas, textos, formato) pueden saltarse el plan del arquitecto, pero no la revisión.
 - Configuración que vive fuera del repo: el secret `CLAUDE_CODE_OAUTH_TOKEN` (para el workflow) y la protección de
   `main` en GitHub con el check «Revisión del equipo» como obligatorio.
+- Caso especial: la Action de Claude solo se ejecuta si `.github/workflows/equipo-revision.yml` es idéntico al de
+  `main`. Un PR que modifique ese workflow no puede revisarse a sí mismo: pasa por la puerta local (`pre-push`), se
+  quita temporalmente el check obligatorio para fusionarlo y se vuelve a exigir justo después.

@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { sincronizar } from '@/sync/motor';
 import { remotoSupabase } from '@/sync/remotoSupabase';
 
+import { idTelefonoEstable } from './idTelefono';
 import { useSesion } from './store';
 
 export type DatosNegocio = {
@@ -127,9 +128,10 @@ export async function eliminarNegocio(db: BaseLocal, contrasena: string): Promis
 async function vincularTelefono(db: BaseLocal, negocioId: string): Promise<void> {
   await borrarDatosLocales(db);
 
+  // Si el teléfono ya tenía id (instalaciones anteriores) se conserva, para no ocupar otro cupo.
   let dispositivoId = await leerAjuste(db, AJUSTE_DISPOSITIVO);
   if (!dispositivoId) {
-    dispositivoId = randomUUID();
+    dispositivoId = await idTelefonoEstable();
     await guardarAjuste(db, AJUSTE_DISPOSITIVO, dispositivoId);
   }
   const nombre = nombreDelTelefono();

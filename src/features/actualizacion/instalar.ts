@@ -4,7 +4,7 @@ import { startActivityAsync } from 'expo-intent-launcher';
 // Intent.FLAG_GRANT_READ_URI_PERMISSION: deja que el instalador de Android lea el archivo.
 const PERMISO_LECTURA = 1;
 const TIPO_APK = 'application/vnd.android.package-archive';
-// Un APK de Stockeao pesa ~40 MB; algo mucho menor es una página de error, no el APK.
+// Un APK de Stockeao pesa ~70 MB; algo mucho menor es una página de error, no el APK.
 const TAMANO_MINIMO = 1_000_000;
 
 const nombreApk = (codigo: number) => `stockeao-${codigo}.apk`;
@@ -44,7 +44,7 @@ export async function descargarEInstalar(
   });
 }
 
-/** Borra los APK descargados de versiones que ya no sirven (ocupan ~40 MB cada uno). */
+/** Borra los APK descargados de versiones que ya no sirven (ocupan ~70 MB cada uno). */
 export function limpiarDescargas(conservar: number | null) {
   try {
     for (const item of Paths.cache.list()) {

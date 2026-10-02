@@ -4,8 +4,8 @@ name: Construir APK
 # en la página de la ejecución (sección "Artifacts").
 #
 # Al ejecutarlo a mano (Actions → Construir APK → Run workflow) con "publicar"
-# marcado, además lo sube a Supabase y las apps de los clientes avisan que hay
-# una versión nueva. Ver docs/PILOTO.md.
+# marcado, además lo publica como Release de GitHub y las apps de los clientes
+# avisan que hay una versión nueva. Ver docs/PILOTO.md.
 on:
   workflow_dispatch:
     inputs:
@@ -23,6 +23,10 @@ on:
         default: false
   push:
     branches: [main, claude/fervent-franklin-regzl4]
+
+# Publicar crea un Release de GitHub con el APK.
+permissions:
+  contents: write
 
 jobs:
   apk:
@@ -104,11 +108,13 @@ jobs:
           path: ${{ steps.nombre.outputs.archivo }}
           retention-days: 30
 
-      # Sube el APK a Supabase Storage (carpeta pública "apk") y registra la versión.
-      # Requiere el secreto SUPABASE_SERVICE_ROLE_KEY (clave secreta del proyecto).
+      # Publica el APK como Release de GitHub (el repo es público y acepta archivos de hasta
+      # 2 GB; Supabase gratis solo acepta 50 MB y el APK pesa ~70 MB) y registra la versión en
+      # Supabase para que las apps avisen. Requiere el secreto SUPABASE_SERVICE_ROLE_KEY.
       - name: Publicar para los clientes
         if: ${{ inputs.publicar }}
         env:
+          GH_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           CLAVE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ARCHIVO: ${{ steps.nombre.outputs.archivo }}
@@ -121,30 +127,18 @@ jobs:
             echo "::error::Falta el secreto SUPABASE_SERVICE_ROLE_KEY o la variable SUPABASE_URL."
             exit 1
           fi
+          # Siempre con el mismo nombre: así el enlace .../releases/latest/download/stockeao.apk
+          # descarga la última versión (es el que usa la página de descarga).
+          cp "$ARCHIVO" stockeao.apk
+          ETIQUETA="apk-$CODIGO"
+          gh release create "$ETIQUETA" stockeao.apk --target "$GITHUB_SHA" --latest             --title "Stockeao $VERSION ($CODIGO)" --notes "${NOTAS:-Versión $VERSION ($CODIGO).}"
+
+          URL_APK="https://github.com/$GITHUB_REPOSITORY/releases/download/$ETIQUETA/stockeao.apk"
           # Las claves nuevas (sb_secret_...) van solo en "apikey"; las antiguas (JWT) también como Bearer.
           CABECERAS=(-H "apikey: $CLAVE")
           case "$CLAVE" in sb_*) ;; *) CABECERAS+=(-H "Authorization: Bearer $CLAVE") ;; esac
-
-          subir() {
-            curl --fail-with-body -sS -X POST "$SUPABASE_URL/storage/v1/object/apk/$1" \
-              "${CABECERAS[@]}" -H "x-upsert: true" \
-              -H "Content-Type: application/vnd.android.package-archive" \
-              --data-binary @"$ARCHIVO"
-            echo
-          }
-          subir "stockeao-$CODIGO.apk"
-          # Nombre fijo para compartir un enlace que siempre descarga la última versión.
-          subir "stockeao.apk"
-
-          URL_APK="$SUPABASE_URL/storage/v1/object/public/apk/stockeao-$CODIGO.apk"
-          jq -n --argjson codigo "$CODIGO" --arg version "$VERSION" --arg url "$URL_APK" \
-            --arg notas "$NOTAS" --argjson obligatoria "$OBLIGATORIA" \
-            '{version_code: $codigo, version: $version, url: $url, notas: (if $notas == "" then null else $notas end), obligatoria: $obligatoria}' \
-            > version.json
-          curl --fail-with-body -sS -X POST "$SUPABASE_URL/rest/v1/versiones_app" \
-            "${CABECERAS[@]}" -H "Content-Type: application/json" \
-            -H "Content-Profile: inventariado" -H "Prefer: resolution=merge-duplicates" \
-            --data @version.json
+          jq -n --argjson codigo "$CODIGO" --arg version "$VERSION" --arg url "$URL_APK"             --arg notas "$NOTAS" --argjson obligatoria "$OBLIGATORIA"             '{version_code: $codigo, version: $version, url: $url, notas: (if $notas == "" then null else $notas end), obligatoria: $obligatoria}'             > version.json
+          curl --fail-with-body -sS -X POST "$SUPABASE_URL/rest/v1/versiones_app"             "${CABECERAS[@]}" -H "Content-Type: application/json"             -H "Content-Profile: inventariado" -H "Prefer: resolution=merge-duplicates"             --data @version.json
           echo
           echo "Publicado: $URL_APK"
-          echo "Enlace fijo a la última versión: $SUPABASE_URL/storage/v1/object/public/apk/stockeao.apk"
+          echo "Enlace fijo a la última versión: https://github.com/$GITHUB_REPOSITORY/releases/latest/download/stockeao.apk"

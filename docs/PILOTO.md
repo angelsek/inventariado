@@ -60,15 +60,17 @@ Esta clave nunca va dentro de la app; solo la usa GitHub para subir el APK.
 1. GitHub → **Actions → Construir APK → Run workflow**.
 2. Elige la rama, marca **"Publicar para los clientes"** y escribe las novedades (opcional).
    Marca **"Actualización obligatoria"** solo si la versión anterior tiene un problema grave.
-3. Al terminar (~15 min), las apps de los clientes muestran "Hay una versión nueva" y al
-   tocarlo se descarga el APK.
+3. Al terminar (~15 min), el APK queda como **Release** en GitHub y las apps de los clientes
+   muestran "Hay una versión nueva → Actualizar": la app lo descarga y abre el instalador.
 
-El enlace fijo `https://<tu-proyecto>.supabase.co/storage/v1/object/public/apk/stockeao.apk`
-siempre descarga la última versión publicada: sirve para instalar la app en un teléfono nuevo.
+Para instalar la app en un teléfono nuevo: **https://grimoriolabs.com/stockeao/** (página con
+el botón de descarga y los pasos). El botón usa el enlace fijo
+`https://github.com/angelsek/inventariado/releases/latest/download/stockeao.apk`, que siempre
+baja la última versión publicada.
 
-> El plan gratuito de Supabase tiene 1 GB de almacenamiento compartido con tu otra app y
-> 50 MB por archivo (cada APK pesa ~41 MB). Borra de vez en cuando los APK antiguos en
-> Storage → apk, dejando `stockeao.apk` y el último.
+> Los APK van en GitHub Releases y no en Supabase porque pesan ~70 MB y el plan gratuito de
+> Supabase acepta hasta 50 MB por archivo. La página de descarga vive en `docs/descargar/` y
+> se publica copiándola a la carpeta `stockeao/` del repo `grimorio-labs-landing`.
 
 ## 3. Respaldo semanal de la base de datos
 

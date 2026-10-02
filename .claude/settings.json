@@ -1,5 +1,11 @@
 {
+  "extraKnownMarketplaces": {
+    "angelsek-herramientas": {
+      "source": { "source": "github", "repo": "angelsek/dev-monitor" }
+    }
+  },
   "enabledPlugins": {
-    "expo@claude-plugins-official": true
+    "expo@claude-plugins-official": true,
+    "equipo-dev@angelsek-herramientas": true
   }
 }

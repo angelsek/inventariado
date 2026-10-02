@@ -1,0 +1,80 @@
+name: Equipo de agentes
+
+# Revisión obligatoria de cada PR por el equipo de agentes (calidad + seguridad).
+# Comenta en el código y falla si el veredicto es "bloqueado", así el PR no se puede fusionar.
+# Requiere el secret CLAUDE_CODE_OAUTH_TOKEN (se genera con `claude setup-token`).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: equipo-revision-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  revision:
+    name: Revisión del equipo
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Revisión
+        id: revision
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR: ${{ github.event.pull_request.number }}
+
+            Eres el equipo de revisión de este repositorio: revisor de código y auditor de seguridad a la vez.
+            La rama del PR ya está en el directorio de trabajo. Lee CLAUDE.md y AGENTS.md y aplica sus convenciones.
+            Obtén el diff con `gh pr diff ${{ github.event.pull_request.number }}`.
+
+            Revisa:
+            - Bugs: lógica incorrecta, casos límite, errores silenciados, estado inconsistente.
+            - Datos: migraciones publicadas editadas (prohibido: se agrega una nueva), cambios incompatibles con datos existentes.
+            - Tests: lógica nueva sin tests o tests que no prueban lo que dicen.
+            - Seguridad: secretos (nunca copies el valor), inyección, autorización/RLS, datos personales,
+              dependencias nuevas, permisos de workflows, descarga de código sin verificar integridad.
+
+            Severidades: critica (rompe la app, pierde datos o expone secretos), alta (bug probable o vulnerabilidad
+            explotable), media, baja, info. Sé concreto y no inventes problemas.
+
+            Publica en GitHub:
+            - Un comentario en línea por cada hallazgo critica/alta/media con
+              `mcp__github_inline_comment__create_inline_comment` (con `confirmed: true`), incluyendo la sugerencia de arreglo.
+            - Un único comentario resumen con `gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body "..."`:
+              veredicto, resumen y tabla de hallazgos (severidad, tipo, archivo:línea, título).
+
+            Veredicto: "bloqueado" si hay alguna critica o alta; "cambios_menores" si solo hay media/baja; "aprobado" si no hay nada relevante.
+          claude_args: |
+            --model sonnet
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Grep,Glob"
+            --json-schema '{"type":"object","properties":{"veredicto":{"type":"string","enum":["aprobado","cambios_menores","bloqueado"]},"resumen":{"type":"string"},"criticos_o_altos":{"type":"integer"}},"required":["veredicto","resumen","criticos_o_altos"]}'
+
+      - name: Veredicto
+        env:
+          RESULTADO: ${{ steps.revision.outputs.structured_output }}
+        run: |
+          echo "$RESULTADO"
+          veredicto=$(echo "$RESULTADO" | jq -r '.veredicto // "sin_veredicto"')
+          altos=$(echo "$RESULTADO" | jq -r '.criticos_o_altos // 0')
+          echo "### Equipo de agentes: $veredicto" >> "$GITHUB_STEP_SUMMARY"
+          echo "$RESULTADO" | jq -r '.resumen // ""' >> "$GITHUB_STEP_SUMMARY"
+          if [ "$veredicto" = "sin_veredicto" ]; then
+            echo "::error::El equipo no entregó un veredicto. Vuelve a ejecutar el job."
+            exit 1
+          fi
+          if [ "$veredicto" = "bloqueado" ] || [ "$altos" -gt 0 ]; then
+            echo "::error::El equipo bloqueó el PR: hay hallazgos críticos o altos. Revisa los comentarios del PR."
+            exit 1
+          fi

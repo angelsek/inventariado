@@ -1,0 +1,3 @@
+#!/bin/sh
+# Puerta del equipo de agentes: ver .githooks/equipo-revision.mjs
+exec node "$(git rev-parse --show-toplevel)/.githooks/equipo-revision.mjs" --pre-push "$@"

@@ -266,8 +266,24 @@ jobs:
           fi
 
           ETIQUETA="apk-$CODIGO"
+          # Si algo falla después de crear la Release, se deshace todo (Release, tag y fila en
+          # Supabase): la página de descarga nunca sirve un APK sin verificar y se puede reintentar.
+          RELEASE_CREADA=""
+          FILA_CREADA=""
+          deshacer() {
+            if [ -n "$FILA_CREADA" ]; then
+              curl -sS -X DELETE "$SUPABASE_URL/rest/v1/versiones_app?version_code=eq.$CODIGO" \
+                "${CABECERAS[@]}" -H "Content-Profile: inventariado" || true
+            fi
+            if [ -n "$RELEASE_CREADA" ]; then
+              echo "::warning::La publicación no terminó: se borra la Release $ETIQUETA."
+              gh release delete "$ETIQUETA" -R "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
+            fi
+          }
+          trap deshacer EXIT
           gh release create "$ETIQUETA" stockeao.apk stockeao.apk.sha256 -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest \
             --title "Stockeao $VERSION ($CODIGO)" --notes "${NOTAS:-Versión $VERSION ($CODIGO).}"
+          RELEASE_CREADA=si
 
           # El asset publicado debe ser el mismo archivo: se descarga y se compara.
           gh release download "$ETIQUETA" -R "$GITHUB_REPOSITORY" -p stockeao.apk -O publicado.apk
@@ -281,6 +297,7 @@ jobs:
             --arg sha256 "$SHA256" --arg notas "$NOTAS" --argjson obligatoria "$OBLIGATORIA" \
             '{version_code: $codigo, version: $version, url: $url, sha256: $sha256, notas: (if $notas == "" then null else $notas end), obligatoria: $obligatoria}' \
             > version.json
+          FILA_CREADA=si
           curl --fail-with-body -sS -X POST "$SUPABASE_URL/rest/v1/versiones_app" \
             "${CABECERAS[@]}" -H "Content-Type: application/json" \
             -H "Content-Profile: inventariado" -H "Prefer: resolution=merge-duplicates" \
@@ -301,5 +318,8 @@ jobs:
             cat publicada.json
             exit 1
           fi
+          # Todo verificado: ya no hay que deshacer nada.
+          RELEASE_CREADA=""
+          FILA_CREADA=""
           echo "Publicado: $URL_APK"
           echo "Enlace fijo a la última versión: https://github.com/$GITHUB_REPOSITORY/releases/latest/download/stockeao.apk"

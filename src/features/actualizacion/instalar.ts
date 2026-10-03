@@ -39,8 +39,8 @@ async function coincide(archivo: File, sha256: string | null) {
  * coincide con el publicado y abre el instalador de Android. La primera vez Android pide
  * permitir instalar apps desde Stockeao; después basta con tocar "Instalar".
  *
- * Lanza ErrorOrigen si la URL no es de las Releases de Stockeao, y ErrorIntegridad si el archivo
- * no coincide con el hash publicado, no se pudo verificar o una versión nueva llega sin hash: en
+ * Lanza ErrorOrigen si la publicación no sirve (URL fuera de las Releases de Stockeao o versión
+ * nueva sin hash), y ErrorIntegridad si el archivo no coincide con el hash o no se pudo verificar: en
  * esos casos borra la descarga y no instala nada. Un APK en caché que ya no coincide se borra
  * y se descarga de nuevo (sin error).
  */
@@ -55,7 +55,8 @@ export async function descargarEInstalar(
     throw new ErrorOrigen('La versión publicada no apunta a una descarga de Stockeao.');
   }
   if (sha256 === null && codigo >= PRIMER_CODIGO_CON_HASH) {
-    throw new ErrorIntegridad('La versión publicada no trae su SHA-256: no se instala.');
+    // Es un problema de la publicación, no de la descarga: reintentar no lo arregla.
+    throw new ErrorOrigen('La versión publicada no trae su SHA-256: no se instala.');
   }
   const apk = new File(Paths.cache, nombreApk(codigo));
   // Un APK ya descargado también se comprueba: pudo dañarse o cambiarse desde entonces.

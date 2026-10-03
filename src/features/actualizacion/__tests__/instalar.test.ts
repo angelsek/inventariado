@@ -154,7 +154,7 @@ it('versión antigua sin sha256 publicado se instala sin calcular el hash', asyn
 it('versión nueva sin sha256 publicado no se descarga ni instala', async () => {
   await expect(
     descargarEInstalar(URL_OK, PRIMER_CODIGO_CON_HASH, null, jest.fn()),
-  ).rejects.toBeInstanceOf(ErrorIntegridad);
+  ).rejects.toBeInstanceOf(ErrorOrigen);
   expect(mockDescargas).toHaveLength(0);
   expect(startActivityAsync).not.toHaveBeenCalled();
 });

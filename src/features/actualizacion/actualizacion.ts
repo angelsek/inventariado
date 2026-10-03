@@ -6,7 +6,12 @@ import { informarError } from '@/lib/errores';
 import { supabase, supabaseConfigurado } from '@/lib/supabase';
 import { versionActual } from '@/lib/version';
 
-import { ErrorIntegridad, ErrorOrigen, urlApkPermitida } from './integridad';
+import {
+  ErrorIntegridad,
+  ErrorOrigen,
+  PRIMER_CODIGO_CON_HASH,
+  urlApkPermitida,
+} from './integridad';
 import { descargarEInstalar, limpiarDescargas } from './instalar';
 
 export type VersionPublicada = {
@@ -54,8 +59,9 @@ export const useActualizacion = create<Estado>((set, get) => ({
     if (!nueva || progreso !== null) return;
     set({ progreso: 0, verificando: false });
     const sha256 = nueva.sha256 ?? null;
-    if (sha256 === null) {
+    if (sha256 === null && nueva.version_code < PRIMER_CODIGO_CON_HASH) {
       // Versiones publicadas antes del hash: se instalan igual y queda registrado.
+      // (Desde PRIMER_CODIGO_CON_HASH no se instalan: lo informa la rama de ErrorOrigen).
       void informarError(
         new Error(`Versión ${nueva.version_code} publicada sin sha256: se instala sin verificar.`),
         'Actualización',
@@ -76,7 +82,7 @@ export const useActualizacion = create<Estado>((set, get) => ({
         // Reintentar fallaría igual y el navegador se saltaría la verificación.
         Alert.alert(
           'No se puede instalar esta versión',
-          'La versión publicada no apunta a una descarga de Stockeao. Avisa a soporte.',
+          'La versión publicada no se puede verificar ni instalar desde la app. Avisa a soporte.',
           [{ text: 'Cerrar', style: 'cancel' }],
         );
       } else if (error instanceof ErrorIntegridad) {

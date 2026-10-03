@@ -1,7 +1,7 @@
 # Trabajar en tu computador (Windows)
 
 Todo el proyecto vive en GitHub (`angelsek/inventariado`, rama
-`claude/fervent-franklin-regzl4`). Las compilaciones del APK y del `.aab`, las pruebas y la
+`main`). Las compilaciones del APK y del `.aab`, las pruebas y la
 publicación de funciones corren en **GitHub Actions**, no en tu equipo: en el computador solo
 se edita el código y se corren las revisiones rápidas. Supabase, Google Play Console y las
 páginas legales siguen igual.
@@ -39,7 +39,7 @@ cd $HOME\Documents
 gh auth login                      # elige GitHub.com → HTTPS → iniciar sesión en el navegador
 gh repo clone angelsek/inventariado stockeao
 cd stockeao
-git checkout claude/fervent-franklin-regzl4
+git checkout main
 npm ci
 ```
 
@@ -70,13 +70,13 @@ algo como:
 
 ## 4. Día a día
 
-| Qué                                               | Cómo                                                                             |
-| ------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Revisar el código (lint, formato, tipos, pruebas) | `npm run check`                                                                  |
-| Subir cambios                                     | `git add -A`, `git commit -m "..."`, `git push` (o pedírselo a Claude)           |
-| APK y `.aab`                                      | Se generan solos en GitHub Actions con cada push a la rama (pestaña **Actions**) |
-| Pruebas SQL                                       | Corren en GitHub Actions (CI). En Windows necesitarían WSL + PostgreSQL          |
-| Probar en el teléfono                             | Instala el APK o la versión de prueba interna de Play                            |
+| Qué                                               | Cómo                                                                            |
+| ------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Revisar el código (lint, formato, tipos, pruebas) | `npm run check`                                                                 |
+| Subir cambios                                     | `git add -A`, `git commit -m "..."`, `git push` (o pedírselo a Claude)          |
+| APK y `.aab`                                      | En **Actions**, a mano o con tag de versión; el `.aab` solo a mano desde `main` |
+| Pruebas SQL                                       | Corren en GitHub Actions (CI). En Windows necesitarían WSL + PostgreSQL         |
+| Probar en el teléfono                             | Instala el APK o la versión de prueba interna de Play                           |
 
 **Expo Go no sirve** para esta app: usa módulos nativos (cobro de Google Play, cámara,
 SQLite). Se prueba siempre con el APK o con Play.

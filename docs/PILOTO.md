@@ -58,10 +58,29 @@ Esta clave nunca va dentro de la app; solo la usa GitHub para subir el APK.
 **Cada vez que quieras publicar:**
 
 1. GitHub → **Actions → Construir APK → Run workflow**.
-2. Elige la rama, marca **"Publicar para los clientes"** y escribe las novedades (opcional).
-   Marca **"Actualización obligatoria"** solo si la versión anterior tiene un problema grave.
+2. Elige la rama **main** (publicar desde otra rama falla al inicio), marca **"Publicar para los
+   clientes"** y escribe las novedades (opcional). Marca **"Actualización obligatoria"** solo si
+   la versión anterior tiene un problema grave.
 3. Al terminar (~15 min), el APK queda como **Release** en GitHub y las apps de los clientes
    muestran "Hay una versión nueva → Actualizar": la app lo descarga y abre el instalador.
+
+**Otra forma, con un tag de versión** (compila y publica sin entrar a Actions):
+
+```powershell
+git tag -a v1.0.1 -m "Novedades de esta versión"
+git push origin v1.0.1
+```
+
+El tag debe coincidir con `expo.version` de `app.json` y apuntar a un commit que ya esté en
+`main`. Las novedades salen de la anotación del tag (un tag ligero, sin `-a`, publica sin
+novedades) y la actualización no es obligatoria.
+
+No lances otra publicación mientras una esté en curso. Y no renombres `build-apk.yml`: el
+número de versión interno (`versionCode`) es el número de ejecución de ese workflow.
+
+Los PR que tocan `package.json`, `app.json`, `eas.json`, `assets/`, `plugins/`, `modules/` o el
+propio workflow también compilan el APK, pero solo para comprobar que arma (sin la clave de
+firma, y el archivo dura 1 día).
 
 Para instalar la app en un teléfono nuevo: **https://grimoriolabs.com/stockeao/** (página con
 el botón de descarga y los pasos). El botón usa el enlace fijo
@@ -78,15 +97,39 @@ El plan gratuito de Supabase no hace respaldos automáticos. El workflow **Respa
 de datos** copia todos los datos de Stockeao cada domingo y guarda el archivo 90 días en
 GitHub (Actions → la ejecución → Artifacts).
 
+Como el repositorio es público y cualquiera con cuenta de GitHub puede descargar los
+artifacts, el respaldo se **cifra con age** antes de subirlo: solo se abre con tu clave
+privada.
+
 **Una sola vez:** crea el secreto `SUPABASE_DB_URL` con la cadena de conexión:
 Supabase → botón **Connect** (arriba) → **Session pooler** → copia la URI y reemplaza
 `[YOUR-PASSWORD]` por la contraseña de la base de datos. Usa la del _pooler_: la conexión
 directa no funciona desde GitHub.
 
+**Una sola vez, la clave de cifrado** (en tu computador con Windows):
+
+1. Instala age: `winget install FiloSottile.age`
+2. Genera el par de claves: `age-keygen -o stockeao-respaldo.key`. Imprime la clave pública
+   (empieza por `age1…`).
+3. Guarda el archivo `stockeao-respaldo.key` **fuera del repositorio** y en un lugar seguro.
+   Si se pierde, los respaldos no se pueden abrir. Conviene una copia en un gestor de
+   contraseñas o en un pendrive.
+4. En GitHub → Settings → Secrets and variables → Actions → **Variables** → crea
+   `RESPALDO_CLAVE_PUBLICA` con la clave `age1…` del paso 2.
+
+Sin esa variable el workflow falla y no sube nada (nunca sube un respaldo sin cifrar).
+
 Para probarlo: Actions → Respaldo de la base de datos → Run workflow.
 
-Restaurar (solo si hace falta, idealmente con ayuda): descomprimir el `.sql.gz` y ejecutarlo
-con `psql` sobre un proyecto vacío que ya tenga aplicadas las migraciones.
+Restaurar (solo si hace falta, idealmente con ayuda): descargar el respaldo
+`respaldo-stockeao-AAAA-MM-DD.sql.gz.age`, abrirlo con tu clave:
+
+```powershell
+age --decrypt -i stockeao-respaldo.key respaldo-stockeao-AAAA-MM-DD.sql.gz.age > respaldo.sql.gz
+```
+
+luego descomprimir el `.sql.gz` y ejecutarlo con `psql` sobre un proyecto vacío que ya tenga
+aplicadas las migraciones.
 
 Además, cada dueño puede descargar sus datos desde **Más → Exportar datos**.
 

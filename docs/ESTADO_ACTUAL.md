@@ -14,7 +14,7 @@ sincroniza con Supabase. Precios (con IVA incluido, pensados para reinvertir en 
 | Pro    | $14.990 | $149.900          | 5         |
 
 - Paquete Android: `cl.stockeao.app` (definitivo, ya está en Play Console).
-- Rama de trabajo: `claude/fervent-franklin-regzl4` (todavía no se une a `main`).
+- Rama principal: `main` (la rama `claude/fervent-franklin-regzl4` ya se fusionó y se borró).
 - Supabase: proyecto compartido con otra app; todo en el esquema `inventariado`.
 - Contacto: contacto@grimoriolabs.com (página) · WhatsApp +56 9 5470 0498 (variable
   `CONTACTO_WHATSAPP`).
@@ -28,7 +28,8 @@ Play Store). El cobro con Google Play queda programado pero en pausa (`docs/COBR
 - Instalar: **https://grimoriolabs.com/stockeao/** (fuente en `docs/descargar/`, se publica en
   la carpeta `stockeao/` del repo `grimorio-labs-landing`). Si Chrome se queda pegado al bajar el
   APK, mandarlo por WhatsApp como documento.
-- Publicar versión: Actions → **Construir APK** → Run workflow → marcar **Publicar**. Queda como
+- Publicar versión (solo desde `main`): Actions → **Construir APK** → Run workflow → marcar
+  **Publicar**, o subir un tag `vX.Y.Z` que coincida con `expo.version` (`docs/PILOTO.md`). Queda como
   Release de GitHub (el APK pesa ~70 MB; Supabase gratis acepta 50 MB) y las apps muestran
   "Hay una versión nueva → Actualizar", que descarga e instala con un toque.
 - El cliente toca "Escribir por WhatsApp", se le dan los datos para transferir en el chat (no van

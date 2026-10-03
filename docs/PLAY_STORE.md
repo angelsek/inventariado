@@ -31,6 +31,8 @@ Todo lo que pide Play Console, en orden, con los textos listos para copiar.
 | Páginas de privacidad, términos y eliminación de cuenta | `docs/legal-web/` (hay que publicarlas, ver abajo)                  |
 | App Bundle (.aab)                                       | Actions → **Construir para Google Play** → Run workflow → Artifacts |
 
+El `.aab` solo se genera a mano y únicamente desde la rama `main`.
+
 Para regenerar el ícono: `python3 scripts/generar-iconos.py`.
 Para regenerar las páginas con tu correo:
 `CONTACTO_CORREO=tu@correo.cl node --experimental-strip-types scripts/generar-legal.mjs`.

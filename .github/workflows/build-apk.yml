@@ -3,14 +3,23 @@ name: Construir APK
 # Genera un APK instalable de Android y lo deja como archivo descargable
 # en la página de la ejecución (sección "Artifacts").
 #
-# Al ejecutarlo a mano (Actions → Construir APK → Run workflow) con "publicar"
-# marcado, además lo publica como Release de GitHub y las apps de los clientes
-# avisan que hay una versión nueva. Ver docs/PILOTO.md.
+# Cuándo corre (los builds tardan ~15 min, por eso ya no se lanzan en cada push):
+#   - A mano: Actions → Construir APK → Run workflow. Con "publicar" marcado y desde main,
+#     además lo publica para los clientes (Release de GitHub + aviso en las apps).
+#   - Al subir un tag de versión (git tag -a v1.0.1 -m "Novedades…" && git push origin v1.0.1):
+#     compila y publica. El tag debe coincidir con expo.version de app.json; las notas salen
+#     de la anotación del tag.
+#   - En PRs que tocan dependencias o configuración nativa: solo compila (sin firma propia
+#     ni publicación) para comprobar que el APK sigue generándose.
+# Ver docs/PILOTO.md.
+#
+# Importante: no renombres este archivo. El versionCode del APK es el número de ejecución
+# del workflow y renombrarlo lo reiniciaría (las apps dejarían de ver versiones nuevas).
 on:
   workflow_dispatch:
     inputs:
       publicar:
-        description: 'Publicar para los clientes (la app avisará que hay versión nueva)'
+        description: 'Publicar para los clientes (solo desde main; la app avisará que hay versión nueva)'
         type: boolean
         default: false
       notas:
@@ -22,30 +31,46 @@ on:
         type: boolean
         default: false
   push:
-    branches: [main, claude/fervent-franklin-regzl4]
+    tags: ['v*.*.*']
+  pull_request:
+    paths:
+      - package.json
+      - package-lock.json
+      - app.json
+      - app.config.ts
+      - 'plugins/**'
+      - 'modules/**'
+      - .github/workflows/build-apk.yml
 
-# Publicar crea un Release de GitHub con el APK.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   apk:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    concurrency:
+      group: build-apk-${{ github.ref }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    outputs:
+      archivo: ${{ steps.nombre.outputs.archivo }}
+      version: ${{ steps.nombre.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
         with:
           distribution: temurin
           java-version: 17
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
 
       - run: npm ci
 
@@ -55,8 +80,9 @@ jobs:
         run: npx expo prebuild --platform android --no-install --clean
 
       # Clave de firma definitiva (secretos del repositorio, ver docs/PILOTO.md).
-      # Sin ella se firma con la clave de desarrollo.
+      # Sin ella se firma con la clave de desarrollo. En los PR no se carga: solo se comprueba que compila.
       - name: Preparar clave de firma
+        if: github.event_name != 'pull_request'
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -95,50 +121,97 @@ jobs:
 
       - name: Nombrar APK
         id: nombre
+        env:
+          CODIGO: ${{ github.run_number }}
         run: |
           VERSION=$(node -p "require('./app.json').expo.version")
-          ARCHIVO="stockeao-v${VERSION}-${{ github.run_number }}.apk"
+          ARCHIVO="stockeao-v${VERSION}-${CODIGO}.apk"
           mv android/app/build/outputs/apk/release/app-release.apk "$ARCHIVO"
           echo "archivo=$ARCHIVO" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ${{ steps.nombre.outputs.archivo }}
           path: ${{ steps.nombre.outputs.archivo }}
           retention-days: 30
 
-      # Publica el APK como Release de GitHub (el repo es público y acepta archivos de hasta
-      # 2 GB; Supabase gratis solo acepta 50 MB y el APK pesa ~70 MB) y registra la versión en
-      # Supabase para que las apps avisen. Requiere el secreto SUPABASE_SERVICE_ROLE_KEY.
+  # Publica el APK como Release de GitHub (el repo es público y acepta archivos de hasta
+  # 2 GB; Supabase gratis solo acepta 50 MB y el APK pesa ~70 MB) y registra la versión en
+  # Supabase para que las apps avisen. Requiere el secreto SUPABASE_SERVICE_ROLE_KEY.
+  # Va en un job aparte para que el permiso de escritura y la clave de Supabase no
+  # convivan con npm ci ni con la compilación.
+  publicar:
+    needs: apk
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.publicar && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    # Nunca se cancela a mitad: dejaría una Release sin registrar.
+    concurrency:
+      group: publicar-apk
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.apk.outputs.archivo }}
+
       - name: Publicar para los clientes
-        if: ${{ inputs.publicar }}
         env:
           GH_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           CLAVE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          ARCHIVO: ${{ steps.nombre.outputs.archivo }}
-          VERSION: ${{ steps.nombre.outputs.version }}
+          ARCHIVO: ${{ needs.apk.outputs.archivo }}
+          VERSION: ${{ needs.apk.outputs.version }}
           CODIGO: ${{ github.run_number }}
-          NOTAS: ${{ inputs.notas }}
-          OBLIGATORIA: ${{ inputs.obligatoria }}
+          EVENTO: ${{ github.event_name }}
+          NOTAS_MANUALES: ${{ inputs.notas }}
+          OBLIGATORIA_MANUAL: ${{ inputs.obligatoria }}
         run: |
           if [ -z "$CLAVE" ] || [ -z "$SUPABASE_URL" ]; then
             echo "::error::Falta el secreto SUPABASE_SERVICE_ROLE_KEY o la variable SUPABASE_URL."
             exit 1
           fi
+          if [ "$EVENTO" = "push" ]; then
+            # Publicación por tag: el tag debe coincidir con la versión de app.json y las notas
+            # salen de su anotación (un tag ligero publica sin notas).
+            if [ "${GITHUB_REF_NAME#v}" != "$VERSION" ]; then
+              echo "::error::El tag $GITHUB_REF_NAME no coincide con la versión $VERSION de app.json."
+              exit 1
+            fi
+            OBJETO=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$GITHUB_REF_NAME" --jq '.object.type + " " + .object.sha')
+            NOTAS=""
+            if [ "${OBJETO%% *}" = "tag" ]; then
+              NOTAS=$(gh api "repos/$GITHUB_REPOSITORY/git/tags/${OBJETO#* }" --jq '.message' | sed -e 's/[[:space:]]*$//')
+            fi
+            OBLIGATORIA=false
+          else
+            NOTAS="$NOTAS_MANUALES"
+            OBLIGATORIA="$OBLIGATORIA_MANUAL"
+          fi
+
           # Siempre con el mismo nombre: así el enlace .../releases/latest/download/stockeao.apk
           # descarga la última versión (es el que usa la página de descarga).
           cp "$ARCHIVO" stockeao.apk
           ETIQUETA="apk-$CODIGO"
-          gh release create "$ETIQUETA" stockeao.apk --target "$GITHUB_SHA" --latest             --title "Stockeao $VERSION ($CODIGO)" --notes "${NOTAS:-Versión $VERSION ($CODIGO).}"
+          gh release create "$ETIQUETA" stockeao.apk -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest \
+            --title "Stockeao $VERSION ($CODIGO)" --notes "${NOTAS:-Versión $VERSION ($CODIGO).}"
 
           URL_APK="https://github.com/$GITHUB_REPOSITORY/releases/download/$ETIQUETA/stockeao.apk"
           # Las claves nuevas (sb_secret_...) van solo en "apikey"; las antiguas (JWT) también como Bearer.
           CABECERAS=(-H "apikey: $CLAVE")
           case "$CLAVE" in sb_*) ;; *) CABECERAS+=(-H "Authorization: Bearer $CLAVE") ;; esac
-          jq -n --argjson codigo "$CODIGO" --arg version "$VERSION" --arg url "$URL_APK"             --arg notas "$NOTAS" --argjson obligatoria "$OBLIGATORIA"             '{version_code: $codigo, version: $version, url: $url, notas: (if $notas == "" then null else $notas end), obligatoria: $obligatoria}'             > version.json
-          curl --fail-with-body -sS -X POST "$SUPABASE_URL/rest/v1/versiones_app"             "${CABECERAS[@]}" -H "Content-Type: application/json"             -H "Content-Profile: inventariado" -H "Prefer: resolution=merge-duplicates"             --data @version.json
+          jq -n --argjson codigo "$CODIGO" --arg version "$VERSION" --arg url "$URL_APK" \
+            --arg notas "$NOTAS" --argjson obligatoria "$OBLIGATORIA" \
+            '{version_code: $codigo, version: $version, url: $url, notas: (if $notas == "" then null else $notas end), obligatoria: $obligatoria}' \
+            > version.json
+          curl --fail-with-body -sS -X POST "$SUPABASE_URL/rest/v1/versiones_app" \
+            "${CABECERAS[@]}" -H "Content-Type: application/json" \
+            -H "Content-Profile: inventariado" -H "Prefer: resolution=merge-duplicates" \
+            --data @version.json
           echo
           echo "Publicado: $URL_APK"
           echo "Enlace fijo a la última versión: https://github.com/$GITHUB_REPOSITORY/releases/latest/download/stockeao.apk"

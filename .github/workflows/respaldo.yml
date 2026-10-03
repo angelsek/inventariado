@@ -10,9 +10,13 @@ on:
     # Domingos a las 06:17 UTC (madrugada en Chile).
     - cron: '17 6 * * 0'
 
+permissions:
+  contents: read
+
 jobs:
   respaldo:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Instalar pg_dump 17
         run: |
@@ -36,7 +40,7 @@ jobs:
           ls -lh "$ARCHIVO"
           echo "ARCHIVO=$ARCHIVO" >> "$GITHUB_ENV"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: env.ARCHIVO != ''
         with:
           name: ${{ env.ARCHIVO }}

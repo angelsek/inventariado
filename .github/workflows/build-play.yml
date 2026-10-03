@@ -19,29 +19,36 @@ on:
         description: 'Novedades de esta versión (se muestran en Play Store)'
         type: string
         default: ''
-  # Mientras el flujo no esté en la rama principal, GitHub no deja lanzarlo a mano:
-  # se construye también con cada push a la rama de desarrollo.
-  push:
-    branches: [claude/fervent-franklin-regzl4]
+
+# Solo a mano (Actions → Construir para Google Play → Run workflow), mientras el cobro con Play
+# esté en pausa. Tarda ~20 min.
+permissions:
+  contents: read
+
+concurrency:
+  group: build-play
+  cancel-in-progress: false
 
 jobs:
   aab:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
         with:
           distribution: temurin
           java-version: 17
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
 
       - run: npm ci
 
@@ -50,9 +57,10 @@ jobs:
         env:
           # Sin el permiso para instalar APK (ver app.config.ts): Play no lo acepta.
           EXPO_PUBLIC_CANAL: play
+          EJECUCION: ${{ github.run_number }}
         run: |
-          echo "VERSION_CODE=$((1000 + ${{ github.run_number }}))" >> "$GITHUB_ENV"
-          ANDROID_VERSION_CODE=$((1000 + ${{ github.run_number }})) npx expo prebuild --platform android --no-install --clean
+          echo "VERSION_CODE=$((1000 + EJECUCION))" >> "$GITHUB_ENV"
+          ANDROID_VERSION_CODE=$((1000 + EJECUCION)) npx expo prebuild --platform android --no-install --clean
 
       - name: Preparar clave de firma
         env:
@@ -89,15 +97,19 @@ jobs:
 
       - name: Nombrar AAB
         id: nombre
+        # Las notas van por env y no interpoladas en el script: así un texto con comillas o $(...)
+        # no se ejecuta como comando.
+        env:
+          NOTAS: ${{ inputs.notas }}
         run: |
           VERSION=$(node -p "require('./app.json').expo.version")
           ARCHIVO="stockeao-v${VERSION}-${VERSION_CODE}.aab"
           mv android/app/build/outputs/bundle/release/app-release.aab "$ARCHIVO"
           echo "archivo=$ARCHIVO" >> "$GITHUB_OUTPUT"
           mkdir -p notas
-          printf '%s' "${{ inputs.notas }}" > notas/whatsnew-es-419
+          printf '%s' "$NOTAS" > notas/whatsnew-es-419
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ${{ steps.nombre.outputs.archivo }}
           path: ${{ steps.nombre.outputs.archivo }}
@@ -111,7 +123,7 @@ jobs:
 
       - name: Subir a Google Play
         if: steps.play.outputs.configurada == 'si'
-        uses: r0adkll/upload-google-play@v1
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: cl.stockeao.app

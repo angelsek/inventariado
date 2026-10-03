@@ -10,21 +10,29 @@ name: Publicar funciones de Supabase
 on:
   workflow_dispatch:
   push:
-    branches: [main, claude/fervent-franklin-regzl4]
+    branches: [main]
     paths: ['supabase/functions/**', '.github/workflows/publicar-funciones.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publicar-funciones
+  cancel-in-progress: false
 
 jobs:
   publicar:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Revisar configuración
         id: config
         env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
         run: |
           if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
@@ -40,20 +48,26 @@ jobs:
       - name: Cargar secretos de las funciones
         if: steps.config.outputs.listo == 'si'
         env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ steps.config.outputs.ref }}
           CUENTA: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           RTDN: ${{ secrets.PLAY_RTDN_TOKEN }}
         run: |
           ARGS=("PLAY_PACKAGE_NAME=cl.stockeao.app")
           [ -n "$CUENTA" ] && ARGS+=("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON=$CUENTA")
           [ -n "$RTDN" ] && ARGS+=("PLAY_RTDN_TOKEN=$RTDN")
-          npx --yes supabase@latest secrets set --project-ref "${{ steps.config.outputs.ref }}" "${ARGS[@]}"
+          npx --yes supabase@2.119.0 secrets set --project-ref "$REF" "${ARGS[@]}"
 
       - name: Publicar funciones
         if: steps.config.outputs.listo == 'si'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ steps.config.outputs.ref }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
         run: |
-          npx --yes supabase@latest functions deploy verificar-compra-play \
-            --project-ref "${{ steps.config.outputs.ref }}" --use-api
+          npx --yes supabase@2.119.0 functions deploy verificar-compra-play \
+            --project-ref "$REF" --use-api
           # Google Pub/Sub no tiene sesión de Supabase: se protege con ?token=PLAY_RTDN_TOKEN.
-          npx --yes supabase@latest functions deploy notificaciones-play \
-            --project-ref "${{ steps.config.outputs.ref }}" --use-api --no-verify-jwt
-          echo "Dirección para Pub/Sub: ${{ vars.SUPABASE_URL }}/functions/v1/notificaciones-play?token=<PLAY_RTDN_TOKEN>"
+          npx --yes supabase@2.119.0 functions deploy notificaciones-play \
+            --project-ref "$REF" --use-api --no-verify-jwt
+          echo "Dirección para Pub/Sub: $SUPABASE_URL/functions/v1/notificaciones-play?token=<PLAY_RTDN_TOKEN>"

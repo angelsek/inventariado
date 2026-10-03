@@ -52,7 +52,8 @@ Para conectarse al servidor, copiar `.env.example` a `.env.local` con los datos 
 **Opción 1 — GitHub Actions (sin instalar nada):**
 
 1. En GitHub, ir a **Actions → Construir APK → Run workflow**.
-   También se ejecuta solo en cada push a `main`.
+   Ya no se ejecuta con cada push: corre a mano, al subir un tag de versión (`v1.0.1`) y en los
+   PR que tocan la configuración de la app (ahí solo compila, sin publicar).
 2. Al terminar (unos 15–20 min), abrir la ejecución y descargar el APK en **Artifacts**.
 3. Pasar el APK al teléfono, abrirlo y permitir "instalar apps de origen desconocido".
 

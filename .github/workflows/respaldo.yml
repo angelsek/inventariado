@@ -3,16 +3,24 @@ name: Respaldo de la base de datos
 # Copia semanal de todos los datos de Stockeao (esquema "inventariado").
 # El plan gratuito de Supabase no incluye respaldos automáticos.
 # El archivo queda 90 días en la página de la ejecución (sección "Artifacts").
-# Requiere el secreto SUPABASE_DB_URL (ver docs/PILOTO.md).
+# Requiere el secreto SUPABASE_DB_URL y la variable RESPALDO_CLAVE_PUBLICA (ver docs/PILOTO.md).
+#
+# El repositorio es público y cualquiera con cuenta de GitHub puede descargar sus artifacts:
+# por eso el respaldo se CIFRA con age antes de subirlo. Solo se puede abrir con la clave privada,
+# que se guarda fuera de GitHub. Sin clave pública configurada no se sube nada.
 on:
   workflow_dispatch:
   schedule:
     # Domingos a las 06:17 UTC (madrugada en Chile).
     - cron: '17 6 * * 0'
 
+permissions:
+  contents: read
+
 jobs:
   respaldo:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Instalar pg_dump 17
         run: |
@@ -20,23 +28,33 @@ jobs:
           sudo curl -sSo /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
           echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
           sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client-17
+          sudo apt-get install -y -qq postgresql-client-17 age
 
-      - name: Respaldar esquema inventariado
+      - name: Respaldar esquema inventariado (cifrado)
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          CLAVE_PUBLICA: ${{ vars.RESPALDO_CLAVE_PUBLICA }}
         run: |
+          set -o pipefail # si pg_dump falla, el paso falla (no se sube un respaldo vacío)
           if [ -z "$SUPABASE_DB_URL" ]; then
             echo "::warning::Falta el secreto SUPABASE_DB_URL: no se hizo respaldo."
             exit 0
           fi
-          ARCHIVO="respaldo-stockeao-$(date -u +%Y-%m-%d).sql.gz"
+          if ! [[ "$CLAVE_PUBLICA" =~ ^age1[0-9a-z]{50,}$ ]]; then
+            echo "::error::Falta la variable RESPALDO_CLAVE_PUBLICA (clave pública de age, empieza por age1): el respaldo no se sube sin cifrar. Ver docs/PILOTO.md."
+            exit 1
+          fi
+          ARCHIVO="respaldo-stockeao-$(date -u +%Y-%m-%d).sql.gz.age"
           /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" --schema=inventariado \
-            --no-owner --no-privileges | gzip > "$ARCHIVO"
+            --no-owner --no-privileges | gzip | age --encrypt --recipient "$CLAVE_PUBLICA" > "$ARCHIVO"
           ls -lh "$ARCHIVO"
+          if [ "$(stat -c %s "$ARCHIVO")" -lt 1024 ]; then
+            echo "::error::El respaldo pesa menos de 1 KB: probablemente pg_dump no exportó datos."
+            exit 1
+          fi
           echo "ARCHIVO=$ARCHIVO" >> "$GITHUB_ENV"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: env.ARCHIVO != ''
         with:
           name: ${{ env.ARCHIVO }}

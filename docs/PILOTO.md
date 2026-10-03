@@ -125,8 +125,11 @@ Restaurar (solo si hace falta, idealmente con ayuda): descargar el respaldo
 `respaldo-stockeao-AAAA-MM-DD.sql.gz.age`, abrirlo con tu clave:
 
 ```powershell
-age --decrypt -i stockeao-respaldo.key respaldo-stockeao-AAAA-MM-DD.sql.gz.age > respaldo.sql.gz
+age --decrypt -i stockeao-respaldo.key -o respaldo.sql.gz respaldo-stockeao-AAAA-MM-DD.sql.gz.age
 ```
+
+(Usa `-o` para el archivo de salida: en PowerShell, redirigir con `>` guarda el resultado como texto y
+corrompe el respaldo.)
 
 luego descomprimir el `.sql.gz` y ejecutarlo con `psql` sobre un proyecto vacío que ya tenga
 aplicadas las migraciones.

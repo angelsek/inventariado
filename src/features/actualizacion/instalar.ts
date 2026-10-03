@@ -1,6 +1,9 @@
 import { File, Paths } from 'expo-file-system';
 import { startActivityAsync } from 'expo-intent-launcher';
 
+import { ErrorIntegridad, hashesCoinciden, urlApkPermitida } from './integridad';
+import { sha256Archivo } from './sha256';
+
 // Intent.FLAG_GRANT_READ_URI_PERMISSION: deja que el instalador de Android lea el archivo.
 const PERMISO_LECTURA = 1;
 const TIPO_APK = 'application/vnd.android.package-archive';
@@ -9,17 +12,35 @@ const TAMANO_MINIMO = 1_000_000;
 
 const nombreApk = (codigo: number) => `stockeao-${codigo}.apk`;
 
+/** ¿El archivo coincide con el SHA-256 publicado? Sin hash publicado no se puede comprobar. */
+async function coincide(archivo: File, sha256: string | null) {
+  return sha256 === null || hashesCoinciden(await sha256Archivo(archivo.uri), sha256);
+}
+
 /**
- * Descarga el APK de la versión nueva (si no estaba ya descargado) y abre el
- * instalador de Android. La primera vez Android pide permitir instalar apps
- * desde Stockeao; después basta con tocar "Instalar".
+ * Descarga el APK de la versión nueva (si no estaba ya descargado), comprueba que su SHA-256
+ * coincide con el publicado y abre el instalador de Android. La primera vez Android pide
+ * permitir instalar apps desde Stockeao; después basta con tocar "Instalar".
+ *
+ * Lanza ErrorIntegridad si la URL no es de las Releases de Stockeao o si el archivo no coincide
+ * con el hash publicado: en ese caso borra la descarga y no instala nada.
  */
 export async function descargarEInstalar(
   url: string,
   codigo: number,
+  sha256: string | null,
   alAvanzar: (fraccion: number) => void,
+  alVerificar: () => void = () => {},
 ) {
+  if (!urlApkPermitida(url)) {
+    throw new ErrorIntegridad('La versión publicada no apunta a una descarga de Stockeao.');
+  }
   const apk = new File(Paths.cache, nombreApk(codigo));
+  // Un APK ya descargado también se comprueba: pudo dañarse o cambiarse desde entonces.
+  if (apk.exists) {
+    alVerificar();
+    if (!(await coincide(apk, sha256))) apk.delete();
+  }
   if (!apk.exists) {
     // Se descarga con otro nombre y se renombra al terminar: así un APK a medias
     // (sin señal, app cerrada) nunca se confunde con uno completo.
@@ -33,6 +54,11 @@ export async function descargarEInstalar(
     if (!parcial.exists || (parcial.size ?? 0) < TAMANO_MINIMO) {
       if (parcial.exists) parcial.delete();
       throw new Error('La descarga no se completó.');
+    }
+    alVerificar();
+    if (!(await coincide(parcial, sha256))) {
+      parcial.delete();
+      throw new ErrorIntegridad('El APK descargado no coincide con la versión publicada.');
     }
     parcial.rename(nombreApk(codigo));
   }

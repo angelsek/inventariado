@@ -14,3 +14,11 @@ export const CONTACTO = {
  * Lo fija el workflow de compilación.
  */
 export const CANAL: 'play' | 'apk' = process.env.EXPO_PUBLIC_CANAL === 'play' ? 'play' : 'apk';
+
+/**
+ * Único origen desde el que la app descarga e instala APK: las Releases del repositorio.
+ * Lo fija el workflow "Construir APK" a partir del repositorio que compila.
+ */
+export const ORIGEN_APK =
+  process.env.EXPO_PUBLIC_ORIGEN_APK ||
+  'https://github.com/angelsek/inventariado/releases/download/';

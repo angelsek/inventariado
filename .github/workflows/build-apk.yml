@@ -151,6 +151,8 @@ jobs:
           EXPO_PUBLIC_DATOS_TRANSFERENCIA: ${{ vars.DATOS_TRANSFERENCIA }}
           # Instalación directa: la app avisa de versiones nuevas publicadas en Supabase.
           EXPO_PUBLIC_CANAL: apk
+          # Único origen desde el que la app acepta descargar APK (ver src/config.ts).
+          EXPO_PUBLIC_ORIGEN_APK: https://github.com/${{ github.repository }}/releases/download/
         # Solo arquitecturas de teléfonos reales: APK más liviano y compilación más rápida.
         run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
 
@@ -237,8 +239,13 @@ jobs:
           # Siempre con el mismo nombre: así el enlace .../releases/latest/download/stockeao.apk
           # descarga la última versión (es el que usa la página de descarga).
           cp "$ARCHIVO" stockeao.apk
+          # SHA-256 del APK: la app lo compara con la descarga antes de instalar (solo confía en el que
+          # queda en Supabase). El .sha256 de la Release es para verificar a mano: sha256sum -c.
+          SHA256=$(sha256sum stockeao.apk | cut -d' ' -f1)
+          sha256sum stockeao.apk > stockeao.apk.sha256
+          echo "SHA-256 del APK: $SHA256"
           ETIQUETA="apk-$CODIGO"
-          gh release create "$ETIQUETA" stockeao.apk -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest \
+          gh release create "$ETIQUETA" stockeao.apk stockeao.apk.sha256 -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest \
             --title "Stockeao $VERSION ($CODIGO)" --notes "${NOTAS:-Versión $VERSION ($CODIGO).}"
 
           URL_APK="https://github.com/$GITHUB_REPOSITORY/releases/download/$ETIQUETA/stockeao.apk"
@@ -246,13 +253,24 @@ jobs:
           CABECERAS=(-H "apikey: $CLAVE")
           case "$CLAVE" in sb_*) ;; *) CABECERAS+=(-H "Authorization: Bearer $CLAVE") ;; esac
           jq -n --argjson codigo "$CODIGO" --arg version "$VERSION" --arg url "$URL_APK" \
-            --arg notas "$NOTAS" --argjson obligatoria "$OBLIGATORIA" \
-            '{version_code: $codigo, version: $version, url: $url, notas: (if $notas == "" then null else $notas end), obligatoria: $obligatoria}' \
+            --arg sha256 "$SHA256" --arg notas "$NOTAS" --argjson obligatoria "$OBLIGATORIA" \
+            '{version_code: $codigo, version: $version, url: $url, sha256: $sha256, notas: (if $notas == "" then null else $notas end), obligatoria: $obligatoria}' \
             > version.json
           curl --fail-with-body -sS -X POST "$SUPABASE_URL/rest/v1/versiones_app" \
             "${CABECERAS[@]}" -H "Content-Type: application/json" \
             -H "Content-Profile: inventariado" -H "Prefer: resolution=merge-duplicates" \
             --data @version.json
           echo
+
+          # Comprueba lo que verán las apps: la última versión debe ser esta y con su hash.
+          curl --fail-with-body -sS -X POST "$SUPABASE_URL/rest/v1/rpc/ultima_version" \
+            "${CABECERAS[@]}" -H "Content-Type: application/json" -H "Content-Profile: inventariado" \
+            --data '{}' > publicada.json
+          if ! jq -e --argjson codigo "$CODIGO" --arg sha256 "$SHA256" \
+            '.version_code == $codigo and .sha256 == $sha256' publicada.json > /dev/null; then
+            echo "::error::Supabase no devuelve la versión $CODIGO con su SHA-256. ¿Se aplicó la migración 20261003000100_versiones_app_sha256.sql?"
+            cat publicada.json
+            exit 1
+          fi
           echo "Publicado: $URL_APK"
           echo "Enlace fijo a la última versión: https://github.com/$GITHUB_REPOSITORY/releases/latest/download/stockeao.apk"

@@ -53,10 +53,15 @@ firmas RSA PKCS#1 v1.5 demasiado permisiva.
 servicio con texto mal codificado.
 
 - **Llega por:** `query-string` de `expo-router`, y **sí va dentro del APK**.
-- **Por qué no afecta:** `expo-router` usa su propio `getStateFromPath`, que analiza los enlaces con
-  `URL`/`URLSearchParams` y tiene comentada la llamada a `queryString.parse`. Los enlaces `stockeao://…`
-  no pasan por la función vulnerable. En el peor caso teórico, un enlace malicioso que el propio usuario
+- **Por qué no afecta:** `getLinkingConfig.js` siempre define `getStateFromPath` con el fork propio de
+  `expo-router` (`fork/getStateFromPath.js`), que analiza los enlaces con `parseQueryParams`
+  (`fork/getStateFromPath-forks.js`, sobre `URL`/`URLSearchParams`) y tiene comentada la llamada a
+  `queryString.parse`. El `getStateFromPath` del core de react-navigation, que sí usa `query-string`,
+  se carga pero solo se usaría si alguien sustituyera `getStateFromPath`. Los enlaces `stockeao://…` no
+  pasan por la función vulnerable. En el peor caso teórico, un enlace malicioso que el propio usuario
   toca congela la app, sin exponer datos.
+- **Revalidar con cada versión de `expo-router`:** es un fork interno que puede cambiar. Comprobar que
+  `node_modules/expo-router/build/fork/getStateFromPath.js` sigue sin llamar a `queryString.parse`.
 - **Por qué no se fuerza la versión corregida:** la 0.5.0 es solo ESM y `query-string@7` la carga con `require`, así que
   forzarla rompería la app (y Jest).
 - **Decisión:** aceptar. Revisar cuando `expo-router` actualice `query-string`.

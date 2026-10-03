@@ -67,7 +67,7 @@ describe('avisosRaiz', () => {
     expect([...avisos.get(GHSA_A).paquetes]).toEqual(['sinNombre']);
   });
 
-  it('ignora las vías sin url GHSA', () => {
+  it('las vías sin url GHSA no se ignoran: cuentan con una clave SIN-GHSA propia', () => {
     const avisos = avisosRaiz(
       auditCon({
         a: { severity: 'high', via: [{ name: 'a', title: 'x', severity: 'high' }] },
@@ -78,7 +78,17 @@ describe('avisosRaiz', () => {
         c: { severity: 'high' },
       }),
     );
-    expect(avisos.size).toBe(0);
+    expect([...avisos.keys()].sort()).toEqual([
+      'SIN-GHSA:a:x',
+      'SIN-GHSA:b:https://example.com/otro',
+    ]);
+  });
+
+  it('un aviso sin GHSA es error en estricto (no se puede exceptuar por error)', () => {
+    const audit = auditCon({
+      a: { severity: 'high', via: [{ name: 'a', title: 'x', severity: 'high' }] },
+    });
+    expect(evaluar(audit, [], '2026-10-02', { estricto: true }).errores).toHaveLength(1);
   });
 });
 

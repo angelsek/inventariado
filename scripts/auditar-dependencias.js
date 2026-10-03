@@ -21,8 +21,11 @@ function avisosRaiz(audit) {
   for (const [paquete, vuln] of Object.entries(audit?.vulnerabilities ?? {})) {
     for (const via of vuln.via ?? []) {
       if (typeof via !== 'object' || !via) continue; // los intermedios (string) se cubren solos
-      const ghsa = String(via.url ?? '').match(/GHSA(-[0-9a-z]{4}){3}/i)?.[0];
-      if (!ghsa) continue;
+      // Sin identificador GHSA (p. ej. si npm cambia el formato) no se ignora: cuenta como aviso
+      // nuevo con una clave propia, así no se puede exceptuar por error y se revisa.
+      const ghsa =
+        String(via.url ?? '').match(/GHSA(-[0-9a-z]{4}){3}/i)?.[0] ??
+        `SIN-GHSA:${via.name ?? paquete}:${via.title ?? via.url ?? '?'}`;
       const aviso = avisos.get(ghsa) ?? {
         ghsa,
         severidad: via.severity,
@@ -92,8 +95,10 @@ function main() {
   const hoy = new Date().toISOString().slice(0, 10);
   const { errores, avisos } = evaluar(audit, excepciones, hoy, { estricto });
   const enActions = process.env.GITHUB_ACTIONS === 'true';
-  for (const a of avisos) console.log(enActions ? `::warning::${a}` : `Aviso: ${a}`);
-  for (const e of errores) console.log(enActions ? `::error::${e}` : `Error: ${e}`);
+  // Los textos vienen de los avisos de npm: se escapan para que no puedan inyectar comandos de Actions.
+  const escapar = (t) => String(t).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+  for (const a of avisos) console.log(enActions ? `::warning::${escapar(a)}` : `Aviso: ${a}`);
+  for (const e of errores) console.log(enActions ? `::error::${escapar(e)}` : `Error: ${e}`);
   console.log(
     `Auditoría de dependencias: ${errores.length} error(es), ${avisos.length} aviso(s)` +
       (estricto ? ' (modo estricto).' : ' (modo informativo).'),

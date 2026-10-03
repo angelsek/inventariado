@@ -13,7 +13,7 @@
       "ghsa": "GHSA-vcc3-ghjq-m6fr",
       "paquete": "decode-uri-component",
       "severidad": "moderate",
-      "justificacion": "Va en el APK vía query-string de expo-router, pero expo-router analiza los enlaces con URLSearchParams y no llama a decode-uri-component. La versión corregida (0.5.0) es solo ESM y rompería la app.",
+      "justificacion": "Va en el APK vía query-string de expo-router. Los enlaces se analizan con el getStateFromPath propio de expo-router (fork, URLSearchParams); el queryString.parse del core de react-navigation solo se usaría si se sustituyera getStateFromPath. Revalidar con cada versión de expo-router. La versión corregida (0.5.0) es solo ESM y rompería la app.",
       "revisar_antes": "2027-01-04",
       "documento": "docs/SEGURIDAD_DEPENDENCIAS.md#decode-uri-component"
     },

@@ -1,7 +1,13 @@
 import { File, Paths } from 'expo-file-system';
 import { startActivityAsync } from 'expo-intent-launcher';
 
-import { ErrorIntegridad, hashesCoinciden, urlApkPermitida } from './integridad';
+import {
+  ErrorIntegridad,
+  ErrorOrigen,
+  hashesCoinciden,
+  PRIMER_CODIGO_CON_HASH,
+  urlApkPermitida,
+} from './integridad';
 import { sha256Archivo } from './sha256';
 
 // Intent.FLAG_GRANT_READ_URI_PERMISSION: deja que el instalador de Android lea el archivo.
@@ -12,9 +18,20 @@ const TAMANO_MINIMO = 1_000_000;
 
 const nombreApk = (codigo: number) => `stockeao-${codigo}.apk`;
 
-/** ¿El archivo coincide con el SHA-256 publicado? Sin hash publicado no se puede comprobar. */
+/**
+ * ¿El archivo coincide con el SHA-256 publicado? Sin hash publicado no se puede comprobar.
+ * Si el cálculo falla (módulo nativo, lectura) es un error de integridad: nunca se instala
+ * algo que no se pudo verificar.
+ */
 async function coincide(archivo: File, sha256: string | null) {
-  return sha256 === null || hashesCoinciden(await sha256Archivo(archivo.uri), sha256);
+  if (sha256 === null) return true;
+  let calculado: string;
+  try {
+    calculado = await sha256Archivo(archivo.uri);
+  } catch {
+    throw new ErrorIntegridad('No se pudo verificar el APK descargado.');
+  }
+  return hashesCoinciden(calculado, sha256);
 }
 
 /**
@@ -22,8 +39,10 @@ async function coincide(archivo: File, sha256: string | null) {
  * coincide con el publicado y abre el instalador de Android. La primera vez Android pide
  * permitir instalar apps desde Stockeao; después basta con tocar "Instalar".
  *
- * Lanza ErrorIntegridad si la URL no es de las Releases de Stockeao o si el archivo no coincide
- * con el hash publicado: en ese caso borra la descarga y no instala nada.
+ * Lanza ErrorOrigen si la URL no es de las Releases de Stockeao, y ErrorIntegridad si el archivo
+ * no coincide con el hash publicado, no se pudo verificar o una versión nueva llega sin hash: en
+ * esos casos borra la descarga y no instala nada. Un APK en caché que ya no coincide se borra
+ * y se descarga de nuevo (sin error).
  */
 export async function descargarEInstalar(
   url: string,
@@ -33,7 +52,10 @@ export async function descargarEInstalar(
   alVerificar: () => void = () => {},
 ) {
   if (!urlApkPermitida(url)) {
-    throw new ErrorIntegridad('La versión publicada no apunta a una descarga de Stockeao.');
+    throw new ErrorOrigen('La versión publicada no apunta a una descarga de Stockeao.');
+  }
+  if (sha256 === null && codigo >= PRIMER_CODIGO_CON_HASH) {
+    throw new ErrorIntegridad('La versión publicada no trae su SHA-256: no se instala.');
   }
   const apk = new File(Paths.cache, nombreApk(codigo));
   // Un APK ya descargado también se comprueba: pudo dañarse o cambiarse desde entonces.
@@ -56,8 +78,13 @@ export async function descargarEInstalar(
       throw new Error('La descarga no se completó.');
     }
     alVerificar();
-    if (!(await coincide(parcial, sha256))) {
-      parcial.delete();
+    let valido = false;
+    try {
+      valido = await coincide(parcial, sha256);
+    } finally {
+      if (!valido && parcial.exists) parcial.delete();
+    }
+    if (!valido) {
       throw new ErrorIntegridad('El APK descargado no coincide con la versión publicada.');
     }
     parcial.rename(nombreApk(codigo));

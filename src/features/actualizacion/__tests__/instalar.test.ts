@@ -1,7 +1,7 @@
 import { startActivityAsync } from 'expo-intent-launcher';
 
 import { descargarEInstalar } from '../instalar';
-import { ErrorIntegridad } from '../integridad';
+import { ErrorIntegridad, ErrorOrigen, PRIMER_CODIGO_CON_HASH } from '../integridad';
 import { sha256Archivo } from '../sha256';
 
 type Falso = {
@@ -135,19 +135,37 @@ it('caché correcta: instala sin descargar', async () => {
   expect(startActivityAsync).toHaveBeenCalledTimes(1);
 });
 
-it('URL no permitida: no descarga y lanza ErrorIntegridad', async () => {
+it('URL no permitida: no descarga y lanza ErrorOrigen', async () => {
   await expect(
     descargarEInstalar('https://x/apk/a.apk', CODIGO, HASH, jest.fn()),
-  ).rejects.toBeInstanceOf(ErrorIntegridad);
+  ).rejects.toBeInstanceOf(ErrorOrigen);
   expect(mockDescargas).toHaveLength(0);
   expect(sha).not.toHaveBeenCalled();
   expect(startActivityAsync).not.toHaveBeenCalled();
 });
 
-it('sin sha256 publicado instala sin calcular el hash', async () => {
+it('versión antigua sin sha256 publicado se instala sin calcular el hash', async () => {
+  expect(CODIGO).toBeLessThan(PRIMER_CODIGO_CON_HASH);
   await descargarEInstalar(URL_OK, CODIGO, null, jest.fn());
   expect(sha).not.toHaveBeenCalled();
   expect(startActivityAsync).toHaveBeenCalledTimes(1);
+});
+
+it('versión nueva sin sha256 publicado no se descarga ni instala', async () => {
+  await expect(
+    descargarEInstalar(URL_OK, PRIMER_CODIGO_CON_HASH, null, jest.fn()),
+  ).rejects.toBeInstanceOf(ErrorIntegridad);
+  expect(mockDescargas).toHaveLength(0);
+  expect(startActivityAsync).not.toHaveBeenCalled();
+});
+
+it('si el cálculo del hash falla: ErrorIntegridad, borra el parcial y no instala', async () => {
+  sha.mockRejectedValue(new Error('módulo nativo no disponible'));
+  await expect(descargarEInstalar(URL_OK, CODIGO, HASH, jest.fn())).rejects.toBeInstanceOf(
+    ErrorIntegridad,
+  );
+  expect(archivo(PARCIAL)?.existe).toBe(false);
+  expect(startActivityAsync).not.toHaveBeenCalled();
 });
 
 it('descarga corta (<1 MB): Error normal, borra el parcial y no instala', async () => {

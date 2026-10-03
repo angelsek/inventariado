@@ -6,7 +6,7 @@ import { informarError } from '@/lib/errores';
 import { supabase, supabaseConfigurado } from '@/lib/supabase';
 import { versionActual } from '@/lib/version';
 
-import { ErrorIntegridad, urlApkPermitida } from './integridad';
+import { ErrorIntegridad, ErrorOrigen, urlApkPermitida } from './integridad';
 import { descargarEInstalar, limpiarDescargas } from './instalar';
 
 export type VersionPublicada = {
@@ -66,11 +66,20 @@ export const useActualizacion = create<Estado>((set, get) => ({
         nueva.url,
         nueva.version_code,
         sha256,
-        (p) => set({ progreso: p }),
+        // Si tras verificar un APK en caché hay que descargarlo de nuevo, vuelve el porcentaje.
+        (p) => set({ progreso: p, verificando: false }),
         () => set({ verificando: true }),
       );
     } catch (error) {
-      if (error instanceof ErrorIntegridad) {
+      if (error instanceof ErrorOrigen) {
+        void informarError(error, 'Actualización');
+        // Reintentar fallaría igual y el navegador se saltaría la verificación.
+        Alert.alert(
+          'No se puede instalar esta versión',
+          'La versión publicada no apunta a una descarga de Stockeao. Avisa a soporte.',
+          [{ text: 'Cerrar', style: 'cancel' }],
+        );
+      } else if (error instanceof ErrorIntegridad) {
         void informarError(error, 'Actualización');
         // Sin "Abrir en el navegador": esa descarga se saltaría la verificación.
         Alert.alert(

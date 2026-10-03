@@ -1,10 +1,25 @@
 import { ORIGEN_APK } from '@/config';
 
-/** La descarga no coincide con el APK publicado (hash distinto u origen no permitido): no se instala. */
+/**
+ * Primer versionCode publicado con SHA-256 (el workflow lo publica siempre desde entonces).
+ * Desde esta versión, una publicación sin hash no se instala: así no queda una vía permanente
+ * para saltarse la verificación. Las versiones anteriores se instalan sin verificar.
+ */
+export const PRIMER_CODIGO_CON_HASH = 46;
+
+/** La descarga no coincide con el APK publicado (o no se pudo verificar): no se instala. */
 export class ErrorIntegridad extends Error {
   constructor(mensaje: string) {
     super(mensaje);
     this.name = 'ErrorIntegridad';
+  }
+}
+
+/** La versión publicada no apunta a las Releases de Stockeao: reintentar no sirve de nada. */
+export class ErrorOrigen extends Error {
+  constructor(mensaje: string) {
+    super(mensaje);
+    this.name = 'ErrorOrigen';
   }
 }
 
@@ -18,7 +33,8 @@ export function urlApkPermitida(url: string, origen: string = ORIGEN_APK): boole
   let esperado: URL;
   try {
     destino = new URL(url);
-    esperado = new URL(origen);
+    // El prefijo siempre termina en "/": así ".../download" no acepta ".../downloadX".
+    esperado = new URL(origen.endsWith('/') ? origen : `${origen}/`);
   } catch {
     return false;
   }

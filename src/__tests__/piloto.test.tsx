@@ -7,7 +7,7 @@ import { crearPerfil } from '@/db/perfiles';
 import type { BaseLocal } from '@/db/tipos';
 import { useActualizacion } from '@/features/actualizacion/actualizacion';
 import { descargarEInstalar } from '@/features/actualizacion/instalar';
-import { ErrorIntegridad } from '@/features/actualizacion/integridad';
+import { ErrorIntegridad, ErrorOrigen } from '@/features/actualizacion/integridad';
 import { informarError } from '@/lib/errores';
 import { useSesion } from '@/sesion/store';
 import { crearBaseEnMemoria } from '@/test/baseEnMemoria';
@@ -179,6 +179,19 @@ it('si la integridad falla alerta sin ofrecer el navegador y deja reintentar', a
   await waitFor(() => expect(useActualizacion.getState().progreso).toBeNull());
   await act(async () => botones.find((b) => b.text === 'Reintentar')?.onPress?.());
   await waitFor(() => expect(descargarEInstalar).toHaveBeenCalledTimes(2));
+});
+
+it('si la versión no apunta a las Releases avisa sin reintentar ni ofrecer el navegador', async () => {
+  jest.mocked(descargarEInstalar).mockRejectedValueOnce(new ErrorOrigen('otra url'));
+  const alerta = jest.spyOn(Alert, 'alert');
+  publicar({});
+  await entrar();
+
+  fireEvent.press(await screen.findByText('Actualizar'));
+  await waitFor(() => expect(alerta).toHaveBeenCalled());
+  expect(alerta.mock.calls[0][0]).toBe('No se puede instalar esta versión');
+  const textos = (alerta.mock.calls[0][2] as { text: string }[]).map((b) => b.text);
+  expect(textos).toEqual(['Cerrar']);
 });
 
 it('error de red con URL no permitida no ofrece el navegador', async () => {

@@ -31,6 +31,8 @@ concurrency:
 
 jobs:
   aab:
+    # Solo desde main: una rama sin revisar no recibe la clave de firma ni la cuenta de Play.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:

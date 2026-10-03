@@ -183,9 +183,9 @@ compartido) y negocio creado desde el teléfono.
 
 **Meta:** validar con clientes antes de crecer. Guía: `docs/PILOTO.md`.
 
-- **Aviso de versión nueva**: el workflow "Construir APK" puede publicar el APK en Supabase
-  Storage y registrar la versión; la app avisa y descarga desde ahí (los clientes no necesitan
-  GitHub). Opción de actualización obligatoria. Enlace fijo a la última versión.
+- **Aviso de versión nueva**: el workflow "Construir APK" puede publicar el APK en las Releases
+  de GitHub y registrar la versión y su SHA-256 en Supabase; la app avisa, descarga de las Releases
+  y verifica el hash antes de instalar (los clientes no necesitan GitHub). Opción de actualización obligatoria. Enlace fijo a la última versión.
 - **Firma con clave propia** (plugin de Expo + secretos de GitHub) antes de entregar a clientes.
 - **Registro de errores** propio (sin servicios externos): errores de pantalla y no capturados
   llegan al panel de administración con versión y modelo de teléfono.

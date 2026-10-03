@@ -26,6 +26,11 @@ Los archivos se pueden ejecutar de nuevo sin problema: completan lo que falte y 
 Se ejecutan **en orden** (el nombre empieza con la fecha). Si un archivo ya ejecutado cambia en
 una actualización, basta con volver a ejecutarlo.
 
+Si ya tenías las tablas creadas, ejecuta también las migraciones nuevas. En particular,
+`20261003000100_versiones_app_sha256.sql` (guarda el SHA-256 de cada APK publicado) es
+**obligatoria antes de publicar una versión** con el workflow "Construir APK": si falta la
+columna, la publicación se detiene.
+
 ## 3. Exponer el esquema
 
 En **Project Settings → Data API → Exposed schemas**, agregar `inventariado` a la lista

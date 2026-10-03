@@ -47,6 +47,9 @@ Play Store). El cobro con Google Play queda programado pero en pausa (`docs/COBR
 - Firma con clave propia; app en Play Console con **prueba interna** (último `.aab`: 1008).
 - Cobro con Google Play Billing programado (en pausa).
 - APK publicado (versión 35) con actualización dentro de la app y página de descarga.
+- Integridad del APK: la app solo descarga de las Releases y verifica el SHA-256 (publicado en
+  Supabase) antes de instalar; el workflow lo calcula, lo registra y sube `stockeao.apk.sha256`
+  (`docs/PILOTO.md`).
 - Desarrollo local en Windows con emulador (`docs/TRABAJAR_EN_MI_EQUIPO.md`).
 - Dependencias revisadas: el workflow **Dependencias** corre `npm audit` contra las excepciones
   registradas (estricto en PR que tocan dependencias y los lunes; no obligatorio). Las
@@ -54,6 +57,9 @@ Play Store). El cobro con Google Play queda programado pero en pausa (`docs/COBR
 
 ## Pendiente (en orden)
 
+0. **Antes de la primera publicación con la verificación:** ejecutar
+   `supabase/migrations/20261003000100_versiones_app_sha256.sql` en el SQL Editor de Supabase
+   (`docs/SUPABASE.md`) y publicar solo después de fusionar `feat/integridad-apk` a `main`.
 1. Cuando se formalice la empresa: retomar el cobro con Google Play (`docs/COBRO_GOOGLE_PLAY.md`),
    ficha de Play Store, cuenta demo y prueba cerrada.
 2. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**

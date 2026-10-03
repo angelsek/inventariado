@@ -9,6 +9,7 @@ import { useActualizacion } from './actualizacion';
 export function AvisoActualizacion() {
   const nueva = useActualizacion((s) => s.nueva);
   const progreso = useActualizacion((s) => s.progreso);
+  const verificando = useActualizacion((s) => s.verificando);
   const actualizar = useActualizacion((s) => s.actualizar);
   if (!nueva) return null;
 
@@ -27,9 +28,11 @@ export function AvisoActualizacion() {
           color={colores.superficie}
         />
         <Text style={estilos.texto}>
-          {descargando
-            ? `Descargando la versión nueva... ${Math.round(progreso * 100)} %`
-            : `${nueva.obligatoria ? 'Actualización necesaria' : 'Hay una versión nueva'} (${nueva.version}).`}
+          {verificando
+            ? 'Verificando la descarga...'
+            : descargando
+              ? `Descargando la versión nueva... ${Math.round(progreso * 100)} %`
+              : `${nueva.obligatoria ? 'Actualización necesaria' : 'Hay una versión nueva'} (${nueva.version}).`}
         </Text>
         {descargando ? null : <Text style={estilos.boton}>Actualizar</Text>}
       </View>

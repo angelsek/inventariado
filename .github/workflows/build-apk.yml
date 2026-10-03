@@ -61,6 +61,7 @@ jobs:
     outputs:
       archivo: ${{ steps.nombre.outputs.archivo }}
       version: ${{ steps.nombre.outputs.version }}
+      sha256: ${{ steps.nombre.outputs.sha256 }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -151,6 +152,8 @@ jobs:
           EXPO_PUBLIC_DATOS_TRANSFERENCIA: ${{ vars.DATOS_TRANSFERENCIA }}
           # Instalación directa: la app avisa de versiones nuevas publicadas en Supabase.
           EXPO_PUBLIC_CANAL: apk
+          # Único origen desde el que la app acepta descargar APK (ver src/config.ts).
+          EXPO_PUBLIC_ORIGEN_APK: https://github.com/${{ github.repository }}/releases/download/
         # Solo arquitecturas de teléfonos reales: APK más liviano y compilación más rápida.
         run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
 
@@ -164,6 +167,8 @@ jobs:
           mv android/app/build/outputs/apk/release/app-release.apk "$ARCHIVO"
           echo "archivo=$ARCHIVO" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          # El hash se calcula aquí, recién compilado; publicar lo recalcula y los compara.
+          echo "sha256=$(sha256sum "$ARCHIVO" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -201,6 +206,8 @@ jobs:
           CLAVE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ARCHIVO: ${{ needs.apk.outputs.archivo }}
           VERSION: ${{ needs.apk.outputs.version }}
+          SHA256_COMPILADO: ${{ needs.apk.outputs.sha256 }}
+          CLAVE_PUBLICA: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           CODIGO: ${{ github.run_number }}
           EVENTO: ${{ github.event_name }}
           NOTAS_MANUALES: ${{ inputs.notas }}
@@ -237,22 +244,82 @@ jobs:
           # Siempre con el mismo nombre: así el enlace .../releases/latest/download/stockeao.apk
           # descarga la última versión (es el que usa la página de descarga).
           cp "$ARCHIVO" stockeao.apk
-          ETIQUETA="apk-$CODIGO"
-          gh release create "$ETIQUETA" stockeao.apk -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest \
-            --title "Stockeao $VERSION ($CODIGO)" --notes "${NOTAS:-Versión $VERSION ($CODIGO).}"
+          # SHA-256 del APK: la app lo compara con la descarga antes de instalar (solo confía en el que
+          # queda en Supabase). El .sha256 de la Release es para verificar a mano: sha256sum -c.
+          SHA256=$(sha256sum stockeao.apk | cut -d' ' -f1)
+          if [ -z "$SHA256_COMPILADO" ] || [ "$SHA256" != "$SHA256_COMPILADO" ]; then
+            echo "::error::El APK a publicar no coincide con el compilado (artifact alterado o incompleto)."
+            exit 1
+          fi
+          sha256sum stockeao.apk > stockeao.apk.sha256
+          echo "SHA-256 del APK: $SHA256"
 
-          URL_APK="https://github.com/$GITHUB_REPOSITORY/releases/download/$ETIQUETA/stockeao.apk"
           # Las claves nuevas (sb_secret_...) van solo en "apikey"; las antiguas (JWT) también como Bearer.
           CABECERAS=(-H "apikey: $CLAVE")
           case "$CLAVE" in sb_*) ;; *) CABECERAS+=(-H "Authorization: Bearer $CLAVE") ;; esac
+          # Antes de crear la Release: si falta la columna sha256 (migración sin aplicar), fallar ya.
+          # Así no queda una Release creada sin registrar que impida reintentar.
+          if ! curl --fail -sS -o /dev/null "$SUPABASE_URL/rest/v1/versiones_app?select=sha256&limit=1" \
+            "${CABECERAS[@]}" -H "Accept-Profile: inventariado"; then
+            echo "::error::Supabase no tiene la columna versiones_app.sha256: aplica la migración 20261003000100_versiones_app_sha256.sql y vuelve a lanzar."
+            exit 1
+          fi
+
+          ETIQUETA="apk-$CODIGO"
+          # Si algo falla después de crear la Release, se deshace todo (Release, tag y fila en
+          # Supabase): la página de descarga nunca sirve un APK sin verificar y se puede reintentar.
+          RELEASE_CREADA=""
+          FILA_CREADA=""
+          deshacer() {
+            if [ -n "$FILA_CREADA" ]; then
+              curl -sS -X DELETE "$SUPABASE_URL/rest/v1/versiones_app?version_code=eq.$CODIGO" \
+                "${CABECERAS[@]}" -H "Content-Profile: inventariado" || true
+            fi
+            if [ -n "$RELEASE_CREADA" ]; then
+              echo "::warning::La publicación no terminó: se borra la Release $ETIQUETA."
+              gh release delete "$ETIQUETA" -R "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
+            fi
+          }
+          trap deshacer EXIT
+          gh release create "$ETIQUETA" stockeao.apk stockeao.apk.sha256 -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest \
+            --title "Stockeao $VERSION ($CODIGO)" --notes "${NOTAS:-Versión $VERSION ($CODIGO).}"
+          RELEASE_CREADA=si
+
+          # El asset publicado debe ser el mismo archivo: se descarga y se compara.
+          gh release download "$ETIQUETA" -R "$GITHUB_REPOSITORY" -p stockeao.apk -O publicado.apk
+          if [ "$(sha256sum publicado.apk | cut -d' ' -f1)" != "$SHA256" ]; then
+            echo "::error::El APK de la Release no coincide con el compilado."
+            exit 1
+          fi
+
+          URL_APK="https://github.com/$GITHUB_REPOSITORY/releases/download/$ETIQUETA/stockeao.apk"
           jq -n --argjson codigo "$CODIGO" --arg version "$VERSION" --arg url "$URL_APK" \
-            --arg notas "$NOTAS" --argjson obligatoria "$OBLIGATORIA" \
-            '{version_code: $codigo, version: $version, url: $url, notas: (if $notas == "" then null else $notas end), obligatoria: $obligatoria}' \
+            --arg sha256 "$SHA256" --arg notas "$NOTAS" --argjson obligatoria "$OBLIGATORIA" \
+            '{version_code: $codigo, version: $version, url: $url, sha256: $sha256, notas: (if $notas == "" then null else $notas end), obligatoria: $obligatoria}' \
             > version.json
+          FILA_CREADA=si
           curl --fail-with-body -sS -X POST "$SUPABASE_URL/rest/v1/versiones_app" \
             "${CABECERAS[@]}" -H "Content-Type: application/json" \
             -H "Content-Profile: inventariado" -H "Prefer: resolution=merge-duplicates" \
             --data @version.json
           echo
+
+          # Comprueba lo que verán las apps, con su misma clave pública: la última versión debe ser
+          # esta y con su hash.
+          CLAVE_APP="${CLAVE_PUBLICA:-$CLAVE}"
+          CABECERAS_APP=(-H "apikey: $CLAVE_APP")
+          case "$CLAVE_APP" in sb_*) ;; *) CABECERAS_APP+=(-H "Authorization: Bearer $CLAVE_APP") ;; esac
+          curl --fail-with-body -sS -X POST "$SUPABASE_URL/rest/v1/rpc/ultima_version" \
+            "${CABECERAS_APP[@]}" -H "Content-Type: application/json" -H "Content-Profile: inventariado" \
+            --data '{}' > publicada.json
+          if ! jq -e --argjson codigo "$CODIGO" --arg sha256 "$SHA256" \
+            '.version_code == $codigo and .sha256 == $sha256' publicada.json > /dev/null; then
+            echo "::error::Supabase no devuelve la versión $CODIGO con su SHA-256. ¿Se aplicó la migración 20261003000100_versiones_app_sha256.sql?"
+            cat publicada.json
+            exit 1
+          fi
+          # Todo verificado: ya no hay que deshacer nada.
+          RELEASE_CREADA=""
+          FILA_CREADA=""
           echo "Publicado: $URL_APK"
           echo "Enlace fijo a la última versión: https://github.com/$GITHUB_REPOSITORY/releases/latest/download/stockeao.apk"

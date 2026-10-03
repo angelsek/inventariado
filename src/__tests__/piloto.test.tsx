@@ -1,4 +1,4 @@
-import { fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
+import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 import { Alert } from 'react-native';
 
 import { AJUSTE_NEGOCIO, guardarAjuste } from '@/db/ajustes';
@@ -7,6 +7,7 @@ import { crearPerfil } from '@/db/perfiles';
 import type { BaseLocal } from '@/db/tipos';
 import { useActualizacion } from '@/features/actualizacion/actualizacion';
 import { descargarEInstalar } from '@/features/actualizacion/instalar';
+import { ErrorIntegridad, ErrorOrigen } from '@/features/actualizacion/integridad';
 import { informarError } from '@/lib/errores';
 import { useSesion } from '@/sesion/store';
 import { crearBaseEnMemoria } from '@/test/baseEnMemoria';
@@ -14,7 +15,10 @@ import { respuestasRpc, respuestasTabla, supabase } from '@/test/mockSupabase';
 
 jest.mock('expo-crypto', () => require('@/test/mockExpoCrypto'));
 jest.mock('@/features/actualizacion/instalar', () => ({
-  descargarEInstalar: jest.fn(async (_url: string, _codigo: number, alAvanzar) => alAvanzar(1)),
+  descargarEInstalar: jest.fn(
+    async (_url: string, _codigo: number, _sha256: string | null, alAvanzar: (f: number) => void) =>
+      alAvanzar(1),
+  ),
   limpiarDescargas: jest.fn(),
 }));
 jest.mock('expo-application', () => ({
@@ -47,6 +51,8 @@ jest.mock('@/sync/useSincronizacionAutomatica', () => ({ useSincronizacionAutoma
 jest.mock('@/sync/ejecutar', () => ({ sincronizarAhora: jest.fn(() => Promise.resolve()) }));
 
 const NEGOCIO = 'negocio-1';
+const URL_APK = 'https://github.com/angelsek/inventariado/releases/download/v15/stockeao.apk';
+const HASH = 'a'.repeat(64);
 
 beforeEach(async () => {
   useSesion.setState({
@@ -89,7 +95,8 @@ it('avisa cuando hay un APK más nuevo y lo instala con un toque', async () => {
     data: {
       version_code: 15,
       version: '0.1.1',
-      url: 'https://x/apk/inventariado.apk',
+      url: URL_APK,
+      sha256: HASH,
       notas: null,
       obligatoria: false,
     },
@@ -101,8 +108,10 @@ it('avisa cuando hay un APK más nuevo y lo instala con un toque', async () => {
   fireEvent.press(screen.getByText('Actualizar'));
   await waitFor(() =>
     expect(descargarEInstalar).toHaveBeenCalledWith(
-      'https://x/apk/inventariado.apk',
+      URL_APK,
       15,
+      HASH,
+      expect.any(Function),
       expect.any(Function),
     ),
   );
@@ -120,7 +129,8 @@ it('si la descarga falla ofrece abrirla en el navegador', async () => {
     data: {
       version_code: 15,
       version: '0.1.1',
-      url: 'https://x/a.apk',
+      url: URL_APK,
+      sha256: HASH,
       notas: null,
       obligatoria: false,
     },
@@ -131,7 +141,94 @@ it('si la descarga falla ofrece abrirla en el navegador', async () => {
   fireEvent.press(await screen.findByText('Actualizar'));
   await waitFor(() => expect(alerta).toHaveBeenCalled());
   expect(alerta.mock.calls[0][0]).toBe('No se pudo descargar');
+  const botones = alerta.mock.calls[0][2] as { text: string }[];
+  expect(botones.map((b) => b.text)).toContain('Abrir en el navegador');
   expect(useActualizacion.getState().progreso).toBeNull();
+});
+
+function publicar(extra: Record<string, unknown>) {
+  respuestasRpc.ultima_version = {
+    data: {
+      version_code: 15,
+      version: '0.1.1',
+      url: URL_APK,
+      sha256: HASH,
+      notas: null,
+      obligatoria: false,
+      ...extra,
+    },
+    error: null,
+  };
+}
+
+it('si la integridad falla alerta sin ofrecer el navegador y deja reintentar', async () => {
+  jest.mocked(descargarEInstalar).mockRejectedValueOnce(new ErrorIntegridad('hash distinto'));
+  const alerta = jest.spyOn(Alert, 'alert');
+  publicar({});
+  await entrar();
+
+  fireEvent.press(await screen.findByText('Actualizar'));
+  await waitFor(() => expect(alerta).toHaveBeenCalled());
+  expect(alerta.mock.calls[0][0]).toBe('La descarga no se instaló');
+  const botones = alerta.mock.calls[0][2] as { text: string; onPress?: () => void }[];
+  const textos = botones.map((b) => b.text);
+  expect(textos).toContain('Reintentar');
+  expect(textos).not.toContain('Abrir en el navegador');
+
+  // Reintentar vuelve a llamar a la descarga.
+  await waitFor(() => expect(useActualizacion.getState().progreso).toBeNull());
+  await act(async () => botones.find((b) => b.text === 'Reintentar')?.onPress?.());
+  await waitFor(() => expect(descargarEInstalar).toHaveBeenCalledTimes(2));
+});
+
+it('si la versión no apunta a las Releases avisa sin reintentar ni ofrecer el navegador', async () => {
+  jest.mocked(descargarEInstalar).mockRejectedValueOnce(new ErrorOrigen('otra url'));
+  const alerta = jest.spyOn(Alert, 'alert');
+  publicar({});
+  await entrar();
+
+  fireEvent.press(await screen.findByText('Actualizar'));
+  await waitFor(() => expect(alerta).toHaveBeenCalled());
+  expect(alerta.mock.calls[0][0]).toBe('No se puede instalar esta versión');
+  const textos = (alerta.mock.calls[0][2] as { text: string }[]).map((b) => b.text);
+  expect(textos).toEqual(['Cerrar']);
+});
+
+it('error de red con URL no permitida no ofrece el navegador', async () => {
+  jest.mocked(descargarEInstalar).mockRejectedValueOnce(new Error('sin señal'));
+  const alerta = jest.spyOn(Alert, 'alert');
+  publicar({ url: 'https://x/a.apk' });
+  await entrar();
+
+  fireEvent.press(await screen.findByText('Actualizar'));
+  await waitFor(() => expect(alerta).toHaveBeenCalled());
+  expect(alerta.mock.calls[0][0]).toBe('No se pudo descargar');
+  const textos = (alerta.mock.calls[0][2] as { text: string }[]).map((b) => b.text);
+  expect(textos).not.toContain('Abrir en el navegador');
+});
+
+it('una versión sin sha256 se informa y se instala igual', async () => {
+  publicar({ sha256: null });
+  await entrar();
+
+  fireEvent.press(await screen.findByText('Actualizar'));
+  await waitFor(() =>
+    expect(descargarEInstalar).toHaveBeenCalledWith(
+      URL_APK,
+      15,
+      null,
+      expect.any(Function),
+      expect.any(Function),
+    ),
+  );
+  await waitFor(() =>
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      'registrar_error',
+      expect.objectContaining({
+        p_mensaje: expect.stringContaining('publicada sin sha256'),
+      }),
+    ),
+  );
 });
 
 it('sin versión nueva no muestra aviso', async () => {

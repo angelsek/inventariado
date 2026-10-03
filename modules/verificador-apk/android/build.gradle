@@ -1,0 +1,17 @@
+// Módulo Expo local: calcula el SHA-256 del APK descargado antes de instalarlo
+// (src/features/actualizacion/). Lo enlaza solo el prebuild (carpeta modules/).
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'cl.stockeao'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.verificadorapk"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+}

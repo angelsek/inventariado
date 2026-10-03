@@ -35,6 +35,7 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           CLAVE_PUBLICA: ${{ vars.RESPALDO_CLAVE_PUBLICA }}
         run: |
+          set -o pipefail # si pg_dump falla, el paso falla (no se sube un respaldo vacío)
           if [ -z "$SUPABASE_DB_URL" ]; then
             echo "::warning::Falta el secreto SUPABASE_DB_URL: no se hizo respaldo."
             exit 0
@@ -47,6 +48,10 @@ jobs:
           /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" --schema=inventariado \
             --no-owner --no-privileges | gzip | age --encrypt --recipient "$CLAVE_PUBLICA" > "$ARCHIVO"
           ls -lh "$ARCHIVO"
+          if [ "$(stat -c %s "$ARCHIVO")" -lt 1024 ]; then
+            echo "::error::El respaldo pesa menos de 1 KB: probablemente pg_dump no exportó datos."
+            exit 1
+          fi
           echo "ARCHIVO=$ARCHIVO" >> "$GITHUB_ENV"
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

@@ -223,7 +223,7 @@ jobs:
             NOTAS=""
             if [ "${OBJETO%% *}" = "tag" ]; then
               NOTAS=$(gh api "repos/$GITHUB_REPOSITORY/git/tags/${OBJETO#* }" --jq '.message' |
-                sed -e '/^-----BEGIN PGP/,$d' -e 's/[[:space:]]*$//')
+                sed -e '/^-----BEGIN \(PGP\|SSH\|SIGNED\|CMS\)/,$d' -e 's/[[:space:]]*$//')
             else
               echo "::warning::Tag ligero (sin anotación): se publica sin notas."
             fi

@@ -1,0 +1,60 @@
+name: Dependencias
+
+# Auditoría de dependencias (npm audit) contra las excepciones documentadas en
+# scripts/excepciones-audit.json. Ver docs/SEGURIDAD_DEPENDENCIAS.md.
+#
+# - En los PR que tocan package.json o package-lock.json, una vulnerabilidad nueva sin analizar
+#   hace fallar el check.
+# - En los demás PR y en main solo avisa: un aviso publicado hoy no bloquea un PR que no toca
+#   dependencias.
+# - Los lunes se revisa en modo estricto: si aparece algo nuevo, la ejecución queda en rojo y
+#   GitHub avisa por correo.
+# De momento es informativo (no es un check obligatorio de main).
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # Lunes 07:23 UTC.
+    - cron: '23 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: dependencias-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  auditar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+
+      - name: ¿El PR toca dependencias?
+        id: cambios
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if gh pr diff "$PR" -R "$GITHUB_REPOSITORY" --name-only | grep -qxE 'package(-lock)?\.json'; then
+            echo "toca=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "toca=no" >> "$GITHUB_OUTPUT"
+          fi
+
+      # npm audit lee package-lock.json: no hace falta instalar las dependencias.
+      - name: Auditar dependencias
+        env:
+          AUDIT_ESTRICTO: ${{ github.event_name == 'schedule' || steps.cambios.outputs.toca == 'si' }}
+        run: npm run audit:revisar

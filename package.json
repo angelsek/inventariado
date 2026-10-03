@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "check": "npm run lint && npm run format:check && npm run typecheck && npm test",
+    "audit:revisar": "node scripts/auditar-dependencias.js",
     "prepare": "node .githooks/instalar.mjs",
     "equipo:revisar": "node .githooks/equipo-revision.mjs"
   },
@@ -62,6 +63,11 @@
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1",
       "^expo-iap$": "<rootDir>/src/test/mockExpoIap.ts"
+    }
+  },
+  "overrides": {
+    "xcode": {
+      "uuid": "^11.1.1"
     }
   }
 }

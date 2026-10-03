@@ -49,11 +49,18 @@ actualizaciones sin que los clientes reinstalen la app, y Play Store la exigirá
 ## 2. Publicar una versión nueva para los clientes
 
 Los clientes no entran a GitHub: la app les avisa cuando hay una versión nueva y la descarga
-desde tu Supabase.
+de las Releases del repo. El SHA-256 de cada APK queda registrado en tu Supabase.
+
+**Antes de la primera publicación con la verificación (paso manual obligatorio):** ejecuta
+`supabase/migrations/20261003000100_versiones_app_sha256.sql` en el SQL Editor de Supabase, como
+se explica en `docs/SUPABASE.md`. Agrega la columna `sha256` a `versiones_app`; sin ella el
+workflow se detiene antes de crear la Release. Además, la primera publicación debe hacerse
+**después de fusionar** este cambio a `main`: si el run 46 o posterior se publicara con el
+workflow antiguo (sin hash), las apps nuevas lo rechazarían.
 
 **Una sola vez:** crea el secreto `SUPABASE_SERVICE_ROLE_KEY` con la clave **secreta** del
 proyecto (Supabase → Project Settings → API Keys → _secret key_ o la antigua _service_role_).
-Esta clave nunca va dentro de la app; solo la usa GitHub para subir el APK.
+Esta clave nunca va dentro de la app; solo la usa GitHub para registrar la versión.
 
 **Cada vez que quieras publicar:**
 
@@ -74,6 +81,32 @@ git push origin v1.0.1
 El tag debe coincidir con `expo.version` de `app.json` y apuntar a un commit que ya esté en
 `main`. Las novedades salen de la anotación del tag (un tag ligero, sin `-a`, publica sin
 novedades) y la actualización no es obligatoria.
+
+**Verificación del APK.** Al publicar, el workflow calcula el SHA-256 del APK al compilarlo y
+lo vuelve a comprobar antes de publicar; sube a la Release el archivo `stockeao.apk.sha256`,
+registra el hash en `versiones_app` y comprueba, con la clave pública, que `ultima_version` lo
+devuelve. Si algo falla después de crear la Release, el workflow borra la Release y la fila, así
+que se puede reintentar. Para verificar a mano un APK descargado, con `stockeao.apk.sha256` en la
+misma carpeta:
+
+```bash
+sha256sum -c stockeao.apk.sha256
+```
+
+En Windows: `Get-FileHash stockeao.apk -Algorithm SHA256` y compara el resultado con el contenido
+del `.sha256`.
+
+**Qué hace la app.** Solo descarga APK de las Releases del repo y, antes de instalar, comprueba
+que su SHA-256 coincida con el publicado en Supabase (también el APK que ya estaba descargado).
+Si el cliente ve:
+
+- **"La descarga no se instaló"**, con el botón **Reintentar**: el archivo no coincidía; la app lo
+  borró y no abre el navegador. Basta con reintentar.
+- **"No se puede instalar esta versión… Avisa a soporte"**: la versión publicada no apunta a las
+  Releases o (desde el `versionCode` 46) no trae hash. Reintentar no lo arregla: hay que volver a
+  publicar bien la versión.
+
+Las versiones anteriores a la 46 sin hash se instalan sin verificar y la app registra un aviso.
 
 No lances otra publicación mientras una esté en curso. Y no renombres `build-apk.yml`: el
 número de versión interno (`versionCode`) es el número de ejecución de ese workflow.

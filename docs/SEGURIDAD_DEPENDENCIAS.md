@@ -12,6 +12,9 @@ npm run audit:revisar                       # informativo
 AUDIT_ESTRICTO=true npm run audit:revisar   # falla ante vulnerabilidades nuevas sin analizar
 ```
 
+En modo estricto también falla una excepción vencida (hay que renovarla o resolverla) y un aviso sin
+identificador GHSA, que cuenta como nuevo. Una excepción que ya no aparece solo avisa.
+
 El workflow **Dependencias** (`.github/workflows/dependencias.yml`) lo ejecuta:
 
 - **En los PR que tocan `package.json` o `package-lock.json`:** en modo estricto. Una vulnerabilidad nueva sin analizar hace fallar el check.
@@ -29,7 +32,8 @@ Por ahora no es un check obligatorio de `main`.
 3. **Si no hay arreglo o no afecta a la app,** analizarla aquí (¿va dentro del APK o solo en las
    herramientas de compilación? ¿con qué entradas se usa?) y añadir la excepción a
    `scripts/excepciones-audit.json`, con una fecha `revisar_antes` de unos 3 meses.
-4. **Cuando una excepción vence o deja de aparecer,** el script avisa: revisarla o quitarla.
+4. **Cuando una excepción vence,** en modo estricto el check falla: renovarla (nueva `revisar_antes`, tras
+   revisar el análisis) o resolverla. **Si deja de aparecer,** el script solo avisa: quitarla.
 
 Nunca usar `npm audit fix --force`: propone bajar Expo a versiones de hace años y rompe la app.
 

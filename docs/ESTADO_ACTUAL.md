@@ -48,6 +48,9 @@ Play Store). El cobro con Google Play queda programado pero en pausa (`docs/COBR
 - Cobro con Google Play Billing programado (en pausa).
 - APK publicado (versión 35) con actualización dentro de la app y página de descarga.
 - Desarrollo local en Windows con emulador (`docs/TRABAJAR_EN_MI_EQUIPO.md`).
+- Dependencias revisadas: el workflow **Dependencias** corre `npm audit` contra las excepciones
+  registradas (estricto en PR que tocan dependencias y los lunes; no obligatorio). Las
+  vulnerabilidades actuales están analizadas en `docs/SEGURIDAD_DEPENDENCIAS.md`.
 
 ## Pendiente (en orden)
 

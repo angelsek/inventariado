@@ -1,0 +1,29 @@
+{
+  "descripcion": "Vulnerabilidades de npm audit analizadas y aceptadas. Cada una tiene su justificación en docs/SEGURIDAD_DEPENDENCIAS.md y una fecha de revisión. Lo usa scripts/auditar-dependencias.js.",
+  "excepciones": [
+    {
+      "ghsa": "GHSA-86w9-cpqp-85rv",
+      "paquete": "node-forge",
+      "severidad": "high",
+      "justificacion": "Sin versión corregida. Solo lo usa la CLI de Expo para firmar actualizaciones OTA (expo-updates), que la app no usa. No va en el APK.",
+      "revisar_antes": "2027-01-04",
+      "documento": "docs/SEGURIDAD_DEPENDENCIAS.md#node-forge"
+    },
+    {
+      "ghsa": "GHSA-vcc3-ghjq-m6fr",
+      "paquete": "decode-uri-component",
+      "severidad": "moderate",
+      "justificacion": "Va en el APK vía query-string de expo-router. Los enlaces se analizan con el getStateFromPath propio de expo-router (fork, URLSearchParams); el queryString.parse del core de react-navigation solo se usaría si se sustituyera getStateFromPath. Revalidar con cada versión de expo-router. La versión corregida (0.5.0) es solo ESM y rompería la app.",
+      "revisar_antes": "2027-01-04",
+      "documento": "docs/SEGURIDAD_DEPENDENCIAS.md#decode-uri-component"
+    },
+    {
+      "ghsa": "GHSA-vfj7-8cjw-p6xm",
+      "paquete": "braces",
+      "severidad": "high",
+      "justificacion": "Sin versión corregida. Llega vía micromatch, que solo usan las herramientas de compilación y pruebas (Metro, Jest, Babel) con patrones de la configuración del proyecto. No va en el APK.",
+      "revisar_antes": "2027-01-04",
+      "documento": "docs/SEGURIDAD_DEPENDENCIAS.md#braces"
+    }
+  ]
+}

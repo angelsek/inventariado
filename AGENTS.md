@@ -50,4 +50,5 @@ Docs: https://docs.expo.dev/eas/index.md
 - Si `npx expo install` falla por red, usar `EXPO_OFFLINE=1 npx expo install <paquete>`.
 - Nunca poner pruebas dentro de `src/app/` (Expo Router trataría cada archivo como pantalla); van en `src/__tests__/` o junto al módulo en `__tests__/`.
 - Base de datos del servidor: migraciones SQL en `supabase/migrations/`, pruebas en `supabase/tests/` (`./scripts/probar-sql.sh`).
+- Antes de añadir o actualizar dependencias, corre `npm run audit:revisar`; nunca `npm audit fix --force`. Las excepciones van en `scripts/excepciones-audit.json`, con su análisis en `docs/SEGURIDAD_DEPENDENCIAS.md`.
 - Si corres `npx expo prebuild` para revisar el proyecto Android, respalda `package.json` antes y restáuralo después (prebuild cambia el script `android`); no uses `git checkout package.json`, que borra dependencias recién agregadas. Borra la carpeta `android/` al terminar.

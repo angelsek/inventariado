@@ -51,13 +51,16 @@ function evaluar(audit, excepciones, hoy, { estricto = false } = {}) {
   const presentes = avisosRaiz(audit);
   const porGhsa = new Map(excepciones.map((e) => [e.ghsa, e]));
   for (const aviso of presentes.values()) {
-    if (SEVERIDADES.indexOf(aviso.severidad) < MINIMA) continue;
+    // Una severidad desconocida (o ausente) cuenta como relevante: mejor revisarla que ignorarla.
+    const nivel = SEVERIDADES.indexOf(aviso.severidad);
+    if (nivel !== -1 && nivel < MINIMA) continue;
     const excepcion = porGhsa.get(aviso.ghsa);
     const desc = `${aviso.ghsa} (${aviso.severidad}) en ${[...aviso.paquetes].join(', ')}: ${aviso.titulo}`;
     if (!excepcion) {
       problema(`Vulnerabilidad nueva sin analizar: ${desc}. Ver docs/SEGURIDAD_DEPENDENCIAS.md.`);
     } else if (excepcion.revisar_antes && excepcion.revisar_antes < hoy) {
-      avisos.push(`Excepción vencida (revisar antes de ${excepcion.revisar_antes}): ${desc}.`);
+      // En modo estricto (revisión semanal) una excepción vencida pone el check en rojo: así se revisa.
+      problema(`Excepción vencida (revisar antes de ${excepcion.revisar_antes}): ${desc}.`);
     }
   }
   for (const e of excepciones) {

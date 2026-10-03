@@ -46,8 +46,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
+        # Lista de archivos por la API (sin el límite de tamaño de `gh pr diff`). Si la consulta
+        # falla, se asume que sí toca dependencias: mejor auditar en estricto que dejarlo pasar.
         run: |
-          if gh pr diff "$PR" -R "$GITHUB_REPOSITORY" --name-only | grep -qxE 'package(-lock)?\.json'; then
+          if ! ARCHIVOS=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --paginate --jq '.[].filename'); then
+            echo "::warning::No se pudo obtener la lista de archivos del PR: se audita en modo estricto."
+            echo "toca=si" >> "$GITHUB_OUTPUT"
+          elif printf '%s\n' "$ARCHIVOS" | grep -qxE 'package(-lock)?\.json'; then
             echo "toca=si" >> "$GITHUB_OUTPUT"
           else
             echo "toca=no" >> "$GITHUB_OUTPUT"

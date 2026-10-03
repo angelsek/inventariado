@@ -133,14 +133,27 @@ describe('evaluar', () => {
     }
   });
 
-  it('una excepción vencida (revisar_antes < hoy) da aviso, también en estricto', () => {
+  it('una excepción vencida (revisar_antes < hoy) es aviso en informativo y error en estricto', () => {
     const audit = auditCon({ uno: { severity: 'high', via: [via(GHSA_A, { name: 'uno' })] } });
     const vencida = excepcion(GHSA_A, { revisar_antes: '2026-10-01' });
-    for (const estricto of [false, true]) {
-      const r = evaluar(audit, [vencida], HOY, { estricto });
-      expect(r.errores).toEqual([]);
-      expect(r.avisos).toHaveLength(1);
-      expect(r.avisos[0]).toContain('vencida');
+    const informativo = evaluar(audit, [vencida], HOY);
+    expect(informativo.errores).toEqual([]);
+    expect(informativo.avisos).toHaveLength(1);
+    expect(informativo.avisos[0]).toContain('vencida');
+    const estricto = evaluar(audit, [vencida], HOY, { estricto: true });
+    expect(estricto.avisos).toEqual([]);
+    expect(estricto.errores).toHaveLength(1);
+    expect(estricto.errores[0]).toContain('vencida');
+  });
+
+  it('un GHSA nuevo con severidad desconocida o ausente no se ignora', () => {
+    for (const severity of ['urgente', undefined]) {
+      // via() pone 'high' por defecto: aquí se fuerza la severidad desconocida o ausente.
+      const vuln = { ...via(GHSA_A, { name: 'uno' }), severity };
+      const audit = auditCon({ uno: { severity, via: [vuln] } });
+      const r = evaluar(audit, [], HOY, { estricto: true });
+      expect(r.errores).toHaveLength(1);
+      expect(r.errores[0]).toContain(GHSA_A);
     }
   });
 

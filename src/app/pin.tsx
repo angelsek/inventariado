@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,7 +17,7 @@ import { colores } from '@/theme/colores';
 
 /** Elegir quién usa la app e ingresar su PIN. */
 export default function PinScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, entrar, versionDatos } = useSesion();
   const [negocio, setNegocio] = useState('');
   const [perfiles, setPerfiles] = useState<Perfil[]>([]);
@@ -133,7 +133,7 @@ function RecuperarPin({
   onListo: () => void;
   onCancelar: () => void;
 }) {
-  const db = useSQLiteContext();
+  const db = useBase();
   const [contrasena, setContrasena] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);

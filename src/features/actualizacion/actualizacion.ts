@@ -1,4 +1,4 @@
-import { Alert, Linking } from 'react-native';
+import { Linking } from 'react-native';
 import { create } from 'zustand';
 
 import { CANAL } from '@/config';
@@ -13,6 +13,7 @@ import {
   urlApkPermitida,
 } from './integridad';
 import { descargarEInstalar, limpiarDescargas } from './instalar';
+import { avisar } from '@/lib/dialogo';
 
 export type VersionPublicada = {
   version_code: number;
@@ -43,7 +44,8 @@ export const useActualizacion = create<Estado>((set, get) => ({
   verificando: false,
   verificar: async () => {
     // Instalada desde Google Play: Play avisa y actualiza; un APK directo no se podría instalar encima.
-    if (!supabaseConfigurado || CANAL === 'play') return;
+    // La web se actualiza con su service worker (ultima_version() solo publica APK).
+    if (!supabaseConfigurado || CANAL !== 'apk') return;
     try {
       const { data } = await supabase.rpc('ultima_version');
       const ultima = data as VersionPublicada | null;
@@ -80,7 +82,7 @@ export const useActualizacion = create<Estado>((set, get) => ({
       if (error instanceof ErrorOrigen) {
         void informarError(error, 'Actualización');
         // Reintentar fallaría igual y el navegador se saltaría la verificación.
-        Alert.alert(
+        avisar(
           'No se puede instalar esta versión',
           'La versión publicada no se puede verificar ni instalar desde la app. Avisa a soporte.',
           [{ text: 'Cerrar', style: 'cancel' }],
@@ -88,7 +90,7 @@ export const useActualizacion = create<Estado>((set, get) => ({
       } else if (error instanceof ErrorIntegridad) {
         void informarError(error, 'Actualización');
         // Sin "Abrir en el navegador": esa descarga se saltaría la verificación.
-        Alert.alert(
+        avisar(
           'La descarga no se instaló',
           'La versión descargada llegó dañada o no coincide con la publicada, así que se borró. Intenta de nuevo.',
           [
@@ -97,7 +99,7 @@ export const useActualizacion = create<Estado>((set, get) => ({
           ],
         );
       } else {
-        Alert.alert(
+        avisar(
           'No se pudo descargar',
           urlApkPermitida(nueva.url)
             ? 'Revisa tu conexión a internet e intenta de nuevo. También puedes descargarla desde el navegador.'

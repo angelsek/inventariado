@@ -1,4 +1,4 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -10,7 +10,7 @@ import { useSesion } from '@/sesion/store';
 import { colores } from '@/theme/colores';
 
 export default function ComprasScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, versionDatos } = useSesion();
   const [compras, setCompras] = useState<ResumenCompra[]>([]);
   const [abierta, setAbierta] = useState<string | null>(null);

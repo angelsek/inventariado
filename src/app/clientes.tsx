@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -12,7 +12,7 @@ import { colores } from '@/theme/colores';
 
 /** Clientes con fiado: quién debe y cuánto. */
 export default function ClientesScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, versionDatos } = useSesion();
   const [busqueda, setBusqueda] = useState('');
   const [clientes, setClientes] = useState<Cliente[]>([]);

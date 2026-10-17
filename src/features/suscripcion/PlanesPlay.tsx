@@ -1,4 +1,4 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
@@ -19,8 +19,8 @@ import {
 } from './googlePlay';
 
 const BENEFICIOS: Record<string, string> = {
-  basico: 'Hasta 2 teléfonos',
-  pro: 'Hasta 5 teléfonos',
+  basico: 'Hasta 2 equipos',
+  pro: 'Hasta 5 equipos',
 };
 
 const enDias = (dias: number) => {
@@ -34,7 +34,7 @@ const enDias = (dias: number) => {
  * incluida). Solo el dueño puede comprar.
  */
 export function PlanesPlay() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, perfil, suscripcion } = useSesion();
   const esDueno = perfil?.rol === 'dueno';
   const [planes, setPlanes] = useState<PlanPlay[] | null>(null);
@@ -83,7 +83,7 @@ export function PlanesPlay() {
     return (
       <View style={estilos.tarjeta}>
         <Text style={estilos.nota}>
-          Pídele al dueño del negocio que active un plan desde su teléfono (Más → Suscripción).
+          Pídele al dueño del negocio que active un plan desde su equipo (Más → Suscripción).
         </Text>
       </View>
     );
@@ -93,7 +93,7 @@ export function PlanesPlay() {
     return (
       <View style={[estilos.tarjeta, estilos.exito]}>
         <Text style={estilos.titulo}>¡Listo! Tu plan quedó activo.</Text>
-        <Text style={estilos.nota}>Todos los teléfonos del negocio se activan al sincronizar.</Text>
+        <Text style={estilos.nota}>Todos los equipos del negocio se activan al sincronizar.</Text>
       </View>
     );
   }

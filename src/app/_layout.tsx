@@ -1,15 +1,15 @@
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { SQLiteProvider, useSQLiteContext } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AJUSTE_NEGOCIO, leerAjuste } from '@/db/ajustes';
-import { migrarBaseDeDatos, NOMBRE_BASE_DE_DATOS } from '@/db/migraciones';
+import { ProveedorBase, useBase } from '@/db/proveedor';
 import { obtenerEstadoSuscripcion } from '@/db/suscripcion';
 import { useActualizacion } from '@/features/actualizacion/actualizacion';
+import { HostDialogos } from '@/lib/dialogo';
 import { informarError, instalarManejadorErrores } from '@/lib/errores';
 import { useSesion } from '@/sesion/store';
 import { useSincronizacionAutomatica } from '@/sync/useSincronizacionAutomatica';
@@ -31,7 +31,7 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Pro
     <ScrollView contentContainerStyle={estilosError.contenedor}>
       <Text style={estilosError.titulo}>Algo salió mal</Text>
       <Text style={estilosError.texto}>
-        El error se informó automáticamente. Tus datos están guardados en el teléfono.
+        El error se informó automáticamente. Tus datos están guardados en este equipo.
       </Text>
       <Text style={estilosError.detalle}>{error.message}</Text>
       <View style={estilosError.boton}>
@@ -59,10 +59,11 @@ const estilosError = StyleSheet.create({
 
 export default function RootLayout() {
   return (
-    <SQLiteProvider databaseName={NOMBRE_BASE_DE_DATOS} onInit={migrarBaseDeDatos}>
+    <ProveedorBase>
       <StatusBar style="dark" />
       <Navegacion />
-    </SQLiteProvider>
+      <HostDialogos />
+    </ProveedorBase>
   );
 }
 
@@ -73,7 +74,7 @@ export default function RootLayout() {
  *   con perfil -> la app
  */
 function Navegacion() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { cargada, negocioId, perfil, cargar, fijarSuscripcion } = useSesion();
 
   useEffect(() => {

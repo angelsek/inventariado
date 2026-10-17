@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Campo } from '@/components/Campo';
@@ -28,11 +28,12 @@ import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
 import { bloqueadoPorSuscripcion } from '@/features/suscripcion/useSoloLectura';
+import { avisar } from '@/lib/dialogo';
 
 const soloDigitos = (v: string) => v.replace(/\D/g, '');
 
 export default function CobrarScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, datosCambiaron } = useSesion();
   const carrito = useCarrito();
   const [descuento, setDescuento] = useState(
@@ -132,7 +133,7 @@ export default function CobrarScreen() {
         negocio?.alcoholDesde ?? null,
         negocio?.alcoholHasta ?? null,
       );
-      Alert.alert(
+      avisar(
         'Venta de alcohol',
         (fuera
           ? `Atención: estás fuera del horario de venta de alcohol (${negocio?.alcoholDesde} a ${negocio?.alcoholHasta}).\n\n`

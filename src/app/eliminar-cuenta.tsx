@@ -1,4 +1,4 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -14,7 +14,7 @@ const CONFIRMACION = 'ELIMINAR';
 
 /** Eliminar el negocio y todos sus datos (exigido por Google Play). Solo el dueño. */
 export default function EliminarCuentaScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const perfil = useSesion((s) => s.perfil);
   const [confirmacion, setConfirmacion] = useState('');
   const [contrasena, setContrasena] = useState('');
@@ -47,7 +47,7 @@ export default function EliminarCuentaScreen() {
     <Formulario titulo="Eliminar cuenta y datos" error={error}>
       <View style={estilos.aviso}>
         <Text style={estilos.textoAviso}>Esto no se puede deshacer. Se eliminan para siempre:</Text>
-        <Text style={estilos.item}>• El negocio, sus usuarios y teléfonos</Text>
+        <Text style={estilos.item}>• El negocio, sus usuarios y equipos</Text>
         <Text style={estilos.item}>• Productos, stock, ventas, cajas, proveedores e ingresos</Text>
         <Text style={estilos.item}>• La suscripción y el historial de pagos</Text>
         <Text style={estilos.textoAviso}>

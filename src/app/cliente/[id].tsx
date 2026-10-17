@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, Share, StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -33,7 +33,7 @@ const soloDigitos = (v: string) => v.replace(/\D/g, '');
 
 export default function ClienteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, perfil, versionDatos, datosCambiaron } = useSesion();
   const esDueno = perfil?.rol === 'dueno';
   const nuevo = id === 'nuevo';

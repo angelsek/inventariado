@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { type ReactNode, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -32,7 +32,7 @@ const porcentaje = (valor: number) => `${Math.round(valor * 100)} %`;
 
 /** Reportes del negocio para el dueño: ventas, productos e inventario. */
 export default function EstadisticasScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, perfil, versionDatos } = useSesion();
   const [periodo, setPeriodo] = useState<Periodo>(() => calcularPeriodo('dia', new Date()));
   const [vista, setVista] = useState<Vista>('ventas');

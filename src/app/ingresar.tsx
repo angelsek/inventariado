@@ -1,21 +1,23 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Campo } from '@/components/Campo';
 import { Formulario } from '@/components/Formulario';
+import { CampoNombreEquipo, opcionesDeEquipo } from '@/features/cuenta/equipo';
 import { mensajeDeError } from '@/lib/supabase';
 import { esCorreoValido } from '@/lib/validacion';
 import { iniciarSesion } from '@/sesion/cuenta';
 import { colores } from '@/theme/colores';
 
 export default function IngresarScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const params = useLocalSearchParams<{ aviso?: string; correo?: string }>();
   const [correo, setCorreo] = useState(params.correo ?? '');
   const [contrasena, setContrasena] = useState('');
+  const [nombreEquipo, setNombreEquipo] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
 
@@ -27,7 +29,7 @@ export default function IngresarScreen() {
     setCargando(true);
     setError(null);
     try {
-      const resultado = await iniciarSesion(db, correo, contrasena);
+      const resultado = await iniciarSesion(db, correo, contrasena, opcionesDeEquipo(nombreEquipo));
       if (resultado.tipo === 'sin_negocio') router.replace('/crear-negocio');
     } catch (e) {
       setError(mensajeDeError(e));
@@ -38,7 +40,7 @@ export default function IngresarScreen() {
   return (
     <Formulario
       titulo="Inicia sesión"
-      subtitulo="Usa la cuenta del negocio. Cada teléfono del local se conecta con la misma cuenta."
+      subtitulo="Usa la cuenta del negocio. Cada equipo del local se conecta con la misma cuenta."
       error={error}
     >
       {params.aviso === 'confirmar' ? (
@@ -67,6 +69,7 @@ export default function IngresarScreen() {
         value={contrasena}
         onChangeText={setContrasena}
       />
+      <CampoNombreEquipo valor={nombreEquipo} onCambio={setNombreEquipo} />
       <Boton titulo="Ingresar" onPress={enviar} cargando={cargando} />
     </Formulario>
   );

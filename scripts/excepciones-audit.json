@@ -24,6 +24,14 @@
       "justificacion": "Sin versión corregida. Llega vía micromatch, que solo usan las herramientas de compilación y pruebas (Metro, Jest, Babel) con patrones de la configuración del proyecto. No va en el APK.",
       "revisar_antes": "2027-01-04",
       "documento": "docs/SEGURIDAD_DEPENDENCIAS.md#braces"
+    },
+    {
+      "ghsa": "GHSA-hp3w-g68c-fv3c",
+      "paquete": "sprintf-js",
+      "severidad": "moderate",
+      "justificacion": "Sin versión corregida (afecta hasta la 1.1.3, la última). Llega vía argparse → js-yaml → babel-plugin-istanbul de Jest, que solo formatea textos de la configuración de cobertura. No va en el APK ni en la web.",
+      "revisar_antes": "2027-01-18",
+      "documento": "docs/SEGURIDAD_DEPENDENCIAS.md#sprintf-js"
     }
   ]
 }

@@ -1,6 +1,6 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Formulario } from '@/components/Formulario';
@@ -15,6 +15,7 @@ import { mensajeDeError, supabase } from '@/lib/supabase';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
+import { avisar } from '@/lib/dialogo';
 
 type Plan = {
   id: string;
@@ -25,7 +26,13 @@ type Plan = {
   max_dispositivos: number;
   reportes_avanzados: boolean;
 };
-type Dispositivo = { id: string; nombre: string; ultimo_sync: string | null };
+type Dispositivo = {
+  id: string;
+  nombre: string;
+  ultimo_sync: string | null;
+  /** 'telefono' o 'pc' (servidores sin la migración dispositivos_tipo no lo envían). */
+  tipo?: string;
+};
 type Pago = { id: string; plan_id: string; meses: number; monto: number; creado_en: string };
 
 const ETIQUETA_ESTADO: Record<Estado, { texto: string; color: string }> = {
@@ -36,7 +43,7 @@ const ETIQUETA_ESTADO: Record<Estado, { texto: string; color: string }> = {
 };
 
 export default function SuscripcionScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, perfil, suscripcion } = useSesion();
   const esDueno = perfil?.rol === 'dueno';
   const [planes, setPlanes] = useState<Plan[]>([]);
@@ -76,7 +83,7 @@ export default function SuscripcionScreen() {
         planes: [],
         telefonos: null,
         pagos: [],
-        error: `No se pudieron cargar los planes y teléfonos. ${mensajeDeError(e)}`,
+        error: `No se pudieron cargar los planes y equipos. ${mensajeDeError(e)}`,
       };
     }
   }, [db, negocioId]);
@@ -97,8 +104,8 @@ export default function SuscripcionScreen() {
   }, [obtener, aplicar]);
 
   const desvincular = (d: Dispositivo) =>
-    Alert.alert(
-      'Desvincular teléfono',
+    avisar(
+      'Desvincular equipo',
       `"${d.nombre}" cerrará sesión la próxima vez que sincronice y liberará un cupo del plan. Los cambios que no haya subido se perderán.`,
       [
         { text: 'Cancelar', style: 'cancel' },
@@ -107,7 +114,7 @@ export default function SuscripcionScreen() {
           style: 'destructive',
           onPress: async () => {
             const { error: e } = await supabase.rpc('desvincular_dispositivo', { p_id: d.id });
-            if (e) Alert.alert('Error', mensajeDeError(e));
+            if (e) avisar('Error', mensajeDeError(e));
             cargar();
           },
         },
@@ -189,7 +196,7 @@ export default function SuscripcionScreen() {
                 <Text style={estilos.precio}>{formatearCLP(p.precio_mensual)}/mes</Text>
               </View>
               <Text style={estilos.nota}>
-                Hasta {p.max_dispositivos} teléfonos
+                Hasta {p.max_dispositivos} equipos
                 {p.reportes_avanzados ? ' · reportes avanzados' : ''}
               </Text>
               {p.precio_anual ? (
@@ -224,14 +231,15 @@ export default function SuscripcionScreen() {
       {telefonos ? (
         <>
           <Text style={estilos.seccion}>
-            Teléfonos ({telefonos.dispositivos.length} de {telefonos.limite})
+            Equipos ({telefonos.dispositivos.length} de {telefonos.limite})
           </Text>
           {telefonos.dispositivos.map((d) => (
             <View key={d.id} style={[estilos.tarjeta, estilos.fila]}>
               <View style={estilos.flex}>
                 <Text style={estilos.nombre}>
+                  {d.tipo === 'pc' ? 'PC · ' : ''}
                   {d.nombre}
-                  {d.id === miDispositivo ? ' (este teléfono)' : ''}
+                  {d.id === miDispositivo ? ' (este equipo)' : ''}
                 </Text>
                 <Text style={estilos.nota}>
                   {d.ultimo_sync

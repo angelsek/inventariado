@@ -1,6 +1,8 @@
 import { getAndroidId } from 'expo-application';
 import { CryptoDigestAlgorithm, digestStringAsync, randomUUID } from 'expo-crypto';
 
+import { uuidDesdeHuella } from './uuidDesdeHuella';
+
 /**
  * Id con que el teléfono ocupa un cupo del plan. Se deriva del ANDROID_ID, que Android
  * mantiene aunque se desinstale la app (cambia solo al restablecer el teléfono de fábrica):
@@ -19,12 +21,5 @@ export async function idTelefonoEstable(): Promise<string> {
 /** UUID (versión 5, con forma válida para Postgres) a partir de la huella SHA-256 del ANDROID_ID. */
 export async function idDesdeAndroidId(androidId: string): Promise<string> {
   const h = await digestStringAsync(CryptoDigestAlgorithm.SHA256, `stockeao-telefono:${androidId}`);
-  const variante = ((parseInt(h[16], 16) & 0x3) | 0x8).toString(16);
-  return [
-    h.slice(0, 8),
-    h.slice(8, 12),
-    `5${h.slice(13, 16)}`,
-    `${variante}${h.slice(17, 20)}`,
-    h.slice(20, 32),
-  ].join('-');
+  return uuidDesdeHuella(h);
 }

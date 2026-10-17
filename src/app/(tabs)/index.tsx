@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { type Href, router, useFocusEffect } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { type ComponentProps, useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -40,7 +40,7 @@ const ATAJOS: Atajo[] = [
 
 /** Pantalla de inicio: resumen del día y accesos grandes a cada tarea. */
 export default function InicioScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, perfil, versionDatos } = useSesion();
   const esDueno = perfil?.rol === 'dueno';
   const [resumen, setResumen] = useState<Resumen | null>(null);

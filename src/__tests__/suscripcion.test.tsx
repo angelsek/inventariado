@@ -183,7 +183,7 @@ it('la pantalla de suscripción muestra planes y teléfonos, y permite desvincul
   expect(await screen.findByText('Activa')).toBeTruthy();
   expect(await screen.findByText('$9.990/mes')).toBeTruthy();
   expect(screen.getByText('Teléfonos (2 de 2)')).toBeTruthy();
-  expect(screen.getByText('Samsung A15 (este teléfono)')).toBeTruthy();
+  expect(screen.getByText('Samsung A15 (este equipo)')).toBeTruthy();
 
   // Solo se puede desvincular el otro teléfono.
   expect(screen.getAllByText('Desvincular')).toHaveLength(1);

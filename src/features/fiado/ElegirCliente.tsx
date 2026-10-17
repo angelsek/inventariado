@@ -1,4 +1,4 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -18,7 +18,7 @@ type Props = {
 
 /** Buscar un cliente para fiarle, o crearlo en el momento. */
 export function ElegirCliente({ visible, onElegir, onCerrar }: Props) {
-  const db = useSQLiteContext();
+  const db = useBase();
   const negocioId = useSesion((s) => s.negocioId);
   const [busqueda, setBusqueda] = useState('');
   const [clientes, setClientes] = useState<Cliente[]>([]);

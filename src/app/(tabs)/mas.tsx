@@ -1,8 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useFocusEffect } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { obtenerNegocio } from '@/db/negocio';
 import { formatearFechaHora } from '@/lib/formato';
@@ -13,9 +13,10 @@ import { cerrarSesion } from '@/sesion/cuenta';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores, radios } from '@/theme/colores';
+import { avisar } from '@/lib/dialogo';
 
 export default function MasScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, perfil, sync, salir, versionDatos } = useSesion();
   const [negocio, setNegocio] = useState('');
   const esDueno = perfil?.rol === 'dueno';
@@ -42,9 +43,9 @@ export default function MasScreen() {
   const confirmarCierre = () => {
     const advertencia =
       sync.pendientes > 0 ? `Hay ${sync.pendientes} cambio(s) sin subir que se perderán. ` : '';
-    Alert.alert(
+    avisar(
       'Cerrar sesión',
-      `${advertencia}Este teléfono se desconectará del negocio y habrá que volver a ingresar con correo y contraseña.`,
+      `${advertencia}Este equipo se desconectará del negocio y habrá que volver a ingresar con correo y contraseña.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Cerrar sesión', style: 'destructive', onPress: () => cerrarSesion(db) },

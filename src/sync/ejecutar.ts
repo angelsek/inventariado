@@ -42,7 +42,7 @@ async function ejecutar(db: BaseLocal): Promise<void> {
     // Otro teléfono desvinculó a este (para liberar cupo del plan): se cierra la sesión.
     if (dispositivoId && (await dispositivoDesvinculado(db, dispositivoId))) {
       await cerrarSesion(db);
-      useSesion.getState().fijarAvisoSalida('Este teléfono fue desvinculado del negocio.');
+      useSesion.getState().fijarAvisoSalida('Este equipo fue desvinculado del negocio.');
       return;
     }
     useSesion.getState().fijarSuscripcion(await obtenerEstadoSuscripcion(db, negocioId));

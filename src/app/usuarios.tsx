@@ -1,4 +1,4 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -13,7 +13,7 @@ import { colores } from '@/theme/colores';
 
 /** Administración de cajeros (solo dueño). */
 export default function UsuariosScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, perfil: actual, versionDatos, datosCambiaron } = useSesion();
   const [perfiles, setPerfiles] = useState<Perfil[]>([]);
   const [nombre, setNombre] = useState('');
@@ -65,7 +65,7 @@ export default function UsuariosScreen() {
   return (
     <Formulario
       titulo="Usuarios"
-      subtitulo="Cada persona entra con su PIN. Los cambios llegan a todos los teléfonos del local."
+      subtitulo="Cada persona entra con su PIN. Los cambios llegan a todos los equipos del local."
       error={error}
     >
       {perfiles.map((p) => (

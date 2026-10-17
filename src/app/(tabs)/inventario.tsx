@@ -1,17 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  FlatList,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Escaner } from '@/components/Escaner';
@@ -22,9 +13,10 @@ import { formatearCLP } from '@/lib/formato';
 import { formatearCantidad } from '@/lib/numeros';
 import { useSesion } from '@/sesion/store';
 import { colores, radios } from '@/theme/colores';
+import { avisar } from '@/lib/dialogo';
 
 export default function InventarioScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, perfil, versionDatos } = useSesion();
   const esDueno = perfil?.rol === 'dueno';
   const [busqueda, setBusqueda] = useState('');
@@ -56,7 +48,7 @@ export default function InventarioScreen() {
     } else if (esDueno) {
       router.push({ pathname: '/producto/[id]', params: { id: 'nuevo', codigo } });
     } else {
-      Alert.alert('Producto no encontrado', `No hay ningún producto con el código ${codigo}.`);
+      avisar('Producto no encontrado', `No hay ningún producto con el código ${codigo}.`);
     }
   };
 

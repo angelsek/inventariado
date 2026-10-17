@@ -1,6 +1,5 @@
-import { Alert } from 'react-native';
-
 import { useSesion } from '@/sesion/store';
+import { avisar } from '@/lib/dialogo';
 
 export const MENSAJE_SOLO_LECTURA =
   'La suscripción está suspendida: puedes ver tus datos, pero no registrar ventas ni hacer cambios. Revisa Más → Suscripción.';
@@ -13,6 +12,6 @@ export function useSoloLectura(): boolean {
 /** Para usar antes de guardar: avisa y devuelve true si no se puede modificar nada. */
 export function bloqueadoPorSuscripcion(): boolean {
   if (!useSesion.getState().suscripcion?.soloLectura) return false;
-  Alert.alert('Solo lectura', MENSAJE_SOLO_LECTURA);
+  avisar('Solo lectura', MENSAJE_SOLO_LECTURA);
   return true;
 }

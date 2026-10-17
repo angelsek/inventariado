@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
@@ -35,7 +35,7 @@ import { bloqueadoPorSuscripcion } from '@/features/suscripcion/useSoloLectura';
 const soloDigitos = (v: string) => v.replace(/\D/g, '');
 
 export default function CajaScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, versionDatos, datosCambiaron } = useSesion();
   const [caja, setCaja] = useState<Caja | null>(null);
   const [cargada, setCargada] = useState(false);
@@ -109,7 +109,7 @@ export default function CajaScreen() {
             <Text style={estilos.titulo}>Caja cerrada</Text>
           </View>
           <Text style={estilos.nota}>
-            Abre la caja al empezar el turno. Las ventas de este teléfono quedarán en ella para
+            Abre la caja al empezar el turno. Las ventas de este equipo quedarán en ella para
             cuadrar el efectivo al cerrar.
           </Text>
           <View style={estilos.espacio}>

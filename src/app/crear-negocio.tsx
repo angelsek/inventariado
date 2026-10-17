@@ -1,4 +1,4 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useState } from 'react';
 
 import { Boton } from '@/components/Boton';
@@ -15,7 +15,7 @@ import { crearNegocio } from '@/sesion/cuenta';
 
 /** Para cuentas que iniciaron sesión pero aún no tienen negocio. */
 export default function CrearNegocioScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const [form, setForm] = useState<FormNegocio>(formNegocioVacio);
   const [errores, setErrores] = useState<Errores<FormNegocio>>({});
   const [error, setError] = useState<string | null>(null);

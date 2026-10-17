@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { AppState } from 'react-native';
-import AsyncStorage from 'expo-sqlite/kv-store';
+
+import { almacenSesion } from './almacenSesion';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const clave = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '';
@@ -21,7 +22,7 @@ export const supabase = createClient(
   {
     db: { schema: ESQUEMA },
     auth: {
-      storage: AsyncStorage,
+      storage: almacenSesion,
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,
@@ -52,7 +53,7 @@ export function mensajeDeError(error: unknown): string {
   if (/invalid.*email|email.*invalid/i.test(mensaje)) return 'El correo no es válido.';
   if (/ya tiene un negocio/i.test(mensaje)) return 'Esta cuenta ya tiene un negocio.';
   if (/LIMITE_DISPOSITIVOS/.test(mensaje))
-    return 'Tu plan no permite más teléfonos. Desvincula uno desde otro teléfono (Más → Suscripción) o cambia al plan Pro.';
+    return 'Tu plan no permite más equipos. Desvincula uno desde otro equipo (Más → Suscripción) o cambia al plan Pro.';
   if (/could not find the (function|table)|schema cache/i.test(mensaje))
     return 'El servidor no está actualizado: falta ejecutar el SQL de la app en Supabase o recargar su esquema.';
   if (/invalid schema|schema must be one of/i.test(mensaje))

@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -15,7 +15,7 @@ import { colores } from '@/theme/colores';
 type Resumen = Awaited<ReturnType<typeof resumirVentas>>;
 
 export default function VentasScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, versionDatos } = useSesion();
   const [dia, setDia] = useState(() => new Date());
   const [ventas, setVentas] = useState<ResumenVenta[]>([]);

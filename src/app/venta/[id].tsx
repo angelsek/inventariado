@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useEffect, useState } from 'react';
 import { Share, StyleSheet, Text, View } from 'react-native';
 
@@ -21,7 +21,7 @@ import { colores } from '@/theme/colores';
 
 export default function VentaScreen() {
   const { id, recien } = useLocalSearchParams<{ id: string; recien?: string }>();
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, perfil, versionDatos, datosCambiaron } = useSesion();
   const [venta, setVenta] = useState<DetalleVenta | null>(null);
   const [anulando, setAnulando] = useState(false);

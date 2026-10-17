@@ -1,7 +1,7 @@
 import { getDocumentAsync } from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import { router } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -20,7 +20,7 @@ import { colores } from '@/theme/colores';
 import { bloqueadoPorSuscripcion } from '@/features/suscripcion/useSoloLectura';
 
 export default function ImportarScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, datosCambiaron } = useSesion();
   const [archivo, setArchivo] = useState<string | null>(null);
   const [analisis, setAnalisis] = useState<Analisis | null>(null);

@@ -22,6 +22,20 @@ export type DatosNegocio = {
   pin: string;
 };
 
+/** PC ya vinculado al negocio, que el PC nuevo puede reemplazar sin gastar otro cupo. */
+export type EquipoVinculado = { id: string; nombre: string; ultimo_sync: string | null };
+
+/**
+ * Datos del equipo al vincularlo (solo en la versión web; el teléfono usa su modelo).
+ * `elegirReemplazo` se llama si el negocio ya tiene PC vinculados y este navegador no tiene
+ * id propio (p. ej. se borraron los datos del sitio): devuelve el id del PC que reemplaza,
+ * o null para vincularlo como equipo nuevo.
+ */
+export type OpcionesEquipo = {
+  nombre?: string;
+  elegirReemplazo?: (equipos: EquipoVinculado[]) => Promise<string | null>;
+};
+
 /** Resultado de crear cuenta o iniciar sesión. */
 export type Resultado =
   | { tipo: 'listo' }
@@ -38,6 +52,7 @@ export async function crearCuentaYNegocio(
   correo: string,
   contrasena: string,
   datos: DatosNegocio,
+  equipo?: OpcionesEquipo,
 ): Promise<Resultado> {
   const { data, error } = await supabase.auth.signUp({
     email: correo.trim(),
@@ -49,12 +64,16 @@ export async function crearCuentaYNegocio(
   if (data.user && data.user.identities?.length === 0) return { tipo: 'cuenta_existente' };
   if (!data.session) return { tipo: 'confirmar_correo' };
 
-  await crearNegocio(db, datos);
+  await crearNegocio(db, datos, equipo);
   return { tipo: 'listo' };
 }
 
 /** Crea el negocio para la cuenta con sesión iniciada y vincula este teléfono. */
-export async function crearNegocio(db: BaseLocal, datos: DatosNegocio): Promise<void> {
+export async function crearNegocio(
+  db: BaseLocal,
+  datos: DatosNegocio,
+  equipo?: OpcionesEquipo,
+): Promise<void> {
   const perfilId = randomUUID();
   const { data: negocioId, error } = await supabase.rpc('crear_negocio', {
     p_nombre: datos.nombreNegocio,
@@ -66,7 +85,7 @@ export async function crearNegocio(db: BaseLocal, datos: DatosNegocio): Promise<
   });
   if (error) throw new Error(error.message);
 
-  await vincularTelefono(db, negocioId as string);
+  await vincularTelefono(db, negocioId as string, equipo);
 }
 
 /** Inicia sesión y, si la cuenta tiene negocio, vincula este teléfono a él. */
@@ -74,6 +93,7 @@ export async function iniciarSesion(
   db: BaseLocal,
   correo: string,
   contrasena: string,
+  equipo?: OpcionesEquipo,
 ): Promise<Resultado> {
   const { error } = await supabase.auth.signInWithPassword({
     email: correo.trim(),
@@ -89,7 +109,7 @@ export async function iniciarSesion(
   if (errorNegocio) throw new Error(errorNegocio.message);
   if (!data) return { tipo: 'sin_negocio' };
 
-  await vincularTelefono(db, data.negocio_id as string);
+  await vincularTelefono(db, data.negocio_id as string, equipo);
   return { tipo: 'listo' };
 }
 
@@ -125,21 +145,42 @@ export async function eliminarNegocio(db: BaseLocal, contrasena: string): Promis
   useSesion.getState().fijarAvisoSalida('Tu negocio y todos sus datos fueron eliminados.');
 }
 
-async function vincularTelefono(db: BaseLocal, negocioId: string): Promise<void> {
-  await borrarDatosLocales(db);
+/** PC vinculados al negocio (para ofrecer reemplazarlos). Requiere sesión e internet. */
+async function pcVinculados(negocioId: string): Promise<EquipoVinculado[]> {
+  const { data, error } = await supabase.rpc('mis_dispositivos', { p_negocio_id: negocioId });
+  if (error) throw new Error(error.message);
+  const equipos = ((data as { dispositivos?: (EquipoVinculado & { tipo?: string })[] } | null)
+    ?.dispositivos ?? []) as (EquipoVinculado & { tipo?: string })[];
+  return equipos
+    .filter((e) => e.tipo === 'pc')
+    .map(({ id, nombre, ultimo_sync }) => ({ id, nombre, ultimo_sync }));
+}
 
-  // Si el teléfono ya tenía id (instalaciones anteriores) se conserva, para no ocupar otro cupo.
+async function vincularTelefono(
+  db: BaseLocal,
+  negocioId: string,
+  equipo?: OpcionesEquipo,
+): Promise<void> {
+  await borrarDatosLocales(db);
+  const esPc = Platform.OS === 'web';
+
+  // Si el equipo ya tenía id (instalaciones anteriores) se conserva, para no ocupar otro cupo.
   let dispositivoId = await leerAjuste(db, AJUSTE_DISPOSITIVO);
-  if (!dispositivoId) {
-    dispositivoId = await idTelefonoEstable();
-    await guardarAjuste(db, AJUSTE_DISPOSITIVO, dispositivoId);
+  if (!dispositivoId && esPc && equipo?.elegirReemplazo) {
+    const pcs = await pcVinculados(negocioId);
+    if (pcs.length) dispositivoId = await equipo.elegirReemplazo(pcs);
   }
-  const nombre = nombreDelTelefono();
-  // El servidor revisa el límite de teléfonos del plan (error LIMITE_DISPOSITIVOS).
+  if (!dispositivoId) dispositivoId = await idTelefonoEstable();
+  await guardarAjuste(db, AJUSTE_DISPOSITIVO, dispositivoId);
+
+  const nombre = equipo?.nombre?.trim() || nombreDelTelefono();
+  // El servidor revisa el límite de equipos del plan (error LIMITE_DISPOSITIVOS). El teléfono
+  // no envía p_tipo: así sigue funcionando con servidores sin la migración dispositivos_tipo.
   const { error } = await supabase.rpc('registrar_dispositivo', {
     p_id: dispositivoId,
     p_negocio_id: negocioId,
     p_nombre: nombre,
+    ...(esPc ? { p_tipo: 'pc' } : {}),
   });
   if (error) throw new Error(error.message);
   await registrarDispositivo(db, { id: dispositivoId, negocioId, nombre });
@@ -153,6 +194,7 @@ async function vincularTelefono(db: BaseLocal, negocioId: string): Promise<void>
 }
 
 function nombreDelTelefono(): string {
+  if (Platform.OS === 'web') return 'PC';
   const constantes = Platform.constants as { Brand?: string; Model?: string };
   const nombre = [constantes.Brand, constantes.Model].filter(Boolean).join(' ');
   return nombre || 'Teléfono';

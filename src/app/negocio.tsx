@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -15,7 +15,7 @@ import { colores } from '@/theme/colores';
 
 /** Datos del negocio y horario de venta de alcohol (solo dueño). */
 export default function NegocioScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, datosCambiaron } = useSesion();
   const [nombre, setNombre] = useState('');
   const [rut, setRut] = useState('');

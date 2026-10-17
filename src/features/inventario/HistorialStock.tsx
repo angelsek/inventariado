@@ -1,4 +1,4 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -18,7 +18,7 @@ const NOMBRES: Record<TipoMovimiento, string> = {
 
 /** Últimos movimientos de stock de un producto (quién, cuándo y por qué). */
 export function HistorialStock({ productoId, version }: { productoId: string; version: number }) {
-  const db = useSQLiteContext();
+  const db = useBase();
   const [movimientos, setMovimientos] = useState<MovimientoStock[]>([]);
 
   useEffect(() => {

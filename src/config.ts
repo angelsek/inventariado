@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 /**
  * Datos de contacto para pagar la suscripción. Se configuran como variables de
  * GitHub (SUPABASE_... ya existen; ver docs/SUPABASE.md) o en .env.local.
@@ -10,10 +12,12 @@ export const CONTACTO = {
 
 /**
  * Por dónde se instaló la app: 'play' (Google Play, que se encarga de las
- * actualizaciones) o 'apk' (instalación directa, la app avisa de versiones nuevas).
- * Lo fija el workflow de compilación.
+ * actualizaciones), 'apk' (instalación directa, la app avisa de versiones nuevas) o
+ * 'web' (versión de PC en el navegador; se cobra por transferencia, como el APK).
+ * Lo fija el workflow de compilación; la web se reconoce por la plataforma.
  */
-export const CANAL: 'play' | 'apk' = process.env.EXPO_PUBLIC_CANAL === 'play' ? 'play' : 'apk';
+export const CANAL: 'play' | 'apk' | 'web' =
+  Platform.OS === 'web' ? 'web' : process.env.EXPO_PUBLIC_CANAL === 'play' ? 'play' : 'apk';
 
 /**
  * Único origen desde el que la app descarga e instala APK: las Releases del repositorio.

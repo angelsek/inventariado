@@ -1,5 +1,5 @@
 import { Link, router } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
@@ -21,7 +21,7 @@ import { colores } from '@/theme/colores';
 type Form = FormNegocio & { correo: string; contrasena: string };
 
 export default function CrearCuentaScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const [form, setForm] = useState<Form>({ ...formNegocioVacio, correo: '', contrasena: '' });
   const [errores, setErrores] = useState<Errores<Form>>({});
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +54,7 @@ export default function CrearCuentaScreen() {
   return (
     <Formulario
       titulo="Crea tu negocio"
-      subtitulo="Con esta cuenta podrás usar la app en todos los teléfonos de tu local."
+      subtitulo="Con esta cuenta podrás usar la app en todos los equipos de tu local."
       error={error}
     >
       <Campo

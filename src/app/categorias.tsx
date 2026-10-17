@@ -1,6 +1,6 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Formulario } from '@/components/Formulario';
@@ -16,9 +16,10 @@ import {
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
+import { avisar } from '@/lib/dialogo';
 
 export default function CategoriasScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, versionDatos, datosCambiaron } = useSesion();
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [nueva, setNueva] = useState('');
@@ -54,7 +55,7 @@ export default function CategoriasScreen() {
   };
 
   const confirmarEliminar = (categoria: Categoria) =>
-    Alert.alert(
+    avisar(
       'Eliminar categoría',
       `¿Eliminar "${categoria.nombre}"? Sus productos quedarán sin categoría.`,
       [

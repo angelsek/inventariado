@@ -55,6 +55,13 @@ export function politicaDeContenido(url) {
   ].join('; ');
 }
 
+// Al publicar (EXIGIR_SUPABASE=true en el workflow) falta la URL de Supabase = build inútil:
+// la web no podría sincronizar y la CSP no permitiría conectarse.
+if (process.env.EXIGIR_SUPABASE === 'true' && !urlSupabase().startsWith('https://')) {
+  console.error('Falta EXPO_PUBLIC_SUPABASE_URL (https://…): no se publica una web sin Supabase.');
+  process.exit(1);
+}
+
 function escribirCabeceras() {
   const comunes = {
     'Content-Security-Policy': politicaDeContenido(urlSupabase()),

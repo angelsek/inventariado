@@ -242,7 +242,7 @@ export default function VenderPos() {
       return;
     }
     cobrando.current = true;
-    if (carrito.items.some((i) => i.alcohol)) {
+    if (useCarrito.getState().items.some((i) => i.alcohol)) {
       try {
         const negocio = await obtenerNegocio(db, negocioId);
         const fuera = !dentroDelHorario(

@@ -65,6 +65,8 @@ jobs:
           # Sin EXPO_PUBLIC_DATOS_TRANSFERENCIA: la web es pública y los datos bancarios se dan
           # por WhatsApp (docs/ESTADO_ACTUAL.md).
           EXPO_PUBLIC_WEB_CODIGO: ${{ github.run_number }}
+          # Al publicar, el build falla si falta la URL de Supabase (scripts/construir-web.mjs).
+          EXIGIR_SUPABASE: ${{ inputs.publicar }}
         run: npm run web:construir
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

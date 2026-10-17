@@ -1,4 +1,4 @@
-/* global self, caches, fetch, Request, URL */
+/* global __ARCHIVOS__ */
 // Service worker de la versión web (PC). Plantilla: scripts/construir-web.mjs reemplaza
 // __VERSION__ y __ARCHIVOS__ y la escribe en dist/sw.js. Ver docs/WEB.md.
 //

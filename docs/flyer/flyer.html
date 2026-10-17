@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Stockeao — Flyer</title>
+    <style>
+      @page {
+        size: 216mm 279mm; /* carta */
+        margin: 0;
+      }
+      :root {
+        --verde: #1f4e45;
+        --verde-medio: #2f6b5f;
+        --verde-suave: #e6efec;
+        --crema: #f6f8f7;
+        --texto: #1a1a1a;
+        --gris: #55605c;
+        --acento: #f2a541;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        width: 216mm;
+        height: 279mm;
+      }
+      body {
+        font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+        color: var(--texto);
+        background: #fff;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .hoja {
+        position: relative;
+        width: 216mm;
+        height: 279mm;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ---------- Portada ---------- */
+      .portada {
+        position: relative;
+        background: var(--verde);
+        color: #fff;
+        padding: 13mm 14mm 0 14mm;
+        height: 112mm;
+        overflow: hidden;
+      }
+      .portada::after {
+        content: '';
+        position: absolute;
+        right: -40mm;
+        top: -30mm;
+        width: 130mm;
+        height: 130mm;
+        border-radius: 50%;
+        background: var(--verde-medio);
+        opacity: 0.55;
+      }
+      .marca {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 4mm;
+      }
+      .marca img {
+        width: 15mm;
+        height: 15mm;
+        border-radius: 3.5mm;
+        background: #fff;
+      }
+      .marca span {
+        font-size: 9.5mm;
+        font-weight: 700;
+        letter-spacing: 0.2mm;
+      }
+      .titular {
+        position: relative;
+        z-index: 1;
+        width: 112mm;
+        margin-top: 8mm;
+      }
+      .titular h1 {
+        font-size: 10.5mm;
+        line-height: 1.12;
+        font-weight: 700;
+      }
+      .titular p {
+        margin-top: 4mm;
+        font-size: 4.3mm;
+        line-height: 1.45;
+        color: #d6e6e1;
+      }
+      .sello {
+        display: inline-block;
+        margin-top: 6mm;
+        padding: 2.4mm 5mm;
+        border-radius: 99mm;
+        background: var(--acento);
+        color: #1a1a1a;
+        font-weight: 700;
+        font-size: 4.2mm;
+      }
+      .telefono {
+        position: absolute;
+        z-index: 2;
+        right: 16mm;
+        top: 12mm;
+        width: 56mm;
+        padding: 2.2mm;
+        border-radius: 8mm;
+        background: #0e1f1b;
+        box-shadow: 0 4mm 10mm rgba(0, 0, 0, 0.35);
+      }
+      .telefono img {
+        display: block;
+        width: 100%;
+        border-radius: 6mm;
+      }
+
+      /* ---------- Cuerpo ---------- */
+      .cuerpo {
+        flex: 1;
+        padding: 9mm 14mm 0 14mm;
+      }
+      h2 {
+        font-size: 5.6mm;
+        color: var(--verde);
+        margin-bottom: 4mm;
+      }
+      .funciones {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3mm 6mm;
+        width: 118mm;
+      }
+      .funcion {
+        display: flex;
+        gap: 3mm;
+        align-items: flex-start;
+      }
+      .icono {
+        flex: none;
+        width: 9mm;
+        height: 9mm;
+        border-radius: 50%;
+        background: var(--verde-suave);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .icono svg {
+        width: 5mm;
+        height: 5mm;
+        stroke: var(--verde);
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .funcion b {
+        display: block;
+        font-size: 3.7mm;
+        line-height: 1.25;
+      }
+      .funcion small {
+        display: block;
+        margin-top: 0.6mm;
+        font-size: 3.05mm;
+        line-height: 1.35;
+        color: var(--gris);
+      }
+
+      .fila {
+        display: flex;
+        gap: 8mm;
+      }
+      .ventajas {
+        flex: none;
+        width: 52mm;
+        margin-top: -1mm;
+        padding: 5mm;
+        border-radius: 4mm;
+        background: var(--crema);
+        border: 0.3mm solid #dfe6e3;
+      }
+      .ventajas h2 {
+        font-size: 4.6mm;
+        margin-bottom: 3mm;
+      }
+      .ventajas li {
+        list-style: none;
+        position: relative;
+        padding-left: 5mm;
+        margin-bottom: 2.6mm;
+        font-size: 3.25mm;
+        line-height: 1.38;
+      }
+      .ventajas li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 1.2mm;
+        width: 2.4mm;
+        height: 1.3mm;
+        border-left: 0.6mm solid var(--verde);
+        border-bottom: 0.6mm solid var(--verde);
+        transform: rotate(-45deg);
+      }
+
+      /* ---------- Precios ---------- */
+      .precios {
+        display: flex;
+        gap: 5mm;
+        margin-top: 7mm;
+      }
+      .plan {
+        flex: 1;
+        padding: 4.5mm 5mm;
+        border-radius: 4mm;
+        border: 0.4mm solid #dfe6e3;
+      }
+      .plan.destacado {
+        border: 0.7mm solid var(--verde);
+        background: var(--verde-suave);
+      }
+      .plan .nombre {
+        font-size: 4.6mm;
+        font-weight: 700;
+      }
+      .plan .precio {
+        margin-top: 1mm;
+        font-size: 7.5mm;
+        font-weight: 700;
+        color: var(--verde);
+      }
+      .plan .precio span {
+        font-size: 3.5mm;
+        font-weight: 600;
+        color: var(--gris);
+      }
+      .plan .detalle {
+        margin-top: 1mm;
+        font-size: 3.2mm;
+        color: var(--gris);
+        line-height: 1.4;
+      }
+      .plan .anual {
+        margin-top: 1.8mm;
+        font-size: 3.2mm;
+        font-weight: 700;
+        color: var(--verde);
+      }
+      .gratis {
+        flex: none;
+        width: 52mm;
+        border-radius: 4mm;
+        background: var(--acento);
+        padding: 4.5mm 5mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .gratis b {
+        font-size: 7mm;
+        line-height: 1.05;
+      }
+      .gratis span {
+        margin-top: 1.5mm;
+        font-size: 3.4mm;
+        line-height: 1.35;
+      }
+
+      /* ---------- Pie ---------- */
+      .pie {
+        margin-top: 7mm;
+        background: var(--verde);
+        color: #fff;
+        padding: 6mm 14mm;
+        display: flex;
+        align-items: center;
+        gap: 7mm;
+      }
+      .qr {
+        flex: none;
+        background: #fff;
+        padding: 2mm;
+        border-radius: 2.5mm;
+        width: 30mm;
+        height: 30mm;
+      }
+      .qr canvas,
+      .qr img {
+        width: 26mm !important;
+        height: 26mm !important;
+        display: block;
+      }
+      .contacto {
+        flex: 1;
+      }
+      .contacto .llamado {
+        font-size: 5.6mm;
+        font-weight: 700;
+      }
+      .contacto .sub {
+        margin-top: 1mm;
+        font-size: 3.4mm;
+        color: #d6e6e1;
+      }
+      .datos {
+        margin-top: 3mm;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5mm 7mm;
+        font-size: 3.6mm;
+        font-weight: 600;
+      }
+      .datos svg {
+        width: 3.8mm;
+        height: 3.8mm;
+        vertical-align: -0.7mm;
+        margin-right: 1.2mm;
+        stroke: #fff;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .firma {
+        position: absolute;
+        right: 14mm;
+        bottom: 2.2mm;
+        font-size: 2.6mm;
+        color: #a9c4bc;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="hoja">
+      <section class="portada">
+        <div class="marca">
+          <img src="icono.png" alt="" />
+          <span>Stockeao</span>
+        </div>
+        <div class="titular">
+          <h1>Tus ventas y tu stock, siempre en orden.</h1>
+          <p>
+            La app para almacenes, botillerías, kioskos, bazares y todo negocio de barrio. Vende,
+            controla tu mercadería y cuadra la caja desde tu teléfono.
+          </p>
+          <div class="sello">14 días gratis · sin tarjeta</div>
+        </div>
+        <div class="telefono"><img src="captura-productos.png" alt="" /></div>
+      </section>
+
+      <section class="cuerpo">
+        <div class="fila">
+          <div>
+            <h2>Todo lo que tu negocio necesita</h2>
+            <div class="funciones">
+              <div class="funcion">
+                <div class="icono">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M3 5v14M7 5v14M11 5v14M15 5v14M19 5v14" />
+                  </svg>
+                </div>
+                <div>
+                  <b>Vende en segundos</b><small>Escanea el código con la cámara y cobra.</small>
+                </div>
+              </div>
+              <div class="funcion">
+                <div class="icono">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8" />
+                  </svg>
+                </div>
+                <div>
+                  <b>Stock al día</b
+                  ><small>Se descuenta solo con cada venta y te avisa qué reponer.</small>
+                </div>
+              </div>
+              <div class="funcion">
+                <div class="icono">
+                  <svg viewBox="0 0 24 24">
+                    <rect x="3" y="6" width="18" height="12" rx="2" />
+                    <circle cx="12" cy="12" r="2.5" />
+                  </svg>
+                </div>
+                <div>
+                  <b>Caja cuadrada</b
+                  ><small>Abre y cierra turnos y ve al tiro si falta o sobra.</small>
+                </div>
+              </div>
+              <div class="funcion">
+                <div class="icono">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="9" cy="8" r="3.5" />
+                    <path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 010 7M21.5 20c-.5-2.5-2-4.2-4-5" />
+                  </svg>
+                </div>
+                <div>
+                  <b>Fiado ordenado</b
+                  ><small>Anota lo que te deben tus clientes y sus abonos.</small>
+                </div>
+              </div>
+              <div class="funcion">
+                <div class="icono">
+                  <svg viewBox="0 0 24 24">
+                    <rect x="2.5" y="4" width="8" height="15" rx="1.5" />
+                    <rect x="13.5" y="4" width="8" height="15" rx="1.5" />
+                    <path d="M8 21h8" />
+                  </svg>
+                </div>
+                <div>
+                  <b>Varios teléfonos</b
+                  ><small>Tú y tus cajeros, cada uno con su usuario y PIN.</small>
+                </div>
+              </div>
+              <div class="funcion">
+                <div class="icono">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M2 9a15 15 0 0120 0M5.5 12.5a10 10 0 0113 0M9 16a5 5 0 016 0M3 3l18 18" />
+                  </svg>
+                </div>
+                <div>
+                  <b>Funciona sin internet</b
+                  ><small>Sigue vendiendo y se sincroniza cuando vuelve la señal.</small>
+                </div>
+              </div>
+              <div class="funcion">
+                <div class="icono">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M20.6 13.4l-7.2 7.2a2 2 0 01-2.8 0L3 13V3h10l7.6 7.6a2 2 0 010 2.8z" />
+                    <circle cx="7.5" cy="7.5" r="1.3" />
+                  </svg>
+                </div>
+                <div>
+                  <b>Promos, packs y envases</b
+                  ><small>Ofertas, six packs y cobro de envases retornables.</small>
+                </div>
+              </div>
+              <div class="funcion">
+                <div class="icono">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+                  </svg>
+                </div>
+                <div>
+                  <b>Reportes claros</b
+                  ><small>Cuánto vendes, qué se vende más y cuánto ganas.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ventajas">
+            <h2>¿Por qué Stockeao?</h2>
+            <ul>
+              <li><b>Simple y con letra grande</b>, pensada para que cualquiera la use.</li>
+              <li><b>Sin equipos caros:</b> basta un teléfono Android.</li>
+              <li><b>Tus datos respaldados</b> en la nube, aunque se pierda el teléfono.</li>
+              <li><b>Sin contratos:</b> pagas mes a mes y cancelas cuando quieras.</li>
+              <li><b>Hecha en Chile</b>, para el negocio de barrio.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="precios">
+          <div class="plan">
+            <div class="nombre">Básico</div>
+            <div class="precio">$9.990 <span>/ mes</span></div>
+            <div class="detalle">Hasta 2 teléfonos</div>
+            <div class="anual">o $99.900 al año (2 meses gratis)</div>
+          </div>
+          <div class="plan destacado">
+            <div class="nombre">Pro</div>
+            <div class="precio">$14.990 <span>/ mes</span></div>
+            <div class="detalle">Hasta 5 teléfonos · reportes avanzados</div>
+            <div class="anual">o $149.900 al año (2 meses gratis)</div>
+          </div>
+          <div class="gratis">
+            <b>Pruébala 14 días gratis</b>
+            <span>Sin tarjeta y sin compromiso. Todas las funciones desde el primer día.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="pie">
+        <div class="qr"><div id="qr"></div></div>
+        <div class="contacto">
+          <div class="llamado">Descárgala hoy</div>
+          <div class="sub">Escanea el código o entra a la página desde tu teléfono Android.</div>
+          <div class="datos">
+            <span
+              ><svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9.5" />
+                <path d="M2.5 12h19M12 2.5c2.8 3 2.8 16 0 19M12 2.5c-2.8 3-2.8 16 0 19" /></svg
+              >grimoriolabs.com/stockeao</span
+            >
+            <span
+              ><svg viewBox="0 0 24 24">
+                <path
+                  d="M4 20l1.3-4A8.5 8.5 0 1112 20.5a8.4 8.4 0 01-4-1L4 20z"
+                /></svg
+              >+56 9 5470 0498</span
+            >
+            <span
+              ><svg viewBox="0 0 24 24">
+                <rect x="3" y="5" width="18" height="14" rx="2" />
+                <path d="M3.5 6l8.5 7 8.5-7" /></svg
+              >contacto@grimoriolabs.com</span
+            >
+          </div>
+        </div>
+      </section>
+      <div class="firma">Un producto de Grimorio Labs</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+      new QRCode(document.getElementById('qr'), {
+        text: 'https://grimoriolabs.com/stockeao/',
+        width: 400,
+        height: 400,
+        colorDark: '#1f4e45',
+        correctLevel: QRCode.CorrectLevel.M,
+      });
+    </script>
+  </body>
+</html>

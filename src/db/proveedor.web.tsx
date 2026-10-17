@@ -22,6 +22,12 @@ const bloqueo =
       })
     : null;
 
+// Se pide una sola vez por carga de la página: en desarrollo, React (StrictMode) ejecuta el
+// efecto dos veces y la segunda vez el bloqueo ya es de esta misma pestaña.
+let toma: Promise<boolean> | null = null;
+// Sin Web Locks (navegador antiguo) no hay bloqueo: se abre directamente.
+const tomarBase = () => (toma ??= bloqueo ? bloqueo.tomar(cederPestana) : Promise.resolve(true));
+
 /** La otra pestaña acaba de soltar el archivo: se reintenta un momento si aún no está libre. */
 async function abrirConReintentos(): Promise<SQLiteDatabase> {
   for (let intento = 1; ; intento++) {
@@ -71,8 +77,7 @@ export function ProveedorBase({ children }: { children: ReactNode }) {
       sessionStorage.removeItem(CEDIDA);
       return;
     }
-    // Sin Web Locks (navegador antiguo) no hay bloqueo: se abre directamente.
-    void (bloqueo ? bloqueo.tomar(cederPestana) : Promise.resolve(true)).then((tomada) => {
+    void tomarBase().then((tomada) => {
       if (tomada) void abrir();
       else setEstado('otraPestana');
     });

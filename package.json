@@ -7,6 +7,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "web": "expo start --web",
+    "web:construir": "expo export --platform web && node scripts/construir-web.mjs",
+    "web:servir": "node scripts/servir-web.mjs",
     "lint": "expo lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

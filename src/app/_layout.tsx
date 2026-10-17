@@ -14,6 +14,7 @@ import { informarError, instalarManejadorErrores } from '@/lib/errores';
 import { useSesion } from '@/sesion/store';
 import { useSincronizacionAutomatica } from '@/sync/useSincronizacionAutomatica';
 import { colores } from '@/theme/colores';
+import { MarcoApp } from '@/web/componentes/MarcoApp';
 
 SplashScreen.preventAutoHideAsync();
 instalarManejadorErrores();
@@ -106,50 +107,52 @@ function Navegacion() {
   });
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!negocioId}>
-        <Stack.Screen name="bienvenida" />
-        <Stack.Screen name="crear-cuenta" options={conEncabezado('Crear cuenta')} />
-        <Stack.Screen name="ingresar" options={conEncabezado('Iniciar sesión')} />
-        <Stack.Screen name="crear-negocio" options={conEncabezado('Datos del negocio')} />
-      </Stack.Protected>
+    <MarcoApp>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Protected guard={!negocioId}>
+          <Stack.Screen name="bienvenida" />
+          <Stack.Screen name="crear-cuenta" options={conEncabezado('Crear cuenta')} />
+          <Stack.Screen name="ingresar" options={conEncabezado('Iniciar sesión')} />
+          <Stack.Screen name="crear-negocio" options={conEncabezado('Datos del negocio')} />
+        </Stack.Protected>
 
-      <Stack.Protected guard={!!negocioId && !perfil}>
-        <Stack.Screen name="pin" />
-      </Stack.Protected>
+        <Stack.Protected guard={!!negocioId && !perfil}>
+          <Stack.Screen name="pin" />
+        </Stack.Protected>
 
-      <Stack.Protected guard={!!negocioId && !!perfil}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="usuarios" options={conEncabezado('Usuarios')} />
-        <Stack.Screen name="producto/[id]" options={conEncabezado('Producto')} />
-        <Stack.Screen name="categorias" options={conEncabezado('Categorías')} />
-        <Stack.Screen name="importar" options={conEncabezado('Importar productos')} />
-        <Stack.Screen name="cobrar" options={conEncabezado('Cobrar')} />
-        <Stack.Screen name="ventas" options={conEncabezado('Ventas')} />
-        <Stack.Screen name="venta/[id]" options={conEncabezado('Venta')} />
-        <Stack.Screen name="compra" options={conEncabezado('Ingreso de mercadería')} />
-        <Stack.Screen name="compras" options={conEncabezado('Ingresos anteriores')} />
-        <Stack.Screen name="proveedores" options={conEncabezado('Proveedores')} />
-        <Stack.Screen name="reponer" options={conEncabezado('Por reponer')} />
-        <Stack.Screen name="conteo" options={conEncabezado('Conteo de inventario')} />
-        <Stack.Screen name="suscripcion" options={conEncabezado('Suscripción')} />
-        <Stack.Screen name="admin" options={conEncabezado('Administración')} />
-        <Stack.Screen name="reportes" options={conEncabezado('Reportes')} />
-        <Stack.Screen name="estadisticas" options={conEncabezado('Reportes del negocio')} />
-        <Stack.Screen name="clientes" options={conEncabezado('Clientes y fiado')} />
-        <Stack.Screen name="cliente/[id]" options={conEncabezado('Cliente')} />
-        <Stack.Screen name="negocio" options={conEncabezado('Datos del negocio')} />
-        <Stack.Screen name="exportar" options={conEncabezado('Exportar datos')} />
-        <Stack.Screen name="comentario" options={conEncabezado('Enviar comentario')} />
-        <Stack.Screen name="eliminar-cuenta" options={conEncabezado('Eliminar cuenta')} />
-      </Stack.Protected>
+        <Stack.Protected guard={!!negocioId && !!perfil}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="usuarios" options={conEncabezado('Usuarios')} />
+          <Stack.Screen name="producto/[id]" options={conEncabezado('Producto')} />
+          <Stack.Screen name="categorias" options={conEncabezado('Categorías')} />
+          <Stack.Screen name="importar" options={conEncabezado('Importar productos')} />
+          <Stack.Screen name="cobrar" options={conEncabezado('Cobrar')} />
+          <Stack.Screen name="ventas" options={conEncabezado('Ventas')} />
+          <Stack.Screen name="venta/[id]" options={conEncabezado('Venta')} />
+          <Stack.Screen name="compra" options={conEncabezado('Ingreso de mercadería')} />
+          <Stack.Screen name="compras" options={conEncabezado('Ingresos anteriores')} />
+          <Stack.Screen name="proveedores" options={conEncabezado('Proveedores')} />
+          <Stack.Screen name="reponer" options={conEncabezado('Por reponer')} />
+          <Stack.Screen name="conteo" options={conEncabezado('Conteo de inventario')} />
+          <Stack.Screen name="suscripcion" options={conEncabezado('Suscripción')} />
+          <Stack.Screen name="admin" options={conEncabezado('Administración')} />
+          <Stack.Screen name="reportes" options={conEncabezado('Reportes')} />
+          <Stack.Screen name="estadisticas" options={conEncabezado('Reportes del negocio')} />
+          <Stack.Screen name="clientes" options={conEncabezado('Clientes y fiado')} />
+          <Stack.Screen name="cliente/[id]" options={conEncabezado('Cliente')} />
+          <Stack.Screen name="negocio" options={conEncabezado('Datos del negocio')} />
+          <Stack.Screen name="exportar" options={conEncabezado('Exportar datos')} />
+          <Stack.Screen name="comentario" options={conEncabezado('Enviar comentario')} />
+          <Stack.Screen name="eliminar-cuenta" options={conEncabezado('Eliminar cuenta')} />
+        </Stack.Protected>
 
-      {/*
+        {/*
         Términos y privacidad: se pueden leer antes y después de iniciar sesión.
         Va al final: si una ruta protegida no está disponible, se abre la primera
         de la lista que sí lo esté, y no debe ser esta.
       */}
-      <Stack.Screen name="legal/[doc]" options={conEncabezado('')} />
-    </Stack>
+        <Stack.Screen name="legal/[doc]" options={conEncabezado('')} />
+      </Stack>
+    </MarcoApp>
   );
 }

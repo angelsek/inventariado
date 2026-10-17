@@ -9,6 +9,9 @@
   "build": {
     "command": "npm run web:construir",
   },
+  // Vista previa de cada rama que no es main (Cloudflare ejecuta `wrangler preview`): usa la
+  // misma configuración de abajo.
+  "previews": {},
   "assets": {
     "directory": "./dist/",
     // Cualquier ruta de la app (/vender, /caja…) abre index.html: Expo Router decide la pantalla.

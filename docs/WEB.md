@@ -116,13 +116,13 @@ redirecciones de `/index.html`).
 
 Configuración en Cloudflare (proyecto `stockeao-web` → Settings → Build):
 
-| Campo                                | Valor                                                                   |
-| ------------------------------------ | ----------------------------------------------------------------------- |
-| Production branch                    | `main`                                                                  |
-| Build command                        | `npm run web:construir`                                                 |
-| Deploy command                       | `npx wrangler deploy`                                                   |
-| Non-production branch deploy command | `npx wrangler versions upload` (o desactivar las builds de otras ramas) |
-| Root directory                       | `/`                                                                     |
+| Campo                                | Valor                                                                        |
+| ------------------------------------ | ---------------------------------------------------------------------------- |
+| Production branch                    | `main`                                                                       |
+| Build command                        | `npm run web:construir`                                                      |
+| Deploy command                       | `npx wrangler deploy`                                                        |
+| Non-production branch deploy command | `npx wrangler preview` (por defecto; o desactivar las builds de otras ramas) |
+| Root directory                       | `/`                                                                          |
 
 Variables de build (Settings → Build → Variables and secrets):
 

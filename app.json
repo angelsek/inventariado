@@ -52,7 +52,8 @@
         }
       ],
       "expo-iap",
-      "./plugins/firma-android"
+      "./plugins/firma-android",
+      "./plugins/memoria-gradle"
     ]
   }
 }

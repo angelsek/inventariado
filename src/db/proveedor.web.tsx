@@ -59,6 +59,7 @@ export function ProveedorBase({ children }: { children: ReactNode }) {
   );
   const [base, setBase] = useState<SQLiteDatabase | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sinRespuesta, setSinRespuesta] = useState(false);
 
   const abrir = async () => {
     try {
@@ -95,11 +96,23 @@ export function ProveedorBase({ children }: { children: ReactNode }) {
             Solo una pestaña puede usarlo a la vez. Si lo usas aquí, la otra pestaña se cierra: lo
             ya guardado se conserva, pero una venta que estaba a medio armar allá se pierde.
           </Text>
+          {sinRespuesta ? (
+            <Text style={estilos.detalle}>
+              La otra pestaña no respondió. Ciérrala (o cierra el navegador) y vuelve a intentar.
+            </Text>
+          ) : null}
           <Boton
             titulo="Usar aquí"
             onPress={() => {
               setEstado('abriendo');
-              void (bloqueo ? bloqueo.quitar(cederPestana) : Promise.resolve()).then(abrir);
+              setSinRespuesta(false);
+              void (bloqueo ? bloqueo.quitar(cederPestana) : Promise.resolve(true)).then(
+                (tomada) => {
+                  if (tomada) return abrir();
+                  setSinRespuesta(true);
+                  setEstado('otraPestana');
+                },
+              );
             }}
           />
         </View>

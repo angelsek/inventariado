@@ -33,7 +33,7 @@ columna, la publicación se detiene.
 
 `20261018000100_dispositivos_tipo.sql` (versión web) agrega `dispositivos.tipo` (`telefono` o
 `pc`; los dos ocupan cupo del plan) y actualiza `registrar_dispositivo` y `mis_dispositivos`.
-Es **obligatoria antes de publicar la web** (`docs/WEB.md`). Es compatible con las apps Android
+Es **obligatoria antes de publicar la web**. Es compatible con las apps Android
 ya instaladas: el tipo por defecto es `telefono`, así que siguen registrándose igual.
 
 ## 3. Exponer el esquema

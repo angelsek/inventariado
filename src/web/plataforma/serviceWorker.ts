@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { useCarrito } from '@/features/ventas/carrito';
+
 /**
  * Service worker de la web (dist/sw.js, lo genera scripts/construir-web.mjs): guarda la app
  * para que abra sin internet. Una versión nueva queda esperando hasta que la persona toque
@@ -31,11 +33,24 @@ function avisarNueva(trabajador: ServiceWorker) {
 export function registrarServiceWorker() {
   if (__DEV__ || typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
 
+  // La versión nueva toma el control de todas las pestañas del sitio, también de una con una
+  // venta a medio armar (si se tocó "Actualizar" en otra): esa espera a que se vacíe el carro.
   let recargando = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
+  const recargar = () => {
     if (recargando) return;
     recargando = true;
     location.reload();
+  };
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (useCarrito.getState().items.length === 0) {
+      recargar();
+      return;
+    }
+    const dejarDeEsperar = useCarrito.subscribe((carrito) => {
+      if (carrito.items.length > 0) return;
+      dejarDeEsperar();
+      recargar();
+    });
   });
 
   navigator.serviceWorker

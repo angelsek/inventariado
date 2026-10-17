@@ -87,8 +87,8 @@ export function ProveedorBase({ children }: { children: ReactNode }) {
         <View style={estilos.tarjeta}>
           <Text style={estilos.titulo}>Stockeao ya está abierto en otra pestaña</Text>
           <Text style={estilos.texto}>
-            Solo una pestaña puede usarlo a la vez. Si lo usas aquí, la otra pestaña se cierra sin
-            perder nada de lo que ya se guardó.
+            Solo una pestaña puede usarlo a la vez. Si lo usas aquí, la otra pestaña se cierra: lo
+            ya guardado se conserva, pero una venta que estaba a medio armar allá se pierde.
           </Text>
           <Boton
             titulo="Usar aquí"

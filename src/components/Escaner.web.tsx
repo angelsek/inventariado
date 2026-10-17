@@ -18,7 +18,7 @@ type Props = {
 const PAUSA_MS = 1500;
 
 /**
- * Escritorio: en vez de la cámara, espera el código de la pistola lectora USB.
+ * Web (PC): en vez de la cámara, espera el código de la pistola lectora USB.
  * Misma interfaz que Escaner.tsx, para que las pantallas no cambien.
  */
 export function Escaner({ visible, onCodigo, onCerrar, continuo, mensaje }: Props) {

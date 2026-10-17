@@ -1,9 +1,9 @@
 /**
- * Escritorio: todavía no instala actualizaciones (CANAL 'escritorio' no consulta
- * ultima_version(), que solo publica APK). El actualizador propio llega con el instalador.
+ * Web (PC): no instala APK. La web se actualiza con su service worker
+ * (web/plataforma/serviceWorker.ts) y el CANAL 'web' no consulta ultima_version().
  */
 export async function descargarEInstalar(): Promise<void> {
-  throw new Error('Las actualizaciones del escritorio todavía no están disponibles.');
+  throw new Error('La versión web no instala APK.');
 }
 
 export function limpiarDescargas() {}

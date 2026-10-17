@@ -13,7 +13,7 @@ type Dialogo = { titulo: string; mensaje?: string; botones: BotonDialogo[] };
 
 const useDialogos = create<{ cola: Dialogo[] }>(() => ({ cola: [] }));
 
-/** Escritorio: encola el aviso; HostDialogos lo muestra en un modal propio. */
+/** Web (PC): encola el aviso; HostDialogos lo muestra en un modal propio. */
 export function avisar(titulo: string, mensaje?: string, botones?: BotonDialogo[]): void {
   const lista = botones?.length ? botones : [{ text: 'Aceptar' }];
   useDialogos.setState((s) => ({ cola: [...s.cola, { titulo, mensaje, botones: lista }] }));
@@ -47,7 +47,12 @@ export function HostDialogos() {
 
   if (!actual) return null;
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={() => cerrar()}>
+    <Modal
+      visible
+      transparent
+      animationType="fade"
+      onRequestClose={() => cerrar(actual.botones.find((b) => b.style === 'cancel'))}
+    >
       <View style={estilos.fondo}>
         <View accessibilityRole="alert" style={estilos.tarjeta}>
           <Text style={estilos.titulo}>{actual.titulo}</Text>

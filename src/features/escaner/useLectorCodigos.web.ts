@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { crearLectorPistola } from './pistola';
 
 /**
- * Escritorio: escucha el teclado de toda la ventana mientras `activo` y avisa cada código
+ * Web (PC): escucha el teclado de toda la ventana mientras `activo` y avisa cada código
  * que llega de la pistola USB, aunque el cursor esté en un campo de texto.
  */
 export function useLectorCodigos(alCodigo: (codigo: string) => void, activo = true) {

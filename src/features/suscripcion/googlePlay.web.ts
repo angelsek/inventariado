@@ -1,5 +1,5 @@
 /**
- * Escritorio: no hay Google Play Billing (se cobra por transferencia, ver CANAL en
+ * Web (PC): no hay Google Play Billing (se cobra por transferencia, ver CANAL en
  * src/config.ts). Mantiene la API de googlePlay.ts para que expo-iap no entre al build.
  */
 export const PRODUCTOS_PLAY = { basico: 'stockeao_basico', pro: 'stockeao_pro' } as const;
@@ -12,7 +12,7 @@ export type PlanPlay = {
   diasPrueba: number;
 };
 
-const sinPlay = () => new Error('Google Play no está disponible en el escritorio.');
+const sinPlay = () => new Error('Google Play no está disponible en la versión web.');
 
 export const elegirOferta = () => null;
 export const obtenerPlanesPlay = async (): Promise<PlanPlay[]> => [];

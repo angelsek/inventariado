@@ -8,7 +8,7 @@ export type BotonDialogo = {
 
 /**
  * Aviso o confirmación con botones, con la misma forma que `Alert.alert`. En el teléfono
- * es el diálogo de Android; en el escritorio, dialogo.web.ts (Alert no hace nada en web).
+ * es el diálogo de Android; en la web (PC), dialogo.web.tsx (Alert no hace nada en web).
  */
 export function avisar(...args: [titulo: string, mensaje?: string, botones?: BotonDialogo[]]) {
   // Se pasan los mismos argumentos que se recibieron (sin agregar undefined al final).

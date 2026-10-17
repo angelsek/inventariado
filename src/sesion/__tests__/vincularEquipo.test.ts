@@ -40,6 +40,18 @@ it('el telÃ©fono se registra sin p_tipo (funciona con servidores sin la migraciÃ
   expect(params.p_id).toBe('id-nuevo');
 });
 
+it('si el id es de un equipo de otro negocio, se vincula con un id nuevo', async () => {
+  supabase.rpc.mockImplementationOnce(() =>
+    Promise.resolve({ data: null, error: { message: 'DISPOSITIVO_DE_OTRO_NEGOCIO' } }),
+  );
+  await iniciarSesion(db, 'ana@ejemplo.cl', 'clave');
+  const registros = supabase.rpc.mock.calls.filter(([n]) => n === 'registrar_dispositivo');
+  expect(registros).toHaveLength(2);
+  const idNuevo = (registros[1] as unknown as [string, { p_id: string }])[1].p_id;
+  expect(idNuevo).not.toBe('id-nuevo');
+  expect(await leerAjuste(db, AJUSTE_DISPOSITIVO)).toBe(idNuevo);
+});
+
 describe('en la web (PC)', () => {
   beforeEach(() => {
     jest.replaceProperty(Platform, 'OS', 'web');

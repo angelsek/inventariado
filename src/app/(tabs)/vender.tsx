@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useFocusEffect } from 'expo-router';
+import { useBase } from '@/db/proveedor';
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -9,7 +10,6 @@ import { Escaner } from '@/components/Escaner';
 import { Hoja } from '@/components/Hoja';
 import { Selector } from '@/components/Selector';
 import { obtenerCajaAbierta } from '@/db/cajas';
-import { useBase } from '@/db/proveedor';
 import { buscarPorCodigo, listarProductos, type Producto } from '@/db/productos';
 import {
   calcularTotales,
@@ -17,7 +17,6 @@ import {
   type ItemCarrito,
   totalItem,
 } from '@/features/ventas/calculos';
-import { useLectorCodigos } from '@/features/escaner/useLectorCodigos';
 import { useCarrito } from '@/features/ventas/carrito';
 import { formatearCLP } from '@/lib/formato';
 import { formatearCantidad, parsearCantidad, parsearMonto } from '@/lib/numeros';
@@ -70,8 +69,6 @@ export default function VenderScreen() {
     if (!producto || !producto.activo) {
       setMensajeEscaner(`Código ${codigo} no está en el catálogo`);
       setAviso(`El código ${codigo} no está en el catálogo.`);
-      // Con la pistola del escritorio el código también quedó escrito en el buscador.
-      setBusqueda('');
       return;
     }
     setAviso(null);
@@ -79,17 +76,6 @@ export default function VenderScreen() {
     setEscaneando(false);
     agregar(producto);
   };
-
-  // Escritorio: la pistola USB agrega productos sin abrir el lector (en el teléfono no hace nada).
-  // Se apaga mientras hay una hoja o el lector abiertos, que reciben la pistola por su cuenta.
-  const [enFoco, setEnFoco] = useState(false);
-  useFocusEffect(
-    useCallback(() => {
-      setEnFoco(true);
-      return () => setEnFoco(false);
-    }, []),
-  );
-  useLectorCodigos(alEscanear, enFoco && !escaneando && !pesando && !editando && !montoLibre);
 
   return (
     <View style={estilos.pantalla}>

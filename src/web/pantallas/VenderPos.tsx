@@ -30,7 +30,7 @@ import { obtenerAutor } from '@/sesion/autor';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores, radios } from '@/theme/colores';
-import { leerMultiplicador, quitarLectura } from '@/web/pos/cobro';
+import { crearMemoriaRecibido, leerMultiplicador } from '@/web/pos/cobro';
 import { accionDeTecla, TECLA_DE_MEDIO, TECLAS_PAGO } from '@/web/pos/teclado';
 
 type Ventana = null | 'kilos' | 'montoLibre' | 'descuento';
@@ -60,6 +60,7 @@ export default function VenderPos() {
   const [modo, setModo] = useState<'venta' | 'cobro'>('venta');
   const [medio, setMedio] = useState<MedioPago>('efectivo');
   const [recibido, setRecibido] = useState('');
+  const memoriaRecibido = useRef(crearMemoriaRecibido(MAX_ENTRE_TECLAS_MS));
   const [ventana, setVentana] = useState<Ventana>(null);
   const [pesando, setPesando] = useState<Producto | null>(null);
   const [aviso, setAviso] = useState<Aviso | null>(null);
@@ -84,7 +85,8 @@ export default function VenderPos() {
       if (negocioId) {
         obtenerAutor(db)
           .then(({ dispositivoId }) => obtenerCajaAbierta(db, negocioId, dispositivoId))
-          .then((caja) => setCajaAbierta(!!caja));
+          .then((caja) => setCajaAbierta(!!caja))
+          .catch(() => setCajaAbierta(true));
       }
       return () => setEnFoco(false);
     }, [db, negocioId, enfocarBuscador]),
@@ -95,11 +97,17 @@ export default function VenderPos() {
   useEffect(() => {
     if (!negocioId || textoBuscado.length < 2) return;
     let vigente = true;
-    listarProductos(db, negocioId, { busqueda: textoBuscado }).then((lista) => {
-      if (vigente) setResultados(lista.slice(0, 8));
-    });
+    // Espera a que se deje de escribir: la pistola teclea el código entero en milisegundos.
+    const espera = setTimeout(() => {
+      listarProductos(db, negocioId, { busqueda: textoBuscado })
+        .then((lista) => {
+          if (vigente) setResultados(lista.slice(0, 8));
+        })
+        .catch(() => {});
+    }, 120);
     return () => {
       vigente = false;
+      clearTimeout(espera);
     };
   }, [db, negocioId, textoBuscado]);
   const sugerencias = textoBuscado.length >= 2 ? resultados : [];
@@ -137,7 +145,8 @@ export default function VenderPos() {
   useLectorCodigos(
     (codigo) => {
       if (modo === 'cobro') {
-        setRecibido((v) => quitarLectura(v, codigo));
+        setRecibido(memoriaRecibido.current.antesDeLaRafaga());
+        cambiarBusqueda('');
         setAviso({ tipo: 'error', texto: 'Termina el cobro antes de agregar otro producto.' });
         return;
       }
@@ -167,29 +176,44 @@ export default function VenderPos() {
     medio === 'efectivo' ? recibidoNumero : null,
   );
 
+  // Mientras se confirma o registra una venta no se acepta otra confirmación (evita ventas
+  // duplicadas con dos Enter seguidos o con el aviso de alcohol abierto).
+  const cobrando = useRef(false);
+
   const registrar = async () => {
-    if (!negocioId || !revision.ok) return;
+    // Se lee el carro al momento: el de este render pudo quedar viejo mientras se esperaba.
+    const { items: itemsVenta, descuentoGeneral } = useCarrito.getState();
+    const totalVenta = calcularTotales(itemsVenta, descuentoGeneral).total;
+    const pagos = revisarPagos(
+      totalVenta,
+      [{ medio, monto: totalVenta }],
+      medio === 'efectivo' ? recibidoNumero : null,
+    );
+    if (!negocioId || itemsVenta.length === 0 || !pagos.ok) {
+      cobrando.current = false;
+      return;
+    }
     setGuardando(true);
     try {
       const autor = await obtenerAutor(db);
       const caja = await obtenerCajaAbierta(db, negocioId, autor.dispositivoId);
       const ventaId = await registrarVenta(db, {
         negocioId,
-        items: carrito.items,
-        descuentoGeneral: carrito.descuentoGeneral,
-        pagos: revision.pagos,
-        efectivoRecibido: revision.efectivoRecibido,
-        vuelto: revision.vuelto,
+        items: itemsVenta,
+        descuentoGeneral,
+        pagos: pagos.pagos,
+        efectivoRecibido: pagos.efectivoRecibido,
+        vuelto: pagos.vuelto,
         cajaId: caja?.id ?? null,
         autor,
       });
-      carrito.vaciar();
+      useCarrito.getState().vaciar();
       datosCambiaron();
       sincronizarAhora(db);
       setAviso({
         tipo: 'exito',
-        texto: `Venta registrada: ${formatearCLP(total)}${
-          revision.vuelto ? ` · Vuelto ${formatearCLP(revision.vuelto)}` : ''
+        texto: `Venta registrada: ${formatearCLP(totalVenta)}${
+          pagos.vuelto ? ` · Vuelto ${formatearCLP(pagos.vuelto)}` : ''
         }`,
         ventaId,
       });
@@ -199,33 +223,46 @@ export default function VenderPos() {
       setAviso({ tipo: 'error', texto: e instanceof Error ? e.message : String(e) });
     } finally {
       setGuardando(false);
+      cobrando.current = false;
     }
   };
 
   const confirmar = async () => {
-    if (guardando || !negocioId) return;
+    if (cobrando.current || !negocioId) return;
     if (bloqueadoPorSuscripcion()) return;
     if (!revision.ok) {
       setAviso({ tipo: 'error', texto: revision.error });
       return;
     }
+    cobrando.current = true;
     if (carrito.items.some((i) => i.alcohol)) {
-      const negocio = await obtenerNegocio(db, negocioId);
-      const fuera = !dentroDelHorario(
-        new Date(),
-        negocio?.alcoholDesde ?? null,
-        negocio?.alcoholHasta ?? null,
-      );
-      avisar(
-        'Venta de alcohol',
-        (fuera
-          ? `Atención: estás fuera del horario de venta de alcohol (${negocio?.alcoholDesde} a ${negocio?.alcoholHasta}).\n\n`
-          : '') + 'Confirma que el cliente es mayor de 18 años.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Es mayor de 18', onPress: () => void registrar() },
-        ],
-      );
+      try {
+        const negocio = await obtenerNegocio(db, negocioId);
+        const fuera = !dentroDelHorario(
+          new Date(),
+          negocio?.alcoholDesde ?? null,
+          negocio?.alcoholHasta ?? null,
+        );
+        avisar(
+          'Venta de alcohol',
+          (fuera
+            ? `Atención: estás fuera del horario de venta de alcohol (${negocio?.alcoholDesde} a ${negocio?.alcoholHasta}).\n\n`
+            : '') + 'Confirma que el cliente es mayor de 18 años.',
+          [
+            {
+              text: 'Cancelar',
+              style: 'cancel',
+              onPress: () => {
+                cobrando.current = false;
+              },
+            },
+            { text: 'Es mayor de 18', onPress: () => void registrar() },
+          ],
+        );
+      } catch (e) {
+        cobrando.current = false;
+        setAviso({ tipo: 'error', texto: e instanceof Error ? e.message : String(e) });
+      }
       return;
     }
     await registrar();
@@ -283,6 +320,8 @@ export default function VenderPos() {
         setSeleccion(Math.min(Math.max(filaSeleccionada + accion.paso, 0), items.length - 1));
         return;
       case 'cantidad':
+        // Un + o − dentro de una ráfaga es parte de un código de la pistola, no un atajo.
+        if (evento.timeStamp - anterior <= MAX_ENTRE_TECLAS_MS) return;
         if (item) {
           const paso = item.unidad === 'kg' ? 0.1 : 1;
           carrito.cambiarCantidad(item.clave, item.cantidad + accion.paso * paso);
@@ -557,7 +596,10 @@ export default function VenderPos() {
                   inputMode="numeric"
                   placeholder={`${formatearCLP(total)} (exacto)`}
                   value={recibido ? formatearCLP(Number(recibido)) : ''}
-                  onChangeText={(v) => setRecibido(soloDigitos(v))}
+                  onChangeText={(v) => {
+                    memoriaRecibido.current.cambio(recibido, performance.now());
+                    setRecibido(soloDigitos(v).slice(0, 9));
+                  }}
                   style={estilos.entradaRecibido}
                 />
                 <View style={estilos.chips}>

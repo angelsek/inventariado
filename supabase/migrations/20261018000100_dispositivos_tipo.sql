@@ -43,6 +43,15 @@ begin
   if p_tipo is null or p_tipo not in ('telefono', 'pc') then
     raise exception 'Tipo de equipo no válido' using errcode = '22023';
   end if;
+  if p_nombre is null or length(trim(p_nombre)) = 0 or length(p_nombre) > 60 then
+    raise exception 'Nombre de equipo no válido' using errcode = '22023';
+  end if;
+  -- Un id que ya es de otro negocio no se puede tomar: si no, quien conozca el id de un equipo
+  -- ajeno lo movería a su negocio (la función salta RLS). La app usa entonces un id nuevo.
+  if exists (select 1 from inventariado.dispositivos
+              where id = p_id and negocio_id <> p_negocio_id) then
+    raise exception 'DISPOSITIVO_DE_OTRO_NEGOCIO' using errcode = '42501';
+  end if;
 
   -- Volver a registrar un equipo ya vinculado (o reemplazar un PC usando su mismo id)
   -- no ocupa otro cupo.
@@ -59,8 +68,8 @@ begin
   insert into inventariado.dispositivos (id, negocio_id, nombre, tipo, eliminado)
   values (p_id, p_negocio_id, p_nombre, p_tipo, false)
   on conflict (id) do update
-    set negocio_id = excluded.negocio_id, nombre = excluded.nombre, tipo = excluded.tipo,
-        eliminado = false;
+    set nombre = excluded.nombre, tipo = excluded.tipo, eliminado = false
+    where inventariado.dispositivos.negocio_id = excluded.negocio_id;
 end;
 $$;
 

@@ -46,9 +46,16 @@ async function cabeceras() {
 const comunes = await cabeceras();
 
 createServer(async (pedido, respuesta) => {
-  const ruta = decodeURIComponent(new URL(pedido.url, 'http://x').pathname);
-  let archivo = path.join(RAIZ, path.normalize(ruta));
-  if (!archivo.startsWith(RAIZ)) {
+  let ruta;
+  try {
+    ruta = decodeURIComponent(new URL(pedido.url, 'http://x').pathname);
+  } catch {
+    respuesta.writeHead(400).end();
+    return;
+  }
+  let archivo = path.resolve(RAIZ, `.${path.posix.normalize(ruta)}`);
+  const relativa = path.relative(RAIZ, archivo);
+  if (relativa.startsWith('..') || path.isAbsolute(relativa)) {
     respuesta.writeHead(403).end();
     return;
   }
@@ -64,4 +71,5 @@ createServer(async (pedido, respuesta) => {
   } catch {
     respuesta.writeHead(404, comunes).end('No encontrado');
   }
-}).listen(PUERTO, () => console.log(`Stockeao web en http://localhost:${PUERTO}`));
+  // Solo en este PC (127.0.0.1): es una herramienta de prueba, no un servidor para la red.
+}).listen(PUERTO, '127.0.0.1', () => console.log(`Stockeao web en http://localhost:${PUERTO}`));

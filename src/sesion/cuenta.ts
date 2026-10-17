@@ -171,18 +171,26 @@ async function vincularTelefono(
     if (pcs.length) dispositivoId = await equipo.elegirReemplazo(pcs);
   }
   if (!dispositivoId) dispositivoId = await idTelefonoEstable();
-  await guardarAjuste(db, AJUSTE_DISPOSITIVO, dispositivoId);
 
-  const nombre = equipo?.nombre?.trim() || nombreDelTelefono();
+  const nombre = (equipo?.nombre?.trim() || nombreDelTelefono()).slice(0, 60);
   // El servidor revisa el límite de equipos del plan (error LIMITE_DISPOSITIVOS). El teléfono
   // no envía p_tipo: así sigue funcionando con servidores sin la migración dispositivos_tipo.
-  const { error } = await supabase.rpc('registrar_dispositivo', {
-    p_id: dispositivoId,
-    p_negocio_id: negocioId,
-    p_nombre: nombre,
-    ...(esPc ? { p_tipo: 'pc' } : {}),
-  });
+  const registrar = (id: string) =>
+    supabase.rpc('registrar_dispositivo', {
+      p_id: id,
+      p_negocio_id: negocioId,
+      p_nombre: nombre,
+      ...(esPc ? { p_tipo: 'pc' } : {}),
+    });
+  let { error } = await registrar(dispositivoId);
+  // El id ya es de un equipo de otro negocio (p. ej. el teléfono se usó antes en otro
+  // negocio): el servidor no deja tomarlo, así que este equipo se vincula con un id nuevo.
+  if (error && /DISPOSITIVO_DE_OTRO_NEGOCIO/.test(error.message)) {
+    dispositivoId = randomUUID();
+    ({ error } = await registrar(dispositivoId));
+  }
   if (error) throw new Error(error.message);
+  await guardarAjuste(db, AJUSTE_DISPOSITIVO, dispositivoId);
   await registrarDispositivo(db, { id: dispositivoId, negocioId, nombre });
 
   // La primera sincronización trae el negocio y los perfiles: sin ella no se puede elegir usuario.

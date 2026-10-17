@@ -12,10 +12,20 @@ export function leerMultiplicador(texto: string): number {
 }
 
 /**
- * Si la pistola lee un código mientras el cursor está en "monto recibido", los dígitos
- * del código quedan escritos ahí. Esto los quita (el error clásico de las cajas: cobrar
- * $7.801.610.001.196 por escanear con el campo de monto activo).
+ * Recuerda el monto recibido que había antes de la última ráfaga de teclas. Si la pistola
+ * lee un código con el cursor en "monto recibido", sus dígitos quedan escritos ahí (el error
+ * clásico de las cajas: cobrar $7.801.610.001.196); con esto se vuelve al monto anterior.
  */
-export function quitarLectura(valor: string, codigo: string): string {
-  return valor.endsWith(codigo) ? valor.slice(0, -codigo.length) : valor;
+export function crearMemoriaRecibido(maxEntreTeclasMs: number) {
+  let estable = '';
+  let ultimoCambio = -Infinity;
+  return {
+    /** Avisa un cambio del campo: `anterior` es el valor que tenía antes de este cambio. */
+    cambio(anterior: string, ms: number) {
+      if (ms - ultimoCambio > maxEntreTeclasMs) estable = anterior;
+      ultimoCambio = ms;
+    },
+    /** Monto que había antes de la ráfaga en curso. */
+    antesDeLaRafaga: () => estable,
+  };
 }

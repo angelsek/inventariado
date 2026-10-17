@@ -1,4 +1,4 @@
-import { leerMultiplicador, quitarLectura } from '../cobro';
+import { crearMemoriaRecibido, leerMultiplicador } from '../cobro';
 
 it('lee el multiplicador escrito antes de escanear', () => {
   expect(leerMultiplicador('3*7801610001196')).toBe(3);
@@ -9,8 +9,20 @@ it('lee el multiplicador escrito antes de escanear', () => {
   expect(leerMultiplicador('')).toBe(1);
 });
 
-it('quita del monto recibido lo que escribió la pistola', () => {
-  expect(quitarLectura('50007801610001196', '7801610001196')).toBe('5000');
-  expect(quitarLectura('7801610001196', '7801610001196')).toBe('');
-  expect(quitarLectura('5000', '7801610001196')).toBe('5000');
+it('recuerda el monto que había antes de que la pistola escribiera en el campo', () => {
+  const memoria = crearMemoriaRecibido(40);
+  // La persona escribe 5000 (teclas separadas por más de 40 ms).
+  let valor = '';
+  let ms = 0;
+  for (const d of '5000') {
+    memoria.cambio(valor, (ms += 200));
+    valor += d;
+  }
+  // Una pausa y luego la pistola escribe un código entero muy rápido.
+  ms += 300;
+  for (const d of '7801610001196') {
+    memoria.cambio(valor, (ms += 5));
+    valor = (valor + d).slice(0, 9);
+  }
+  expect(memoria.antesDeLaRafaga()).toBe('5000');
 });

@@ -103,6 +103,42 @@ end;
 $$;
 reset role;
 
+-- Beto no puede tomar el id de un equipo de Elena (lo movería a su negocio).
+select id as negocio_beto from inventariado.negocios where nombre = 'Almacén Beto' \gset
+select set_config('pruebas.negocio_beto', :'negocio_beto', false);
+select pg_temp.como('00000000-0000-0000-0000-00000000000b');
+do $$
+begin
+  perform inventariado.registrar_dispositivo('20000000-0000-0000-0000-0000000000e2',
+    current_setting('pruebas.negocio_beto')::uuid, 'Robado', 'pc');
+  raise exception 'FALLA: Beto tomó un equipo de otro negocio';
+exception when insufficient_privilege then
+  if sqlerrm <> 'DISPOSITIVO_DE_OTRO_NEGOCIO' then raise; end if;
+end;
+$$;
+reset role;
+do $$
+begin
+  if (select negocio_id from inventariado.dispositivos where id = '20000000-0000-0000-0000-0000000000e2')
+     <> current_setting('pruebas.negocio_elena')::uuid then
+    raise exception 'FALLA: el PC de Elena cambió de negocio';
+  end if;
+end;
+$$;
+
+-- Un nombre vacío o muy largo se rechaza.
+select pg_temp.como('00000000-0000-0000-0000-00000000000e');
+do $$
+begin
+  perform inventariado.registrar_dispositivo('20000000-0000-0000-0000-0000000000e2',
+    current_setting('pruebas.negocio_elena')::uuid, repeat('x', 61), 'pc');
+  raise exception 'FALLA: se aceptó un nombre de equipo de 61 caracteres';
+exception when invalid_parameter_value then
+  null;
+end;
+$$;
+reset role;
+
 -- Nadie sin sesión puede registrar equipos.
 select pg_temp.como(null);
 do $$

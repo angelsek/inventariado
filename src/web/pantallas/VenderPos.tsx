@@ -191,6 +191,8 @@ export default function VenderPos() {
     );
     if (!negocioId || itemsVenta.length === 0 || !pagos.ok) {
       cobrando.current = false;
+      // El carro cambió mientras se confirmaba (p. ej. con el aviso de alcohol abierto).
+      if (!pagos.ok) setAviso({ tipo: 'error', texto: pagos.error });
       return;
     }
     setGuardando(true);

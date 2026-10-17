@@ -26,7 +26,20 @@ function crearNavegador() {
           };
           if (!dueno) tomar();
           else if (opciones.ifAvailable) void tarea(null);
-          else esperando.push(tomar);
+          else {
+            // Como el navegador: si se cancela la espera, la petición se rechaza.
+            return new Promise<void>((resolve, reject) => {
+              const enCola = () => {
+                tomar();
+                resolve();
+              };
+              esperando.push(enCola);
+              opciones.signal?.addEventListener('abort', () => {
+                esperando.splice(esperando.indexOf(enCola), 1);
+                reject(new Error('AbortError'));
+              });
+            });
+          }
           return Promise.resolve();
         },
       },
@@ -74,6 +87,20 @@ it('"Usar aquí" pide la base a la otra pestaña y la toma cuando esta la suelta
   await a.tomar(alPedirleA);
   expect(await b.tomar(jest.fn())).toBe(false);
 
-  await b.quitar(jest.fn());
+  expect(await b.quitar(jest.fn())).toBe(true);
   expect(alPedirleA).toHaveBeenCalledTimes(1);
+});
+
+it('si la otra pestaña no responde, "Usar aquí" se rinde después del plazo', async () => {
+  jest.useFakeTimers();
+  const pestana = crearNavegador();
+  const a = crearBloqueoPestana(pestana());
+  const b = crearBloqueoPestana(pestana());
+  // La pestaña A está congelada: recibe el aviso pero nunca suelta la base.
+  await a.tomar(jest.fn());
+
+  const resultado = b.quitar(jest.fn(), 10_000);
+  jest.advanceTimersByTime(10_000);
+  await expect(resultado).resolves.toBe(false);
+  jest.useRealTimers();
 });

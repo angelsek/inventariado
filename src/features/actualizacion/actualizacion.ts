@@ -44,7 +44,7 @@ export const useActualizacion = create<Estado>((set, get) => ({
   verificando: false,
   verificar: async () => {
     // Instalada desde Google Play: Play avisa y actualiza; un APK directo no se podría instalar encima.
-    // La web se actualiza con su service worker (ultima_version() solo publica APK).
+    // La web no instala APK: se actualiza al publicar el sitio (ultima_version() solo publica APK).
     if (!supabaseConfigurado || CANAL !== 'apk') return;
     try {
       const { data } = await supabase.rpc('ultima_version');

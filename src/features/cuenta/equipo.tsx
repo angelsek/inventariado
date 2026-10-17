@@ -44,7 +44,7 @@ export function describirPc(pc: EquipoVinculado, ahora = Date.now()): string {
  * navegador): así no ocupa otro cupo del plan. Devuelve el id elegido o null si es nuevo.
  */
 function elegirReemplazo(pcs: EquipoVinculado[]): Promise<string | null> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     avisar(
       '¿Este PC reemplaza a otro?',
       'Tu negocio ya tiene PC vinculados. Si este reemplaza a uno de ellos (por ejemplo, se ' +
@@ -52,7 +52,13 @@ function elegirReemplazo(pcs: EquipoVinculado[]): Promise<string | null> {
         'elijas uno que se siga usando.',
       [
         ...pcs.slice(0, 5).map((pc) => ({ text: describirPc(pc), onPress: () => resolve(pc.id) })),
-        { text: 'No, es un PC nuevo', style: 'cancel' as const, onPress: () => resolve(null) },
+        { text: 'No, es un PC nuevo', onPress: () => resolve(null) },
+        // Cerrar el aviso (o Esc) no vincula nada: así no se gasta un cupo sin querer.
+        {
+          text: 'Cancelar',
+          style: 'cancel' as const,
+          onPress: () => reject(new Error('Se canceló la vinculación de este PC.')),
+        },
       ],
     );
   });

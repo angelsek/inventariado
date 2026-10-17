@@ -9,9 +9,9 @@ botillerías, kioskos, bazares). Varios teléfonos por negocio, funciona sin int
 sincroniza con Supabase. Precios (con IVA incluido, pensados para reinvertir en Grimorio Labs):
 
 | Plan   | Mensual | Anual (12 por 10) | Equipos |
-| ------ | ------- | ----------------- | --------- |
-| Básico | $9.990  | $99.900           | 2         |
-| Pro    | $14.990 | $149.900          | 5         |
+| ------ | ------- | ----------------- | ------- |
+| Básico | $9.990  | $99.900           | 2       |
+| Pro    | $14.990 | $149.900          | 5       |
 
 - Paquete Android: `cl.stockeao.app` (definitivo, ya está en Play Console).
 - Rama principal: `main` (la rama `claude/fervent-franklin-regzl4` ya se fusionó y se borró).

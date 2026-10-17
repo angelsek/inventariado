@@ -47,23 +47,23 @@ workers en localhost, así que no sirve para esta prueba.
 
 ## Caja (POS)
 
-| Tecla         | Acción                                                         |
-| ------------- | -------------------------------------------------------------- |
-| F3            | Buscar producto                                                |
-| F4            | Monto libre                                                    |
-| F6            | Descuento                                                      |
-| F7            | Caja                                                           |
-| F8            | Fiado o pago mixto (abre la pantalla de cobro del teléfono)    |
-| F9            | Cobrar en Efectivo                                             |
-| F10           | Cobrar con Débito                                              |
-| F11           | Cobrar con Crédito                                             |
-| F12           | Cobrar con Transferencia                                       |
-| ↑ ↓           | Moverse entre filas                                            |
-| + / −         | Subir o bajar la cantidad de la fila                           |
-| Supr          | Quitar la fila                                                 |
-| `3*` + escanear | Agrega 3 unidades del producto escaneado                     |
-| Enter         | Confirma el cobro                                              |
-| Esc           | Vuelve o cancela                                               |
+| Tecla           | Acción                                                      |
+| --------------- | ----------------------------------------------------------- |
+| F3              | Buscar producto                                             |
+| F4              | Monto libre                                                 |
+| F6              | Descuento                                                   |
+| F7              | Caja                                                        |
+| F8              | Fiado o pago mixto (abre la pantalla de cobro del teléfono) |
+| F9              | Cobrar en Efectivo                                          |
+| F10             | Cobrar con Débito                                           |
+| F11             | Cobrar con Crédito                                          |
+| F12             | Cobrar con Transferencia                                    |
+| ↑ ↓             | Moverse entre filas                                         |
+| + / −           | Subir o bajar la cantidad de la fila                        |
+| Supr            | Quitar la fila                                              |
+| `3*` + escanear | Agrega 3 unidades del producto escaneado                    |
+| Enter           | Confirma el cobro                                           |
+| Esc             | Vuelve o cancela                                            |
 
 **Pistola USB:** se reconoce como una ráfaga de teclas (menos de 40 ms entre teclas) terminada en
 Enter, y se valida el dígito verificador GS1. Nunca escribe en el monto recibido ni confirma el

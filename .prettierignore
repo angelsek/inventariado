@@ -4,3 +4,5 @@ android/
 ios/
 dist/
 package-lock.json
+# Material de diseño (flyer): se edita aparte y no sigue el formato del código.
+docs/flyer/

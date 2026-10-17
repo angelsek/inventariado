@@ -1,4 +1,4 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -17,7 +17,7 @@ const hoy = () => {
 
 /** Descargar los datos del negocio para Excel o como respaldo. */
 export default function ExportarScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const negocioId = useSesion((s) => s.negocioId);
   const [trabajando, setTrabajando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -107,7 +107,7 @@ export default function ExportarScreen() {
 
       <Seccion
         titulo="Respaldo completo (JSON)"
-        texto="Todos los datos del negocio guardados en este teléfono. Guárdalo en un lugar seguro."
+        texto="Todos los datos del negocio guardados en este equipo. Guárdalo en un lugar seguro."
       >
         <Boton
           titulo="Descargar respaldo"

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Campo } from '@/components/Campo';
@@ -12,6 +12,7 @@ import { formatearCLP, formatearFecha, formatearFechaHora } from '@/lib/formato'
 import { parsearMonto } from '@/lib/numeros';
 import { mensajeDeError, supabase } from '@/lib/supabase';
 import { colores } from '@/theme/colores';
+import { avisar } from '@/lib/dialogo';
 
 type NegocioAdmin = {
   id: string;
@@ -129,7 +130,7 @@ export default function AdminScreen() {
             <Text style={estilos.nota}>
               Plan {NOMBRE_PLAN[n.plan_id] ?? n.plan_id}
               {vence ? ` · vence ${formatearFecha(new Date(vence))}` : ''} · {n.dispositivos}{' '}
-              teléfono(s)
+              equipo(s)
             </Text>
             <Text style={estilos.nota}>
               {n.ultimo_sync
@@ -189,8 +190,8 @@ function HojaNegocio({
     setTrabajando(true);
     const { error } = await accion();
     setTrabajando(false);
-    if (error) return Alert.alert('Error', mensajeDeError(error));
-    Alert.alert('Listo', exito);
+    if (error) return avisar('Error', mensajeDeError(error));
+    avisar('Listo', exito);
     setMonto('');
     setNotas('');
     onListo();

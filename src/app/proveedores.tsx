@@ -1,6 +1,6 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Campo } from '@/components/Campo';
@@ -16,11 +16,12 @@ import { esRutValido, formatearRut } from '@/lib/validacion';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
+import { avisar } from '@/lib/dialogo';
 
 type Edicion = { id?: string; nombre: string; rut: string; telefono: string };
 
 export default function ProveedoresScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, versionDatos, datosCambiaron } = useSesion();
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [edicion, setEdicion] = useState<Edicion | null>(null);
@@ -46,21 +47,17 @@ export default function ProveedoresScreen() {
   };
 
   const eliminar = (p: Proveedor) =>
-    Alert.alert(
-      'Eliminar proveedor',
-      `¿Eliminar "${p.nombre}"? Sus ingresos anteriores se mantienen.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            await eliminarProveedor(db, p.id);
-            listo();
-          },
+    avisar('Eliminar proveedor', `¿Eliminar "${p.nombre}"? Sus ingresos anteriores se mantienen.`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: async () => {
+          await eliminarProveedor(db, p.id);
+          listo();
         },
-      ],
-    );
+      },
+    ]);
 
   return (
     <Formulario titulo="Proveedores">

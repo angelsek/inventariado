@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -18,7 +18,7 @@ type Props = {
 
 /** Buscador por nombre + escáner, para elegir productos del catálogo dentro de una pantalla. */
 export function BuscadorProductos({ onElegir, escanerContinuo }: Props) {
-  const db = useSQLiteContext();
+  const db = useBase();
   const negocioId = useSesion((s) => s.negocioId);
   const [busqueda, setBusqueda] = useState('');
   const [resultados, setResultados] = useState<Producto[]>([]);

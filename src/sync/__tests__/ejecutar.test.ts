@@ -70,6 +70,6 @@ it('si otro teléfono lo desvinculó, cierra la sesión y lo avisa', async () =>
   await sincronizarAhora(db);
 
   expect(useSesion.getState().negocioId).toBeNull();
-  expect(useSesion.getState().avisoSalida).toBe('Este teléfono fue desvinculado del negocio.');
+  expect(useSesion.getState().avisoSalida).toBe('Este equipo fue desvinculado del negocio.');
   expect(await leerAjuste(db, AJUSTE_NEGOCIO)).toBeNull();
 });

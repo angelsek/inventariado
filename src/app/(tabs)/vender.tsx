@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useFocusEffect } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -25,7 +25,7 @@ import { useSesion } from '@/sesion/store';
 import { colores, radios } from '@/theme/colores';
 
 export default function VenderScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const negocioId = useSesion((s) => s.negocioId);
   const carrito = useCarrito();
   const { total } = calcularTotales(carrito.items, carrito.descuentoGeneral);

@@ -1,4 +1,4 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
@@ -21,7 +21,7 @@ type Props = {
 
 /** Corregir el stock de un producto indicando cuánto hay realmente y por qué. */
 export function AjusteStock({ producto, visible, onCerrar, onListo }: Props) {
-  const db = useSQLiteContext();
+  const db = useBase();
   const [nuevo, setNuevo] = useState('');
   const [motivo, setMotivo] = useState(MOTIVOS_AJUSTE[0]);
   const [error, setError] = useState<string | null>(null);

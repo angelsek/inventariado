@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { BuscadorProductos } from '@/components/BuscadorProductos';
@@ -14,10 +14,11 @@ import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
 import { bloqueadoPorSuscripcion } from '@/features/suscripcion/useSoloLectura';
+import { avisar } from '@/lib/dialogo';
 
 /** Toma de inventario: contar lo que hay y dejar el stock igual a lo contado. */
 export default function ConteoScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, datosCambiaron } = useSesion();
   const { lineas, sumar, fijar, quitar, vaciar } = useConteo();
   const [aplicando, setAplicando] = useState(false);
@@ -38,7 +39,7 @@ export default function ConteoScreen() {
 
   const aplicar = () =>
     !bloqueadoPorSuscripcion() &&
-    Alert.alert(
+    avisar(
       'Aplicar conteo',
       `El stock de ${lineas.length} producto(s) quedará igual a lo contado. Hazlo sin vender al mismo tiempo.`,
       [

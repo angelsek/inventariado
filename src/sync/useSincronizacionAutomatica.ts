@@ -1,4 +1,4 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
@@ -10,7 +10,7 @@ const INTERVALO_MS = 60 * 1000;
 
 /** Sincroniza al abrir la app, al volver a primer plano y cada minuto. */
 export function useSincronizacionAutomatica() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const negocioId = useSesion((s) => s.negocioId);
 
   useEffect(() => {

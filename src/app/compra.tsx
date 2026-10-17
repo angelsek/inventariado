@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
@@ -23,7 +23,7 @@ type Linea = { producto: Producto; cantidad: string; costo: string };
 
 /** Ingreso de mercadería: suma stock y (opcionalmente) actualiza costos. */
 export default function CompraScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, datosCambiaron } = useSesion();
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [proveedorId, setProveedorId] = useState<string | null>(null);

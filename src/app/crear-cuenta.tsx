@@ -1,5 +1,5 @@
 import { Link, router } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
@@ -7,6 +7,7 @@ import { Boton } from '@/components/Boton';
 import { Campo } from '@/components/Campo';
 import { Formulario } from '@/components/Formulario';
 import { CamposNegocio } from '@/features/cuenta/CamposNegocio';
+import { CampoNombreEquipo, opcionesDeEquipo } from '@/features/cuenta/equipo';
 import {
   type Errores,
   type FormNegocio,
@@ -21,11 +22,12 @@ import { colores } from '@/theme/colores';
 type Form = FormNegocio & { correo: string; contrasena: string };
 
 export default function CrearCuentaScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const [form, setForm] = useState<Form>({ ...formNegocioVacio, correo: '', contrasena: '' });
   const [errores, setErrores] = useState<Errores<Form>>({});
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
+  const [nombreEquipo, setNombreEquipo] = useState('');
 
   const cambiar = (cambios: Partial<Form>) => setForm((f) => ({ ...f, ...cambios }));
 
@@ -39,7 +41,13 @@ export default function CrearCuentaScreen() {
     setCargando(true);
     setError(null);
     try {
-      const resultado = await crearCuentaYNegocio(db, form.correo, form.contrasena, form);
+      const resultado = await crearCuentaYNegocio(
+        db,
+        form.correo,
+        form.contrasena,
+        form,
+        opcionesDeEquipo(nombreEquipo),
+      );
       if (resultado.tipo === 'confirmar_correo' || resultado.tipo === 'cuenta_existente') {
         const aviso = resultado.tipo === 'confirmar_correo' ? 'confirmar' : 'existente';
         router.replace({ pathname: '/ingresar', params: { aviso, correo: form.correo.trim() } });
@@ -54,7 +62,7 @@ export default function CrearCuentaScreen() {
   return (
     <Formulario
       titulo="Crea tu negocio"
-      subtitulo="Con esta cuenta podrás usar la app en todos los teléfonos de tu local."
+      subtitulo="Con esta cuenta podrás usar la app en todos los equipos de tu local."
       error={error}
     >
       <Campo
@@ -86,6 +94,7 @@ export default function CrearCuentaScreen() {
         </Link>
         .
       </Text>
+      <CampoNombreEquipo valor={nombreEquipo} onCambio={setNombreEquipo} />
       <Boton titulo="Crear cuenta" onPress={enviar} cargando={cargando} />
     </Formulario>
   );

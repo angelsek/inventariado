@@ -1,5 +1,5 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
@@ -55,7 +55,7 @@ const soloDigitos = (texto: string) => texto.replace(/\D/g, '');
 export default function ProductoScreen() {
   const { id, codigo } = useLocalSearchParams<{ id: string; codigo?: string }>();
   const esNuevo = id === 'nuevo';
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, perfil, versionDatos, datosCambiaron } = useSesion();
   const esDueno = perfil?.rol === 'dueno';
 

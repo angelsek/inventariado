@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { useBase } from '@/db/proveedor';
 import { useEffect, useState } from 'react';
 import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
@@ -14,7 +14,7 @@ import { colores } from '@/theme/colores';
 
 /** Productos bajo el stock mínimo o sin stock. */
 export default function ReponerScreen() {
-  const db = useSQLiteContext();
+  const db = useBase();
   const { negocioId, versionDatos } = useSesion();
   const [productos, setProductos] = useState<Producto[]>([]);
 

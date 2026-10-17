@@ -31,6 +31,11 @@ Si ya tenías las tablas creadas, ejecuta también las migraciones nuevas. En pa
 **obligatoria antes de publicar una versión** con el workflow "Construir APK": si falta la
 columna, la publicación se detiene.
 
+`20261018000100_dispositivos_tipo.sql` (versión web) agrega `dispositivos.tipo` (`telefono` o
+`pc`; los dos ocupan cupo del plan) y actualiza `registrar_dispositivo` y `mis_dispositivos`.
+Es **obligatoria antes de publicar la web**. Es compatible con las apps Android
+ya instaladas: el tipo por defecto es `telefono`, así que siguen registrándose igual.
+
 ## 3. Exponer el esquema
 
 En **Project Settings → Data API → Exposed schemas**, agregar `inventariado` a la lista

@@ -2,13 +2,16 @@
 // Termina el build de la versión web (PC) después de `npx expo export --platform web`:
 //   1. Escribe dist/_headers (cabeceras que aplica Cloudflare) con la política de contenido,
 //      que solo permite conectarse al proyecto de Supabase de este build.
-//   2. Genera el service worker (dist/sw.js) desde scripts/sw-plantilla.js, con la lista de
+//   2. Genera los íconos de la app instalable (dist/icono-192.png y 512) desde assets/icon.png.
+//   3. Genera el service worker (dist/sw.js) desde scripts/sw-plantilla.js, con la lista de
 //      archivos de la app y una versión que cambia si cambia cualquiera de ellos.
 // Uso: npm run web:construir. La URL de Supabase sale de EXPO_PUBLIC_SUPABASE_URL o, si no
 // está, de .env.local / .env (igual que expo export). Ver docs/WEB.md.
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+
+import Jimp from 'jimp-compact';
 
 const DIST = 'dist';
 
@@ -128,6 +131,15 @@ function escribirExclusiones() {
   );
 }
 
+/** Íconos del manifest (public/manifest.webmanifest), a partir del ícono de la app. */
+async function generarIconos() {
+  for (const lado of [192, 512]) {
+    const icono = await Jimp.read('assets/icon.png');
+    await icono.resize(lado, lado).writeAsync(path.join(DIST, `icono-${lado}.png`));
+  }
+}
+
 escribirCabeceras();
+await generarIconos();
 generarServiceWorker();
 escribirExclusiones();

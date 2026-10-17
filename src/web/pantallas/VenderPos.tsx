@@ -54,7 +54,11 @@ export default function VenderPos() {
   const buscador = useRef<TextInput>(null);
   const [busqueda, setBusqueda] = useState('');
   const busquedaActual = useRef('');
-  const [resultados, setResultados] = useState<Producto[]>([]);
+  // Sugerencias junto al texto que las produjo (las de una búsqueda anterior no se usan).
+  const [resultados, setResultados] = useState<{ texto: string; lista: Producto[] }>({
+    texto: '',
+    lista: [],
+  });
   const [marcado, setMarcado] = useState(0);
   const [seleccion, setSeleccion] = useState(0);
   const [modo, setModo] = useState<'venta' | 'cobro'>('venta');
@@ -101,7 +105,7 @@ export default function VenderPos() {
     const espera = setTimeout(() => {
       listarProductos(db, negocioId, { busqueda: textoBuscado })
         .then((lista) => {
-          if (vigente) setResultados(lista.slice(0, 8));
+          if (vigente) setResultados({ texto: textoBuscado, lista: lista.slice(0, 8) });
         })
         .catch(() => {});
     }, 120);
@@ -110,7 +114,8 @@ export default function VenderPos() {
       clearTimeout(espera);
     };
   }, [db, negocioId, textoBuscado]);
-  const sugerencias = textoBuscado.length >= 2 ? resultados : [];
+  const sugerencias =
+    textoBuscado.length >= 2 && resultados.texto === textoBuscado ? resultados.lista : [];
 
   const items = carrito.items;
   const filaSeleccionada = Math.min(seleccion, Math.max(items.length - 1, 0));
@@ -363,12 +368,14 @@ export default function VenderPos() {
     }
   };
   const enterEnBuscador = () => {
-    const elegido = sugerencias[marcado];
-    if (elegido) {
-      agregar(elegido, leerMultiplicador(busquedaActual.current));
-    } else if (/^\d{4,}$/.test(textoBuscado)) {
+    // Un texto de solo números es un código (escrito a mano o una lectura que la pistola no
+    // validó): se busca por código, nunca se toma la primera sugerencia.
+    if (/^\d{4,}$/.test(textoBuscado)) {
       void agregarPorCodigo(textoBuscado, leerMultiplicador(busquedaActual.current));
+      return;
     }
+    const elegido = sugerencias[marcado];
+    if (elegido) agregar(elegido, leerMultiplicador(busquedaActual.current));
   };
 
   return (

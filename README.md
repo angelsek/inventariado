@@ -8,7 +8,7 @@ botillerías, kioskos y bazares.
 - [Piloto con locales reales](docs/PILOTO.md) (firma, publicar versiones, respaldos)
 - [Publicar en Google Play](docs/PLAY_STORE.md) (ficha, formularios y App Bundle)
 - [Cobro con Google Play](docs/COBRO_GOOGLE_PLAY.md) (suscripción con 14 días gratis)
-- [Versión web para PC](docs/WEB.md) (caja en Chrome/Edge, atajos, publicación en Cloudflare Pages)
+- [Versión web para PC](docs/WEB.md) (caja en Chrome/Edge, atajos, publicación en Cloudflare Workers)
 - [Trabajar en tu computador](docs/TRABAJAR_EN_MI_EQUIPO.md) · [Estado actual](docs/ESTADO_ACTUAL.md)
 
 ## Tecnología

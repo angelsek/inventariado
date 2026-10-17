@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Termina el build de la versión web (PC) después de `npx expo export --platform web`:
-//   1. Escribe dist/_headers (cabeceras de Cloudflare Pages) con la política de contenido,
+//   1. Escribe dist/_headers (cabeceras que aplica Cloudflare) con la política de contenido,
 //      que solo permite conectarse al proyecto de Supabase de este build.
 //   2. Genera el service worker (dist/sw.js) desde scripts/sw-plantilla.js, con la lista de
 //      archivos de la app y una versión que cambia si cambia cualquiera de ellos.
@@ -119,5 +119,14 @@ function generarServiceWorker() {
   console.log(`Service worker ${version}: ${urls.length} archivos.`);
 }
 
+// Archivos de dist/ que Cloudflare no publica: los source maps y los datos internos de Expo.
+function escribirExclusiones() {
+  writeFileSync(
+    path.join(DIST, '.assetsignore'),
+    ['*.map', '**/*.map', 'metadata.json', ''].join('\n'),
+  );
+}
+
 escribirCabeceras();
 generarServiceWorker();
+escribirExclusiones();

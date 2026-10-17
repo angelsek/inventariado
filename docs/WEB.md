@@ -1,7 +1,7 @@
 # Versión web (PC)
 
 Stockeao también corre en el navegador del computador (Chrome o Edge) en
-**https://stockeao.grimoriolabs.com** (Cloudflare Pages). Funciona sin internet y sincroniza con
+**https://stockeao.grimoriolabs.com** (Cloudflare Workers). Funciona sin internet y sincroniza con
 el mismo Supabase que la app Android. Tiene un front propio para PC, pensado para la caja: menú
 lateral y una pantalla de venta con teclado y pistola lectora.
 
@@ -104,19 +104,47 @@ las capture la página. Si el navegador se las queda, hay que cambiar esas dos t
 
 ## Publicación
 
-Workflow **Publicar web** (`.github/workflows/publicar-web.yml`): en un PR solo compila. Para
-publicar: Actions → Publicar web → Run workflow, marcando **publicar**, desde `main`.
+El proyecto **`stockeao-web`** de Cloudflare Workers está conectado a este repositorio
+(integración de Git): Cloudflare compila y publica solo. Lo que publica lo define
+`wrangler.jsonc` (archivos estáticos de `dist/`, cualquier ruta abre `index.html`, sin
+redirecciones de `/index.html`).
+
+- **Producción:** cada push a `main` (al fusionar un PR) compila y publica en
+  stockeao.grimoriolabs.com. Los PC abiertos ven "Hay una versión nueva → Actualizar".
+- **PR:** el workflow **Web** (`.github/workflows/web.yml`) comprueba que compile. Cloudflare
+  además puede publicar una vista previa de cada rama (ver abajo).
+
+Configuración en Cloudflare (proyecto `stockeao-web` → Settings → Build):
+
+| Campo                                | Valor                                                                   |
+| ------------------------------------ | ----------------------------------------------------------------------- |
+| Production branch                    | `main`                                                                  |
+| Build command                        | `npm run web:construir`                                                 |
+| Deploy command                       | `npx wrangler deploy`                                                   |
+| Non-production branch deploy command | `npx wrangler versions upload` (o desactivar las builds de otras ramas) |
+| Root directory                       | `/`                                                                     |
+
+Variables de build (Settings → Build → Variables and secrets):
+
+| Variable                        | Valor                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------- |
+| `NODE_VERSION`                  | `22`                                                                      |
+| `EXPO_PUBLIC_SUPABASE_URL`      | URL del proyecto de Supabase (la misma variable `SUPABASE_URL` de GitHub) |
+| `EXPO_PUBLIC_SUPABASE_KEY`      | clave publicable (`SUPABASE_PUBLISHABLE_KEY`)                             |
+| `EXPO_PUBLIC_CONTACTO_WHATSAPP` | el mismo valor que la variable `CONTACTO_WHATSAPP` de GitHub              |
+| `EXPO_PUBLIC_CONTACTO_CORREO`   | el mismo valor que la variable `CONTACTO_CORREO` de GitHub                |
+| `EXIGIR_SUPABASE`               | `true` (el build falla si falta la URL de Supabase)                       |
+
+No agregar `EXPO_PUBLIC_DATOS_TRANSFERENCIA`: el sitio es público.
 
 Pasos manuales antes de la primera publicación:
 
 1. Ejecutar `supabase/migrations/20261018000100_dispositivos_tipo.sql` en el SQL Editor de
    Supabase (`docs/SUPABASE.md`).
-2. En Cloudflare, crear el proyecto Pages `stockeao-web` y el dominio personalizado
-   `stockeao.grimoriolabs.com` (con su registro DNS).
-3. Crear un token de API de Cloudflare con permiso solo **Cloudflare Pages: Edit**.
-4. En GitHub, crear el Environment `produccion` (deployment branches: solo `main`; revisor
-   obligatorio) con los secrets `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID`.
-5. Si se usan enlaces de correo de Supabase Auth, agregar el dominio a las URL permitidas.
+2. Configurar el build y las variables de arriba en Cloudflare.
+3. Conectar el dominio: proyecto → Settings → Domains & Routes → Add → Custom domain →
+   `stockeao.grimoriolabs.com`.
+4. Si se usan enlaces de correo de Supabase Auth, agregar el dominio a las URL permitidas.
 
 **La dirección es definitiva:** cambiarla deja los datos locales de los PC en la dirección
 anterior (cada dirección tiene su propia base en el navegador).

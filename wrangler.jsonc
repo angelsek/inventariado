@@ -1,0 +1,15 @@
+// Versión web (PC) en Cloudflare Workers (proyecto "stockeao-web", conectado a este repositorio).
+// Cloudflare compila con `npm run web:construir` y publica dist/: solo archivos estáticos, sin
+// código de servidor. Las cabeceras (CSP, COOP/COEP…) las pone dist/_headers. Ver docs/WEB.md.
+{
+  "name": "stockeao-web",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist/",
+    // Cualquier ruta de la app (/vender, /caja…) abre index.html: Expo Router decide la pantalla.
+    "not_found_handling": "single-page-application",
+    // Sin redirecciones de /index.html a /: el service worker guarda /index.html y una respuesta
+    // redirigida no sirve para abrir la app sin internet.
+    "html_handling": "none",
+  },
+}

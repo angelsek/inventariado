@@ -64,11 +64,10 @@ Play Store). El cobro con Google Play queda programado pero en pausa (`docs/COBR
    `supabase/migrations/20261003000100_versiones_app_sha256.sql` en el SQL Editor de Supabase
    (`docs/SUPABASE.md`) y publicar solo después de fusionar `feat/integridad-apk` a `main`.
 2. **Antes de publicar la web** (`docs/WEB.md`): ejecutar
-   `supabase/migrations/20261018000100_dispositivos_tipo.sql` en Supabase; crear en Cloudflare el
-   proyecto Pages `stockeao-web` y el dominio `stockeao.grimoriolabs.com`; crear un token de API
-   con permiso solo "Cloudflare Pages: Edit"; crear en GitHub el Environment `produccion` (solo
-   `main`, revisor obligatorio) con los secrets `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID`;
-   si se usan enlaces de correo de Supabase Auth, agregar el dominio a las URL permitidas.
+   `supabase/migrations/20261018000100_dispositivos_tipo.sql` en Supabase; en Cloudflare
+   (proyecto `stockeao-web`, Workers con integración de Git) configurar el build, las variables y
+   el dominio `stockeao.grimoriolabs.com` (tablas en `docs/WEB.md`); si se usan enlaces de correo
+   de Supabase Auth, agregar el dominio a las URL permitidas.
    Verificar en Chrome/Edge reales que F11 y F12 las capture la caja.
 3. Versión web, fases 2 a 5: caja y ventas; catálogo; inventario y clientes; gestión, respaldo y
    documentación (hoy esas pantallas se ven con el diseño del teléfono).

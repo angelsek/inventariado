@@ -161,15 +161,17 @@ async function vincularTelefono(
   negocioId: string,
   equipo?: OpcionesEquipo,
 ): Promise<void> {
-  await borrarDatosLocales(db);
   const esPc = Platform.OS === 'web';
 
   // Si el equipo ya tenía id (instalaciones anteriores) se conserva, para no ocupar otro cupo.
+  // (borrarDatosLocales no borra ese ajuste.) La pregunta de reemplazo va antes del borrado:
+  // si se cancela, los datos locales quedan como estaban.
   let dispositivoId = await leerAjuste(db, AJUSTE_DISPOSITIVO);
   if (!dispositivoId && esPc && equipo?.elegirReemplazo) {
     const pcs = await pcVinculados(negocioId);
     if (pcs.length) dispositivoId = await equipo.elegirReemplazo(pcs);
   }
+  await borrarDatosLocales(db);
   if (!dispositivoId) dispositivoId = await idTelefonoEstable();
 
   const nombre = (equipo?.nombre?.trim() || nombreDelTelefono()).slice(0, 60);

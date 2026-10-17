@@ -10,12 +10,30 @@ const VERSION = '__VERSION__';
 const ARCHIVOS = __ARCHIVOS__;
 const CACHE = `stockeao-${VERSION}`;
 
-self.addEventListener('install', (evento) => {
-  evento.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(ARCHIVOS.map((url) => new Request(url, { cache: 'reload' })))),
+// Si el servidor redirige (p. ej. /index.html → /), el navegador no acepta esa respuesta para
+// abrir la app: se guarda una copia sin la marca de "redirigida".
+async function sinRedireccion(respuesta) {
+  if (!respuesta.redirected) return respuesta;
+  return new Response(await respuesta.blob(), {
+    status: respuesta.status,
+    statusText: respuesta.statusText,
+    headers: respuesta.headers,
+  });
+}
+
+async function guardarTodo() {
+  const cache = await caches.open(CACHE);
+  await Promise.all(
+    ARCHIVOS.map(async (url) => {
+      const respuesta = await fetch(new Request(url, { cache: 'reload' }));
+      if (!respuesta.ok) throw new Error(`No se pudo guardar ${url} (${respuesta.status}).`);
+      await cache.put(url, await sinRedireccion(respuesta));
+    }),
   );
+}
+
+self.addEventListener('install', (evento) => {
+  evento.waitUntil(guardarTodo());
 });
 
 self.addEventListener('activate', (evento) => {

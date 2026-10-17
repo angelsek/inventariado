@@ -4,6 +4,11 @@
 {
   "name": "stockeao-web",
   "compatibility_date": "2026-10-01",
+  // Wrangler compila antes de publicar, aunque el proyecto de Cloudflare no tenga comando de
+  // build configurado (si lo tiene, se compila dos veces: no es un problema).
+  "build": {
+    "command": "npm run web:construir",
+  },
   "assets": {
     "directory": "./dist/",
     // Cualquier ruta de la app (/vender, /caja…) abre index.html: Expo Router decide la pantalla.

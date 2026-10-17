@@ -100,7 +100,9 @@ function archivosDe(carpeta, base = carpeta) {
 
 function generarServiceWorker() {
   const archivos = archivosDe(DIST).sort();
-  const huella = createHash('sha256');
+  const plantilla = readFileSync(new URL('./sw-plantilla.js', import.meta.url), 'utf8');
+  // La versión cambia si cambia cualquier archivo de la app o el propio service worker.
+  const huella = createHash('sha256').update(plantilla);
   for (const archivo of archivos) {
     huella.update(archivo);
     huella.update(
@@ -111,7 +113,6 @@ function generarServiceWorker() {
   }
   const version = huella.digest('hex').slice(0, 16);
   const urls = archivos.map((a) => `/${a}`);
-  const plantilla = readFileSync(new URL('./sw-plantilla.js', import.meta.url), 'utf8');
   const codigo = plantilla
     .replace("const VERSION = '__VERSION__';", `const VERSION = ${JSON.stringify(version)};`)
     .replace('const ARCHIVOS = __ARCHIVOS__;', `const ARCHIVOS = ${JSON.stringify(urls)};`);

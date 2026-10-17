@@ -15,7 +15,12 @@ export function avisar(...args: [titulo: string, mensaje?: string, botones?: Bot
   Alert.alert(...args);
 }
 
-/** Muestra los avisos del escritorio. En el teléfono no hace falta. */
+/** true si hay un aviso abierto (solo se usa en la web, para no mezclar atajos de teclado). */
+export function hayDialogoAbierto(): boolean {
+  return false;
+}
+
+/** Muestra los avisos de la web. En el teléfono no hace falta. */
 export function HostDialogos() {
   return null;
 }

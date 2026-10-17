@@ -19,6 +19,11 @@ export function avisar(titulo: string, mensaje?: string, botones?: BotonDialogo[
   useDialogos.setState((s) => ({ cola: [...s.cola, { titulo, mensaje, botones: lista }] }));
 }
 
+/** true si hay un aviso abierto: los atajos de la caja esperan a que se cierre. */
+export function hayDialogoAbierto(): boolean {
+  return useDialogos.getState().cola.length > 0;
+}
+
 function cerrar(boton?: BotonDialogo) {
   useDialogos.setState((s) => ({ cola: s.cola.slice(1) }));
   boton?.onPress?.();

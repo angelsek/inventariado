@@ -26,7 +26,13 @@ type Plan = {
   max_dispositivos: number;
   reportes_avanzados: boolean;
 };
-type Dispositivo = { id: string; nombre: string; ultimo_sync: string | null };
+type Dispositivo = {
+  id: string;
+  nombre: string;
+  ultimo_sync: string | null;
+  /** 'telefono' o 'pc' (servidores sin la migración dispositivos_tipo no lo envían). */
+  tipo?: string;
+};
 type Pago = { id: string; plan_id: string; meses: number; monto: number; creado_en: string };
 
 const ETIQUETA_ESTADO: Record<Estado, { texto: string; color: string }> = {
@@ -225,12 +231,13 @@ export default function SuscripcionScreen() {
       {telefonos ? (
         <>
           <Text style={estilos.seccion}>
-            Teléfonos ({telefonos.dispositivos.length} de {telefonos.limite})
+            Equipos ({telefonos.dispositivos.length} de {telefonos.limite})
           </Text>
           {telefonos.dispositivos.map((d) => (
             <View key={d.id} style={[estilos.tarjeta, estilos.fila]}>
               <View style={estilos.flex}>
                 <Text style={estilos.nombre}>
+                  {d.tipo === 'pc' ? 'PC · ' : ''}
                   {d.nombre}
                   {d.id === miDispositivo ? ' (este equipo)' : ''}
                 </Text>

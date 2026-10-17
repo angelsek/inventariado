@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Boton } from '@/components/Boton';
 import { Formulario } from '@/components/Formulario';
 import { CamposNegocio } from '@/features/cuenta/CamposNegocio';
+import { CampoNombreEquipo, opcionesDeEquipo } from '@/features/cuenta/equipo';
 import {
   type Errores,
   type FormNegocio,
@@ -20,6 +21,7 @@ export default function CrearNegocioScreen() {
   const [errores, setErrores] = useState<Errores<FormNegocio>>({});
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
+  const [nombreEquipo, setNombreEquipo] = useState('');
 
   const enviar = async () => {
     const nuevos = validarNegocio(form);
@@ -29,7 +31,7 @@ export default function CrearNegocioScreen() {
     setCargando(true);
     setError(null);
     try {
-      await crearNegocio(db, form);
+      await crearNegocio(db, form, opcionesDeEquipo(nombreEquipo));
     } catch (e) {
       setError(mensajeDeError(e));
       setCargando(false);
@@ -43,6 +45,7 @@ export default function CrearNegocioScreen() {
         errores={errores}
         onCambio={(cambios) => setForm((f) => ({ ...f, ...cambios }))}
       />
+      <CampoNombreEquipo valor={nombreEquipo} onCambio={setNombreEquipo} />
       <Boton titulo="Crear negocio" onPress={enviar} cargando={cargando} />
     </Formulario>
   );

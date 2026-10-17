@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { LARGO_PIN } from '@/lib/pin';
+import { useTeclado } from '@/lib/useTeclado';
 import { colores } from '@/theme/colores';
 
 type Props = {
@@ -18,6 +19,12 @@ export function TecladoPin({ valor, onCambio, deshabilitado }: Props) {
     if (tecla === 'borrar') onCambio(valor.slice(0, -1));
     else if (valor.length < LARGO_PIN) onCambio(valor + tecla);
   };
+
+  // En el PC el PIN también se escribe con el teclado (números y Retroceso).
+  useTeclado((tecla) => {
+    if (/^\d$/.test(tecla)) presionar(tecla);
+    else if (tecla === 'Backspace') presionar('borrar');
+  }, !deshabilitado);
 
   return (
     <View>

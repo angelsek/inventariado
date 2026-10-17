@@ -6,6 +6,9 @@
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
+    "web": "expo start --web",
+    "web:construir": "expo export --platform web && node scripts/construir-web.mjs",
+    "web:servir": "node scripts/servir-web.mjs",
     "lint": "expo lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -57,7 +60,8 @@
     "jest-expo": "^57.0.5",
     "prettier": "^3.9.9",
     "react-test-renderer": "^19.2.3",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "workbox-build": "7.4.1"
   },
   "jest": {
     "preset": "jest-expo",
@@ -70,6 +74,9 @@
   "overrides": {
     "xcode": {
       "uuid": "^11.1.1"
+    },
+    "postcss": {
+      "source-map-js": "^1.2.2"
     }
   }
 }

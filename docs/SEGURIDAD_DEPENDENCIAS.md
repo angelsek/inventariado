@@ -81,6 +81,23 @@ servicio con patrones glob muy anidados.
 - **No va dentro del APK.**
 - **Decisión:** aceptar. Revisar cuando haya versión corregida.
 
+### sprintf-js
+
+[GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c), moderada. Denegación de
+servicio con especificadores de precisión muy grandes.
+
+- **Sin versión corregida:** afecta a todas las versiones hasta la 1.1.3, que es la última.
+- **Llega por:** `argparse` → `js-yaml` → `babel-plugin-istanbul` (Jest), que solo formatea textos de
+  la configuración de cobertura del proyecto, nunca datos de usuarios.
+- **No va dentro del APK ni de la versión web.**
+- **Decisión:** aceptar. Revisar cuando haya versión corregida.
+
+### source-map-js (resuelta)
+
+[GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q), alta. Llegaba por `postcss`
+de `@expo/metro-config` (herramienta de compilación). Se resolvió con `npm audit fix` (sin `--force`),
+que subió `source-map-js` a la 1.2.2 dentro del rango que ya aceptaba `postcss`.
+
 ### uuid (resuelta)
 
 [GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq), moderada.

@@ -19,7 +19,7 @@ export function useLectorCodigos(alCodigo: (codigo: string) => void, activo = tr
       if (evento.ctrlKey || evento.altKey || evento.metaKey) return;
       if (lector.tecla(evento.key, evento.timeStamp)) {
         evento.preventDefault();
-        evento.stopPropagation();
+        evento.stopImmediatePropagation();
       }
     };
     // En captura, para ver el Enter antes que el campo de texto que tenga el foco.

@@ -85,7 +85,12 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
    paso 2 de `docs/COBRO_GOOGLE_PLAY.md` (subir el `.aab`, suscripciones, cuenta de servicio,
    secretos, SQL, Pub/Sub, pruebas de licencias). Después: ficha de Play Store, cuenta demo y,
    si la cuenta de desarrollador es personal, prueba cerrada de 12 probadores por 14 días.
-6. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**
+6. **Boletas y facturas electrónicas (DTE)** (plan aún sin aprobar): servicio extra que se cobra
+   aparte del plan. Grimorio Labs paga el certificado y le cobra al negocio un delta sobre su
+   costo. Se están cotizando OpenFactura (Haulmer) y SimpleAPI; el piloto será certificar el RUT
+   de Grimorio Labs. Ojo: los clientes que cobran con la POS de Mercado Pago ya reciben boleta de
+   la máquina, así que hay que evitar emitir una segunda boleta por la misma venta.
+7. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**
    (ver abajo).
 
 ## Idea a futuro: cobrar con la máquina POS desde Stockeao

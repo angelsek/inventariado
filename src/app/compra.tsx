@@ -219,6 +219,13 @@ export default function CompraScreen() {
       >
         Ver ingresos anteriores
       </Text>
+      <Text
+        accessibilityRole="button"
+        style={[estilos.enlace, estilos.centrado]}
+        onPress={() => router.push('/proveedores')}
+      >
+        Administrar proveedores
+      </Text>
     </Formulario>
   );
 }

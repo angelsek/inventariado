@@ -5,8 +5,8 @@
 //   2. Genera los íconos de la app instalable (dist/icono-192.png y 512) desde assets/icon.png.
 //   3. Genera el service worker (dist/sw.js) desde scripts/sw-plantilla.js, con la lista de
 //      archivos de la app y una versión que cambia si cambia cualquiera de ellos.
-// Uso: npm run web:construir. La URL de Supabase sale de EXPO_PUBLIC_SUPABASE_URL o, si no
-// está, de .env.local / .env (igual que expo export). Ver docs/WEB.md.
+// Uso: npx expo export --platform web && node scripts/construir-web.mjs. La URL de Supabase sale de EXPO_PUBLIC_SUPABASE_URL o, si no
+// está, de .env.local / .env (igual que expo export).
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';

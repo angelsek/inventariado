@@ -4,7 +4,7 @@ name: Web
 #
 # La publicación no pasa por aquí: el proyecto "stockeao-web" de Cloudflare Workers está
 # conectado al repositorio y compila y publica solo (main → producción en
-# https://stockeao.grimoriolabs.com). Ver wrangler.jsonc y docs/WEB.md.
+# https://stockeao.grimoriolabs.com). Ver wrangler.jsonc.
 on:
   pull_request:
     paths:
@@ -43,4 +43,4 @@ jobs:
         env:
           EXPO_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
-        run: npm run web:construir
+        run: npx expo export --platform web && node scripts/construir-web.mjs

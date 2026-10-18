@@ -1,6 +1,6 @@
 import type { MedioPago } from '@/features/ventas/calculos';
 
-/** Lo que hace cada tecla en la caja del PC (ver la tabla de atajos en docs/WEB.md). */
+/** Lo que hace cada tecla en la caja del PC (atajos de la caja; ver accionDeTecla). */
 export type AccionPos =
   | { tipo: 'buscar' }
   | { tipo: 'montoLibre' }

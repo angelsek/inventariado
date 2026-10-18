@@ -1,6 +1,6 @@
 /* global __ARCHIVOS__ */
 // Service worker de la versión web (PC). Plantilla: scripts/construir-web.mjs reemplaza
-// __VERSION__ y __ARCHIVOS__ y la escribe en dist/sw.js. Ver docs/WEB.md.
+// __VERSION__ y __ARCHIVOS__ y la escribe en dist/sw.js.
 //
 // - Al instalarse guarda todos los archivos de la app (para abrir sin internet).
 // - Cualquier ruta de la app abre index.html desde la caché (Expo Router decide la pantalla).

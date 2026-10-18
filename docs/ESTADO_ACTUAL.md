@@ -1,6 +1,6 @@
 # Estado actual del proyecto (para retomar)
 
-Última actualización: 17 de octubre de 2026.
+Última actualización: 2 de octubre de 2026.
 
 ## Qué es
 
@@ -8,10 +8,10 @@
 botillerías, kioskos, bazares). Varios teléfonos por negocio, funciona sin internet y
 sincroniza con Supabase. Precios (con IVA incluido, pensados para reinvertir en Grimorio Labs):
 
-| Plan   | Mensual | Anual (12 por 10) | Equipos |
-| ------ | ------- | ----------------- | ------- |
-| Básico | $9.990  | $99.900           | 2       |
-| Pro    | $14.990 | $149.900          | 5       |
+| Plan   | Mensual | Anual (12 por 10) | Teléfonos |
+| ------ | ------- | ----------------- | --------- |
+| Básico | $9.990  | $99.900           | 2         |
+| Pro    | $14.990 | $149.900          | 5         |
 
 - Paquete Android: `cl.stockeao.app` (definitivo, ya está en Play Console).
 - Rama principal: `main` (la rama `claude/fervent-franklin-regzl4` ya se fusionó y se borró).
@@ -51,31 +51,18 @@ Play Store). El cobro con Google Play queda programado pero en pausa (`docs/COBR
   Supabase) antes de instalar; el workflow lo calcula, lo registra y sube `stockeao.apk.sha256`
   (`docs/PILOTO.md`).
 - Desarrollo local en Windows con emulador (`docs/TRABAJAR_EN_MI_EQUIPO.md`).
-- Versión web para PC, fase 1 (rama `feat/version-escritorio`): Stockeao en Chrome/Edge, sin
-  internet, con menú lateral y caja (POS) con atajos y pistola USB. Un PC ocupa un cupo como un
-  teléfono. Detalle en `docs/WEB.md`.
 - Dependencias revisadas: el workflow **Dependencias** corre `npm audit` contra las excepciones
   registradas (estricto en PR que tocan dependencias y los lunes; no obligatorio). Las
   vulnerabilidades actuales están analizadas en `docs/SEGURIDAD_DEPENDENCIAS.md`.
 
 ## Pendiente (en orden)
 
-1. **Antes de la primera publicación con la verificación:** ejecutar
+0. **Antes de la primera publicación con la verificación:** ejecutar
    `supabase/migrations/20261003000100_versiones_app_sha256.sql` en el SQL Editor de Supabase
    (`docs/SUPABASE.md`) y publicar solo después de fusionar `feat/integridad-apk` a `main`.
-2. **Antes de publicar la web** (`docs/WEB.md`): ejecutar
-   `supabase/migrations/20261018000100_dispositivos_tipo.sql` en Supabase; en Cloudflare
-   (proyecto `stockeao-web`, Workers con integración de Git) configurar el build, las variables y
-   el dominio `stockeao.grimoriolabs.com` (tablas en `docs/WEB.md`); si se usan enlaces de correo
-   de Supabase Auth, agregar el dominio a las URL permitidas.
-   Verificar en Chrome/Edge reales que F11 y F12 las capture la caja.
-3. Versión web, fases 2 a 5: caja y ventas; catálogo; inventario y clientes; gestión, respaldo y
-   documentación (hoy esas pantallas se ven con el diseño del teléfono).
-4. Revisar los textos legales: la política de privacidad debe decir que los datos se guardan en
-   el navegador del PC, y los textos que hablan de "teléfonos" deben hablar de "equipos".
-5. Cuando se formalice la empresa: retomar el cobro con Google Play (`docs/COBRO_GOOGLE_PLAY.md`),
+1. Cuando se formalice la empresa: retomar el cobro con Google Play (`docs/COBRO_GOOGLE_PLAY.md`),
    ficha de Play Store, cuenta demo y prueba cerrada.
-6. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**
+2. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**
    (ver abajo).
 
 ## Idea a futuro: cobrar con la máquina POS desde Stockeao

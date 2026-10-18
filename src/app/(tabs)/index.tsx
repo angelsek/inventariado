@@ -1,29 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { type Href, router, useFocusEffect } from 'expo-router';
-import { useBase } from '@/db/proveedor';
-import { type ComponentProps, useCallback, useEffect, useState } from 'react';
+import { type Href, router } from 'expo-router';
+import type { ComponentProps } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { obtenerCajaAbierta } from '@/db/cajas';
-import { obtenerNegocio } from '@/db/negocio';
-import { listarProductos } from '@/db/productos';
-import { resumirVentas } from '@/db/ventas';
-import { rangoDelDia } from '@/lib/fechas';
+import { useResumenDelDia } from '@/features/inicio/useResumenDelDia';
 import { formatearCLP } from '@/lib/formato';
-import { obtenerAutor } from '@/sesion/autor';
 import { useSesion } from '@/sesion/store';
 import { colores, radios } from '@/theme/colores';
 
 type NombreIcono = ComponentProps<typeof Ionicons>['name'];
-
-type Resumen = {
-  negocio: string;
-  ventasHoy: number;
-  cantidadHoy: number;
-  stockBajo: number;
-  sinStock: number;
-  cajaAbierta: boolean;
-};
 
 type Atajo = { icono: NombreIcono; texto: string; destino: Href; soloDueno?: boolean };
 
@@ -40,38 +25,9 @@ const ATAJOS: Atajo[] = [
 
 /** Pantalla de inicio: resumen del día y accesos grandes a cada tarea. */
 export default function InicioScreen() {
-  const db = useBase();
-  const { negocioId, perfil, versionDatos } = useSesion();
+  const { perfil } = useSesion();
   const esDueno = perfil?.rol === 'dueno';
-  const [resumen, setResumen] = useState<Resumen | null>(null);
-
-  const cargar = useCallback(() => {
-    if (!negocioId) return;
-    const { desde, hasta } = rangoDelDia(new Date());
-    Promise.all([
-      obtenerNegocio(db, negocioId),
-      resumirVentas(db, negocioId, desde, hasta),
-      listarProductos(db, negocioId),
-      obtenerAutor(db).then(({ dispositivoId }) =>
-        obtenerCajaAbierta(db, negocioId, dispositivoId),
-      ),
-    ]).then(([negocio, ventas, productos, caja]) =>
-      setResumen({
-        negocio: negocio?.nombre ?? '',
-        ventasHoy: ventas.total,
-        cantidadHoy: ventas.cantidad,
-        sinStock: productos.filter((p) => p.stock <= 0).length,
-        stockBajo: productos.filter(
-          (p) => p.stock > 0 && p.stockMinimo > 0 && p.stock <= p.stockMinimo,
-        ).length,
-        cajaAbierta: !!caja,
-      }),
-    );
-  }, [db, negocioId]);
-
-  // Al volver a esta pantalla y cuando llegan datos de otros teléfonos.
-  useFocusEffect(cargar);
-  useEffect(cargar, [cargar, versionDatos]);
+  const resumen = useResumenDelDia();
 
   return (
     <ScrollView style={estilos.pantalla} contentContainerStyle={estilos.contenido}>

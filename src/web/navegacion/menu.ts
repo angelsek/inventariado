@@ -146,3 +146,16 @@ export function entradaActiva(ruta: string, rol: Rol = 'dueno'): EntradaMenu | n
   }
   return mejor;
 }
+
+/**
+ * Miga de pan de una pantalla: la entrada del menú de la que cuelga (p. ej. /producto/x →
+ * Productos), o null si la ruta es la de una entrada del menú o no cuelga de ninguna.
+ */
+export function migaDe(ruta: string, rol: Rol = 'dueno'): EntradaMenu | null {
+  const entrada = entradaActiva(ruta, rol);
+  if (!entrada) return null;
+  const propia = segmentos(entrada.ruta);
+  const actual = segmentos(ruta);
+  const esLaMisma = propia.length === actual.length && propia.every((s, i) => s === actual[i]);
+  return esLaMisma ? null : entrada;
+}

@@ -1,4 +1,4 @@
-import { entradaActiva, MENU, menuParaRol } from '../menu';
+import { entradaActiva, MENU, menuParaRol, migaDe } from '../menu';
 
 const textos = (rol: 'dueno' | 'cajero') =>
   menuParaRol(rol).flatMap((g) => g.entradas.map((e) => e.texto));
@@ -56,4 +56,20 @@ it.each([
 it('una ruta de una entrada que el cajero no ve no marca nada para él', () => {
   expect(entradaActiva('/conteo', 'cajero')).toBeNull();
   expect(entradaActiva('/conteo', 'dueno')?.texto).toBe('Conteo de stock');
+});
+
+it.each([
+  ['/producto/nuevo', 'Productos'],
+  ['/reponer', 'Productos'],
+  ['/compras', 'Ingresos de mercadería'],
+  ['/venta/abc', 'Ventas'],
+  ['/legal/terminos', 'Cuenta y equipo'],
+])('la miga de %s es "%s"', (ruta, texto) => {
+  expect(migaDe(ruta)?.texto).toBe(texto);
+});
+
+it('las pantallas del menú y las que no cuelgan de él no tienen miga', () => {
+  expect(migaDe('/inventario')).toBeNull();
+  expect(migaDe('/')).toBeNull();
+  expect(migaDe('/ingresar')).toBeNull();
 });

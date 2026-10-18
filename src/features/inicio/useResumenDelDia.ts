@@ -39,18 +39,22 @@ export function useResumenDelDia(): ResumenDelDia | null {
       obtenerAutor(db).then(({ dispositivoId }) =>
         obtenerCajaAbierta(db, negocioId, dispositivoId),
       ),
-    ]).then(([negocio, ventas, productos, caja]) =>
-      setResumen({
-        negocio: negocio?.nombre ?? '',
-        ventasHoy: ventas.total,
-        cantidadHoy: ventas.cantidad,
-        sinStock: productos.filter((p) => p.stock <= 0).length,
-        stockBajo: productos.filter(
-          (p) => p.stock > 0 && p.stockMinimo > 0 && p.stock <= p.stockMinimo,
-        ).length,
-        cajaAbierta: !!caja,
-      }),
-    );
+    ])
+      .then(([negocio, ventas, productos, caja]) =>
+        setResumen({
+          negocio: negocio?.nombre ?? '',
+          ventasHoy: ventas.total,
+          cantidadHoy: ventas.cantidad,
+          sinStock: productos.filter((p) => p.stock <= 0).length,
+          stockBajo: productos.filter(
+            (p) => p.stock > 0 && p.stockMinimo > 0 && p.stock <= p.stockMinimo,
+          ).length,
+          cajaAbierta: !!caja,
+        }),
+      )
+      .catch(() => {
+        // Si la base local falla, el resumen queda como estaba; se reintenta en la próxima carga.
+      });
   }, [db, negocioId]);
 
   useFocusEffect(cargar);

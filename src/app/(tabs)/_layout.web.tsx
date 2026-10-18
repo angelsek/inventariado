@@ -23,11 +23,11 @@ export default function TabsLayoutWeb() {
           headerShadowVisible: false,
         }}
       >
-        <Tabs.Screen name="index" options={{ title: 'Inicio' }} />
+        <Tabs.Screen name="index" options={{ title: 'Resumen de hoy' }} />
         <Tabs.Screen name="inventario" options={{ title: 'Productos' }} />
         <Tabs.Screen name="vender" options={{ title: 'Vender', headerShown: false }} />
-        <Tabs.Screen name="caja" options={{ title: 'Caja' }} />
-        <Tabs.Screen name="mas" options={{ title: 'Más' }} />
+        <Tabs.Screen name="caja" options={{ title: 'Caja del día' }} />
+        <Tabs.Screen name="mas" options={{ title: 'Cuenta y equipo' }} />
       </Tabs>
     </View>
   );

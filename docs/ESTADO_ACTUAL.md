@@ -60,6 +60,8 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
 - Versión web para PC, fase 1 (rama `feat/version-escritorio`): Stockeao en Chrome/Edge, sin
   internet, con menú lateral y caja (POS) con atajos y pistola USB. Un PC ocupa un cupo como un
   teléfono. Detalle en `docs/WEB.md`.
+- Logo nuevo "cajas en S" (rama `feat/logo-cajas`): fuentes SVG y reglas en `assets/marca/LEEME.md`;
+  los PNG se regeneran con `npm run iconos:generar`. Ya está dentro de la app y la web.
 - Dependencias revisadas: el workflow **Dependencias** corre `npm audit` contra las excepciones
   registradas (estricto en PR que tocan dependencias y los lunes; no obligatorio). Las
   vulnerabilidades actuales están analizadas en `docs/SEGURIDAD_DEPENDENCIAS.md`.
@@ -75,22 +77,28 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
    el dominio `stockeao.grimoriolabs.com` (tablas en `docs/WEB.md`); si se usan enlaces de correo
    de Supabase Auth, agregar el dominio a las URL permitidas.
    Verificar en Chrome/Edge reales que F11 y F12 las capture la caja.
-3. Versión web, fases 2 a 5: caja y ventas; catálogo; inventario y clientes; gestión, respaldo y
+3. **Logo nuevo, pasos manuales:** copiar `docs/descargar/icono.png` a la carpeta `stockeao/` del
+   repo `grimorio-labs-landing`; subir `docs/play-store/icono-512.png` y el gráfico destacado en
+   Play Console; publicar una versión APK para que los clientes vean el ícono nuevo (los íconos no
+   cambian por OTA); revisar en el emulador el ícono adaptable (máscaras circular y squircle), el
+   ícono temático y el splash de Android 12+; actualizar el flyer (`docs/flyer`, fuera de git)
+   con el ícono nuevo.
+4. Versión web, fases 2 a 5: caja y ventas; catálogo; inventario y clientes; gestión, respaldo y
    documentación (hoy esas pantallas se ven con el diseño del teléfono).
-4. Revisar los textos legales: la política de privacidad debe decir que los datos se guardan en
+5. Revisar los textos legales: la política de privacidad debe decir que los datos se guardan en
    el navegador del PC, y los textos que hablan de "teléfonos" deben hablar de "equipos".
-5. Cobro con Google Play (en pausa): Google paga a Chile por transferencia internacional y exige
+6. Cobro con Google Play (en pausa): Google paga a Chile por transferencia internacional y exige
    código SWIFT/BIC. Mercado Pago no tiene, y los bancos que sí tienen piden historial de
    facturación a la SpA. Con la cuenta abierta: agregarla al perfil de pagos y seguir desde el
    paso 2 de `docs/COBRO_GOOGLE_PLAY.md` (subir el `.aab`, suscripciones, cuenta de servicio,
    secretos, SQL, Pub/Sub, pruebas de licencias). Después: ficha de Play Store, cuenta demo y,
    si la cuenta de desarrollador es personal, prueba cerrada de 12 probadores por 14 días.
-6. **Boletas y facturas electrónicas (DTE)** (plan aún sin aprobar): servicio extra que se cobra
+7. **Boletas y facturas electrónicas (DTE)** (plan aún sin aprobar): servicio extra que se cobra
    aparte del plan. Grimorio Labs paga el certificado y le cobra al negocio un delta sobre su
    costo. Se están cotizando OpenFactura (Haulmer) y SimpleAPI; el piloto será certificar el RUT
    de Grimorio Labs. Ojo: los clientes que cobran con la POS de Mercado Pago ya reciben boleta de
    la máquina, así que hay que evitar emitir una segunda boleta por la misma venta.
-7. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**
+8. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**
    (ver abajo).
 
 ## Idea a futuro: cobrar con la máquina POS desde Stockeao

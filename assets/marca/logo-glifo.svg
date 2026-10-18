@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!-- Tres cajas apiladas en zigzag (forman una S), con su cinta de embalaje. -->
+  <rect x="42" y="22" width="56" height="24" rx="5" fill="#FFFFFF"/>
+  <rect x="22" y="49" width="56" height="24" rx="5" fill="#F2B33D"/>
+  <rect x="42" y="76" width="56" height="24" rx="5" fill="#CFE3DC"/>
+  <rect x="64" y="22" width="12" height="7" fill="#1F4E45" fill-opacity="0.25"/>
+  <rect x="44" y="49" width="12" height="7" fill="#1F4E45" fill-opacity="0.25"/>
+  <rect x="64" y="76" width="12" height="7" fill="#1F4E45" fill-opacity="0.25"/>
+</svg>

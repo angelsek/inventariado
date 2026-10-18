@@ -33,7 +33,8 @@ Todo lo que pide Play Console, en orden, con los textos listos para copiar.
 
 El `.aab` solo se genera a mano y únicamente desde la rama `main`.
 
-Para regenerar el ícono: `python3 scripts/generar-iconos.py`.
+Para regenerar el ícono y la imagen destacada: `npm run iconos:generar` (detalle en
+`assets/marca/LEEME.md`).
 Para regenerar las páginas con tu correo:
 `CONTACTO_CORREO=tu@correo.cl node --experimental-strip-types scripts/generar-legal.mjs`.
 

@@ -1,79 +1,19 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { type Href, router, usePathname } from 'expo-router';
 import { type ComponentProps, type ReactNode, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { obtenerNegocio } from '@/db/negocio';
+import { useBase } from '@/db/proveedor';
 import { useCarrito } from '@/features/ventas/carrito';
 import { useSesion } from '@/sesion/store';
+import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores, radios } from '@/theme/colores';
+import { entradaActiva, menuParaRol } from '@/web/navegacion/menu';
 import { pedirPersistencia } from '@/web/plataforma/persistencia';
 import { registrarServiceWorker, useVersionWeb } from '@/web/plataforma/serviceWorker';
 
 type NombreIcono = ComponentProps<typeof Ionicons>['name'];
-type Opcion = {
-  texto: string;
-  icono: NombreIcono;
-  ruta: Href;
-  activaEn: string[];
-  soloDueno?: boolean;
-};
-
-const OPCIONES: Opcion[] = [
-  { texto: 'Vender', icono: 'cart-outline', ruta: '/vender', activaEn: ['/vender', '/cobrar'] },
-  { texto: 'Caja', icono: 'cash-outline', ruta: '/caja', activaEn: ['/caja'] },
-  { texto: 'Ventas', icono: 'receipt-outline', ruta: '/ventas', activaEn: ['/ventas', '/venta'] },
-  { texto: 'Inicio', icono: 'home-outline', ruta: '/', activaEn: ['/'] },
-  {
-    texto: 'Productos',
-    icono: 'cube-outline',
-    ruta: '/inventario',
-    activaEn: ['/inventario', '/producto', '/categorias', '/importar'],
-  },
-  {
-    texto: 'Llegó mercadería',
-    icono: 'download-outline',
-    ruta: '/compra',
-    activaEn: ['/compra', '/compras', '/proveedores'],
-    soloDueno: true,
-  },
-  {
-    texto: 'Contar stock',
-    icono: 'clipboard-outline',
-    ruta: '/conteo',
-    activaEn: ['/conteo'],
-    soloDueno: true,
-  },
-  {
-    texto: 'Por reponer',
-    icono: 'alert-circle-outline',
-    ruta: '/reponer',
-    activaEn: ['/reponer'],
-    soloDueno: true,
-  },
-  {
-    texto: 'Clientes y fiado',
-    icono: 'people-outline',
-    ruta: '/clientes',
-    activaEn: ['/clientes', '/cliente'],
-  },
-  {
-    texto: 'Reportes',
-    icono: 'bar-chart-outline',
-    ruta: '/estadisticas',
-    activaEn: ['/estadisticas', '/reportes'],
-    soloDueno: true,
-  },
-  {
-    texto: 'Más',
-    icono: 'menu-outline',
-    ruta: '/mas',
-    activaEn: ['/mas', '/suscripcion', '/negocio', '/usuarios', '/exportar', '/admin'],
-  },
-];
-
-function activa(opcion: Opcion, ruta: string) {
-  return opcion.activaEn.some((r) => (r === '/' ? ruta === '/' : ruta.startsWith(r)));
-}
 
 function useEnLinea() {
   const [enLinea, setEnLinea] = useState(() => navigator.onLine);
@@ -120,53 +60,96 @@ export function MarcoApp({ children }: { children: ReactNode }) {
 }
 
 function MenuLateral() {
+  const db = useBase();
   const ruta = usePathname();
+  const negocioId = useSesion((s) => s.negocioId);
+  const versionDatos = useSesion((s) => s.versionDatos);
   const perfil = useSesion((s) => s.perfil);
   const salir = useSesion((s) => s.salir);
   const sync = useSesion((s) => s.sync);
   const enLinea = useEnLinea();
-  const esDueno = perfil?.rol === 'dueno';
+  const rol = perfil?.rol === 'dueno' ? 'dueno' : 'cajero';
+  const activa = entradaActiva(ruta, rol);
+  const [negocio, setNegocio] = useState('');
+
+  useEffect(() => {
+    if (!negocioId) return;
+    obtenerNegocio(db, negocioId)
+      .then((n) => setNegocio(n?.nombre ?? ''))
+      .catch(() => {});
+  }, [db, negocioId, versionDatos]);
 
   const estadoSync = !enLinea
     ? { texto: 'Sin internet: se guarda en este PC', color: colores.aviso }
-    : sync.estado === 'error'
-      ? { texto: 'Error al sincronizar', color: colores.error }
-      : sync.pendientes > 0
-        ? { texto: `${sync.pendientes} cambio(s) por subir`, color: colores.aviso }
-        : { texto: 'Todo sincronizado', color: colores.exito };
+    : sync.estado === 'sincronizando'
+      ? { texto: 'Sincronizando…', color: colores.primarioSuave }
+      : sync.estado === 'error'
+        ? { texto: 'Error al sincronizar', color: colores.error }
+        : sync.pendientes > 0
+          ? { texto: `${sync.pendientes} cambio(s) por subir`, color: colores.aviso }
+          : { texto: 'Todo sincronizado', color: colores.exito };
 
   return (
     <View style={estilos.menu}>
-      <Text style={estilos.marca}>Stockeao</Text>
-      <View style={estilos.opciones}>
-        {OPCIONES.filter((o) => !o.soloDueno || esDueno).map((o) => {
-          const seleccionada = activa(o, ruta);
-          return (
-            <Pressable
-              key={o.texto}
-              accessibilityRole="link"
-              accessibilityState={{ selected: seleccionada }}
-              onPress={() => router.navigate(o.ruta)}
-              style={[estilos.opcion, seleccionada && estilos.opcionActiva]}
-            >
-              <Ionicons
-                name={o.icono}
-                size={22}
-                color={seleccionada ? colores.superficie : colores.primarioSuave}
-              />
-              <Text style={[estilos.textoOpcion, seleccionada && estilos.textoOpcionActiva]}>
-                {o.texto}
-              </Text>
-            </Pressable>
-          );
-        })}
+      <View style={estilos.cabecera}>
+        <Text style={estilos.marca}>Stockeao</Text>
+        {negocio ? (
+          <Text style={estilos.negocio} numberOfLines={1}>
+            {negocio}
+          </Text>
+        ) : null}
       </View>
+      <ScrollView style={estilos.opciones} contentContainerStyle={estilos.listaOpciones}>
+        {menuParaRol(rol).map((grupo) => (
+          <View key={grupo.titulo} style={estilos.grupo}>
+            <Text style={estilos.tituloGrupo}>{grupo.titulo.toUpperCase()}</Text>
+            {grupo.entradas.map((entrada) => {
+              const seleccionada = entrada === activa;
+              return (
+                <Pressable
+                  key={entrada.ruta}
+                  accessibilityRole="link"
+                  accessibilityState={{ selected: seleccionada }}
+                  onPress={() => router.navigate(entrada.ruta as Href)}
+                  // react-native-web agrega `hovered` al estado del Pressable (no está en los tipos).
+                  style={(estado) => [
+                    estilos.opcion,
+                    (estado as { hovered?: boolean }).hovered && estilos.opcionEncima,
+                    seleccionada && estilos.opcionActiva,
+                  ]}
+                >
+                  <Ionicons
+                    name={entrada.icono as NombreIcono}
+                    size={19}
+                    color={seleccionada ? colores.superficie : colores.primarioSuave}
+                  />
+                  <Text
+                    style={[estilos.textoOpcion, seleccionada && estilos.textoOpcionActiva]}
+                    numberOfLines={1}
+                  >
+                    {entrada.texto}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
+      </ScrollView>
       <View style={estilos.pie}>
-        <View style={estilos.estado}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Sincronizar ahora"
+          disabled={!enLinea || sync.estado === 'sincronizando'}
+          onPress={() => sincronizarAhora(db)}
+          style={estilos.estado}
+        >
           <View style={[estilos.punto, { backgroundColor: estadoSync.color }]} />
           <Text style={estilos.textoEstado}>{estadoSync.texto}</Text>
-        </View>
-        <Text style={estilos.usuario}>{perfil?.nombre}</Text>
+          {enLinea ? <Ionicons name="refresh" size={14} color={colores.primarioSuave} /> : null}
+        </Pressable>
+        <Text style={estilos.usuario} numberOfLines={1}>
+          {perfil?.nombre} · {rol === 'dueno' ? 'Dueño' : 'Cajero'}
+        </Text>
         <Pressable accessibilityRole="button" onPress={salir}>
           <Text style={estilos.cambiarUsuario}>Cambiar usuario</Text>
         </Pressable>
@@ -221,33 +204,41 @@ const estilos = StyleSheet.create({
     boxShadow: '0 8px 30px rgba(0, 0, 0, 0.08)',
   },
   menu: {
-    width: 240,
-    paddingVertical: 20,
-    paddingHorizontal: 12,
+    width: 248,
+    paddingTop: 20,
+    paddingBottom: 16,
     backgroundColor: colores.primario,
   },
-  marca: {
-    paddingHorizontal: 12,
-    marginBottom: 20,
-    fontSize: 24,
-    fontWeight: '800',
-    color: colores.superficie,
+  cabecera: { paddingHorizontal: 20, marginBottom: 12 },
+  marca: { fontSize: 22, fontWeight: '800', color: colores.superficie },
+  negocio: { marginTop: 2, fontSize: 13, color: colores.primarioSuave },
+  opciones: { flex: 1 },
+  listaOpciones: { paddingHorizontal: 10, paddingBottom: 12, gap: 14 },
+  grupo: { gap: 2 },
+  tituloGrupo: {
+    paddingHorizontal: 10,
+    marginBottom: 4,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    color: 'rgba(230, 239, 236, 0.6)',
   },
-  opciones: { flex: 1, gap: 4 },
   opcion: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    borderRadius: radios.chico,
+    gap: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
-  opcionActiva: { backgroundColor: 'rgba(255,255,255,0.16)' },
-  textoOpcion: { fontSize: 17, color: colores.primarioSuave },
+  opcionEncima: { backgroundColor: 'rgba(255,255,255,0.08)' },
+  opcionActiva: { backgroundColor: 'rgba(255,255,255,0.18)' },
+  textoOpcion: { flex: 1, fontSize: 15, color: colores.primarioSuave },
   textoOpcionActiva: { color: colores.superficie, fontWeight: '700' },
   pie: {
     gap: 6,
-    paddingHorizontal: 12,
+    marginHorizontal: 10,
+    paddingHorizontal: 10,
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.2)',
@@ -255,7 +246,7 @@ const estilos = StyleSheet.create({
   estado: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   punto: { width: 10, height: 10, borderRadius: 5 },
   textoEstado: { flex: 1, fontSize: 13, color: colores.primarioSuave },
-  usuario: { fontSize: 16, fontWeight: '700', color: colores.superficie },
+  usuario: { fontSize: 15, fontWeight: '700', color: colores.superficie },
   cambiarUsuario: { fontSize: 14, color: colores.primarioSuave, textDecorationLine: 'underline' },
   version: {
     flexDirection: 'row',

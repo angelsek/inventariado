@@ -7,13 +7,12 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { obtenerNegocio } from '@/db/negocio';
 import { formatearFechaHora } from '@/lib/formato';
 import { useActualizacion } from '@/features/actualizacion/actualizacion';
+import { confirmarCierreSesion } from '@/features/cuenta/cierreSesion';
 import { supabase } from '@/lib/supabase';
 import { versionActual } from '@/lib/version';
-import { cerrarSesion } from '@/sesion/cuenta';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores, radios } from '@/theme/colores';
-import { avisar } from '@/lib/dialogo';
 
 export default function MasScreen() {
   const db = useBase();
@@ -40,18 +39,7 @@ export default function MasScreen() {
     }, [esDueno]),
   );
 
-  const confirmarCierre = () => {
-    const advertencia =
-      sync.pendientes > 0 ? `Hay ${sync.pendientes} cambio(s) sin subir que se perderán. ` : '';
-    avisar(
-      'Cerrar sesión',
-      `${advertencia}Este equipo se desconectará del negocio y habrá que volver a ingresar con correo y contraseña.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Cerrar sesión', style: 'destructive', onPress: () => cerrarSesion(db) },
-      ],
-    );
-  };
+  const confirmarCierre = () => confirmarCierreSesion(db, sync.pendientes);
 
   return (
     <ScrollView style={estilos.pantalla} contentContainerStyle={estilos.contenido}>

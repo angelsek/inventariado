@@ -13,9 +13,9 @@ export const coloresMarca = {
 
 /**
  * Cajas del logo en el lienzo de 120 de assets/marca/logo.svg: posición, color y cinta.
- * Si cambia el SVG, actualizar también esto (y al revés).
+ * Si cambia el SVG, actualizar también esto (y al revés); scripts/__tests__/logo-componente.test.js los compara.
  */
-const CAJAS = [
+export const CAJAS = [
   { x: 42, y: 22, color: coloresMarca.blanco, cinta: 64 },
   { x: 22, y: 49, color: coloresMarca.mostaza, cinta: 44 },
   { x: 42, y: 76, color: coloresMarca.menta, cinta: 64 },

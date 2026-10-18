@@ -2,11 +2,12 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useBase } from '@/db/proveedor';
 import { useEffect, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Escaner } from '@/components/Escaner';
 import { Selector } from '@/components/Selector';
+import { AccionesInventario, BotonNuevoProducto } from '@/features/inventario/AccionesInventario';
 import { type Categoria, listarCategorias } from '@/db/categorias';
 import { buscarPorCodigo, listarProductos, type Producto } from '@/db/productos';
 import { formatearCLP } from '@/lib/formato';
@@ -97,37 +98,7 @@ export default function InventarioScreen() {
         </View>
       ) : null}
 
-      {esDueno ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={estilos.accionesScroll}
-          contentContainerStyle={estilos.acciones}
-        >
-          <Accion icono="download-outline" texto="Ingreso" onPress={() => router.push('/compra')} />
-          <Accion
-            icono="alert-circle-outline"
-            texto="Reponer"
-            onPress={() => router.push('/reponer')}
-          />
-          <Accion icono="clipboard-outline" texto="Conteo" onPress={() => router.push('/conteo')} />
-          <Accion
-            icono="pricetags-outline"
-            texto="Categorías"
-            onPress={() => router.push('/categorias')}
-          />
-          <Accion
-            icono="people-outline"
-            texto="Proveedores"
-            onPress={() => router.push('/proveedores')}
-          />
-          <Accion
-            icono="document-text-outline"
-            texto="Importar"
-            onPress={() => router.push('/importar')}
-          />
-        </ScrollView>
-      ) : null}
+      <AccionesInventario esDueno={esDueno} />
 
       <FlatList
         data={productos}
@@ -157,17 +128,7 @@ export default function InventarioScreen() {
         }
       />
 
-      {esDueno && productos.length > 0 ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Nuevo producto"
-          onPress={() => router.push('/producto/nuevo')}
-          style={({ pressed }) => [estilos.flotante, pressed && estilos.presionada]}
-        >
-          <Ionicons name="add" size={28} color={colores.superficie} />
-          <Text style={estilos.textoFlotante}>Nuevo producto</Text>
-        </Pressable>
-      ) : null}
+      <BotonNuevoProducto visible={esDueno && productos.length > 0} />
 
       <Escaner visible={escaneando} onCodigo={alEscanear} onCerrar={() => setEscaneando(false)} />
     </View>
@@ -219,23 +180,6 @@ function FilaProducto({ producto }: { producto: Producto }) {
   );
 }
 
-function Accion({
-  icono,
-  texto,
-  onPress,
-}: {
-  icono: React.ComponentProps<typeof Ionicons>['name'];
-  texto: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={estilos.accion}>
-      <Ionicons name={icono} size={18} color={colores.primario} />
-      <Text style={estilos.textoAccion}>{texto}</Text>
-    </Pressable>
-  );
-}
-
 const estilos = StyleSheet.create({
   pantalla: { flex: 1, backgroundColor: colores.fondo },
   barra: { flexDirection: 'row', gap: 8, padding: 12, paddingBottom: 4 },
@@ -260,18 +204,6 @@ const estilos = StyleSheet.create({
   },
   categorias: { paddingHorizontal: 12 },
   // Sin encoger: si no, la lista de productos le quita altura y los botones salen cortados.
-  accionesScroll: { flexGrow: 0, flexShrink: 0 },
-  acciones: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingVertical: 8 },
-  accion: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: radios.pastilla,
-    backgroundColor: colores.primarioSuave,
-  },
-  textoAccion: { fontSize: 15, fontWeight: '600', color: colores.primario },
   // Espacio abajo para que el botón flotante no tape el último producto.
   lista: { padding: 12, paddingTop: 4, paddingBottom: 116, flexGrow: 1 },
   fila: {
@@ -302,22 +234,6 @@ const estilos = StyleSheet.create({
   precio: { fontSize: 18, fontWeight: '700', color: colores.texto },
   insignia: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: radios.pastilla },
   stock: { fontSize: 13, fontWeight: '600' },
-  flotante: {
-    position: 'absolute',
-    right: 16,
-    // Más arriba que la barra para no topar con el botón Vender, que sobresale.
-    bottom: 36,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingLeft: 18,
-    paddingRight: 22,
-    minHeight: 60,
-    borderRadius: radios.pastilla,
-    backgroundColor: colores.primario,
-    elevation: 6,
-  },
-  textoFlotante: { fontSize: 18, fontWeight: '700', color: colores.superficie },
   vacio: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
   textoVacio: { fontSize: 16, color: colores.textoSecundario },
   botonesVacio: { alignSelf: 'stretch', gap: 10, marginTop: 8 },

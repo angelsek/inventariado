@@ -3,6 +3,7 @@ import { type Href, router, usePathname } from 'expo-router';
 import { type ComponentProps, type ReactNode, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { Logotipo } from '@/components/LogoStockeao';
 import { obtenerNegocio } from '@/db/negocio';
 import { useBase } from '@/db/proveedor';
 import { useCarrito } from '@/features/ventas/carrito';
@@ -92,7 +93,7 @@ function MenuLateral() {
   return (
     <View style={estilos.menu}>
       <View style={estilos.cabecera}>
-        <Text style={estilos.marca}>Stockeao</Text>
+        <Logotipo tamano={26} sobreVerde />
         {negocio ? (
           <Text style={estilos.negocio} numberOfLines={1}>
             {negocio}
@@ -210,7 +211,6 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.primario,
   },
   cabecera: { paddingHorizontal: 20, marginBottom: 12 },
-  marca: { fontSize: 22, fontWeight: '800', color: colores.superficie },
   negocio: { marginTop: 2, fontSize: 13, color: colores.primarioSuave },
   opciones: { flex: 1 },
   listaOpciones: { paddingHorizontal: 10, paddingBottom: 12, gap: 14 },

@@ -1,7 +1,7 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LogoStockeao } from '@/components/LogoStockeao';
 import { useSesion } from '@/sesion/store';
 import { colores } from '@/theme/colores';
 
@@ -17,7 +17,7 @@ export function ElegirPlan() {
     <SafeAreaView style={estilos.pantalla}>
       <ScrollView contentContainerStyle={estilos.contenido}>
         <View style={estilos.logo}>
-          <Ionicons name="storefront" size={44} color={colores.primario} />
+          <LogoStockeao tamano={84} />
         </View>
         <Text style={estilos.titulo}>Elige tu plan</Text>
         <Text style={estilos.subtitulo}>
@@ -36,15 +36,7 @@ export function ElegirPlan() {
 const estilos = StyleSheet.create({
   pantalla: { flex: 1, backgroundColor: colores.fondo },
   contenido: { padding: 20, paddingBottom: 40 },
-  logo: {
-    alignSelf: 'center',
-    width: 84,
-    height: 84,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colores.primarioSuave,
-  },
+  logo: { alignSelf: 'center' },
   titulo: {
     marginTop: 16,
     textAlign: 'center',

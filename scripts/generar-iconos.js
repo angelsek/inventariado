@@ -9,6 +9,10 @@ const path = require('node:path');
 const zlib = require('node:zlib');
 const { Resvg } = require('@resvg/resvg-js');
 
+if (typeof zlib.crc32 !== 'function') {
+  throw new Error(`generar-iconos necesita Node 22.2 o superior (tienes ${process.version}).`);
+}
+
 const RAIZ = path.resolve(__dirname, '..');
 const MARCA = path.join(RAIZ, 'assets', 'marca');
 const FUENTE = path.join(MARCA, 'fuentes', 'Nunito-Bold.ttf');

@@ -11,7 +11,10 @@ export const coloresMarca = {
   blanco: '#FFFFFF',
 } as const;
 
-/** Cajas del logo en el lienzo de 120 de assets/marca/logo.svg: posición, color y cinta. */
+/**
+ * Cajas del logo en el lienzo de 120 de assets/marca/logo.svg: posición, color y cinta.
+ * Si cambia el SVG, actualizar también esto (y al revés).
+ */
 const CAJAS = [
   { x: 42, y: 22, color: coloresMarca.blanco, cinta: 64 },
   { x: 22, y: 49, color: coloresMarca.mostaza, cinta: 44 },
@@ -35,7 +38,7 @@ export function LogoStockeao({ tamano = 96 }: { tamano?: number }) {
     >
       {CAJAS.map((caja) => (
         <View
-          key={caja.y}
+          key={caja.color}
           testID="logo-caja"
           style={[
             estilos.caja,

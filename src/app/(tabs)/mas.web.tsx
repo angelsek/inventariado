@@ -28,7 +28,10 @@ export default function CuentaYEquipo() {
   const [esAdmin, setEsAdmin] = useState(false);
 
   useEffect(() => {
-    if (negocioId) obtenerNegocio(db, negocioId).then((n) => setNegocio(n?.nombre ?? ''));
+    if (!negocioId) return;
+    obtenerNegocio(db, negocioId)
+      .then((n) => setNegocio(n?.nombre ?? ''))
+      .catch(() => {});
   }, [db, negocioId, versionDatos]);
 
   // Solo las cuentas administradoras de la app ven el panel (requiere internet).

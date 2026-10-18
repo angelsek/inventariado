@@ -1,6 +1,6 @@
 # Estado actual del proyecto (para retomar)
 
-Última actualización: 17 de octubre de 2026.
+Última actualización: 18 de octubre de 2026.
 
 ## Qué es
 
@@ -19,11 +19,15 @@ sincroniza con Supabase. Precios (con IVA incluido, pensados para reinvertir en 
 - Contacto: contacto@grimoriolabs.com (página) · WhatsApp +56 9 5470 0498 (variable
   `CONTACTO_WHATSAPP`).
 - Páginas legales: repositorio `angelsek/inventariado-legal` (GitHub Pages).
+- Empresa: **Grimorio Labs SpA**, formalizada y con inicio de actividades en el SII (octubre de
+  2026).
 
 ## Cómo se cobra hoy
 
-Mientras no se formalice la empresa, **se cobra por transferencia con la versión APK** (fuera de
-Play Store). El cobro con Google Play queda programado pero en pausa (`docs/COBRO_GOOGLE_PLAY.md`).
+**Se cobra por transferencia con la versión APK** (fuera de Play Store). El cobro con Google Play
+está programado pero en pausa hasta que la SpA tenga una cuenta bancaria con código SWIFT (ver
+Pendiente). Conviene que cada pago llegue a una cuenta de la SpA y se emita boleta o factura: ese
+historial de facturación es lo que piden los bancos para abrir la cuenta.
 
 - Instalar: **https://grimoriolabs.com/stockeao/** (fuente en `docs/descargar/`, se publica en
   la carpeta `stockeao/` del repo `grimorio-labs-landing`). Si Chrome se queda pegado al bajar el
@@ -44,8 +48,10 @@ Play Store). El cobro con Google Play queda programado pero en pausa (`docs/COBR
 - Escáner que solo lee dentro del rectángulo y valida el dígito verificador.
 - Diseño simple y grande para personas adultas (pantalla de Inicio, botón Vender al centro);
   botón flotante "Nuevo producto" en Productos.
-- Firma con clave propia; app en Play Console con **prueba interna** (último `.aab`: 1008).
-- Cobro con Google Play Billing programado (en pausa).
+- Firma con clave propia; app en Play Console con **prueba interna** (último `.aab` compilado:
+  1015, desde `main`, run 39099334938; aún no subido).
+- Cobro con Google Play Billing programado (en pausa) y **perfil de pagos de Grimorio Labs SpA**
+  creado en Play Console (le falta la cuenta bancaria).
 - APK publicado (versión 35) con actualización dentro de la app y página de descarga.
 - Integridad del APK: la app solo descarga de las Releases y verifica el SHA-256 (publicado en
   Supabase) antes de instalar; el workflow lo calcula, lo registra y sube `stockeao.apk.sha256`
@@ -73,8 +79,12 @@ Play Store). El cobro con Google Play queda programado pero en pausa (`docs/COBR
    documentación (hoy esas pantallas se ven con el diseño del teléfono).
 4. Revisar los textos legales: la política de privacidad debe decir que los datos se guardan en
    el navegador del PC, y los textos que hablan de "teléfonos" deben hablar de "equipos".
-5. Cuando se formalice la empresa: retomar el cobro con Google Play (`docs/COBRO_GOOGLE_PLAY.md`),
-   ficha de Play Store, cuenta demo y prueba cerrada.
+5. Cobro con Google Play (en pausa): Google paga a Chile por transferencia internacional y exige
+   código SWIFT/BIC. Mercado Pago no tiene, y los bancos que sí tienen piden historial de
+   facturación a la SpA. Con la cuenta abierta: agregarla al perfil de pagos y seguir desde el
+   paso 2 de `docs/COBRO_GOOGLE_PLAY.md` (subir el `.aab`, suscripciones, cuenta de servicio,
+   secretos, SQL, Pub/Sub, pruebas de licencias). Después: ficha de Play Store, cuenta demo y,
+   si la cuenta de desarrollador es personal, prueba cerrada de 12 probadores por 14 días.
 6. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**
    (ver abajo).
 

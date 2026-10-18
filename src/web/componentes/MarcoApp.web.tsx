@@ -104,10 +104,14 @@ export function MarcoApp({ children }: { children: ReactNode }) {
     if (negocioId) void pedirPersistencia();
   }, [negocioId]);
 
+  // Sin sesión (bienvenida, ingreso, PIN) las pantallas son las del teléfono: en el PC van en
+  // una tarjeta angosta y centrada en vez de ocupar todo el monitor. La estructura de vistas es
+  // siempre la misma (solo cambian los estilos), así la navegación no se reinicia al entrar.
+  const conSesion = !!negocioId && !!perfil;
   return (
-    <View style={estilos.marco}>
-      {negocioId && perfil ? <MenuLateral /> : null}
-      <View style={estilos.contenido}>
+    <View style={[estilos.marco, !conSesion && estilos.marcoAcceso]}>
+      {conSesion ? <MenuLateral /> : null}
+      <View style={[estilos.contenido, !conSesion && estilos.tarjetaAcceso]}>
         <AvisoVersionNueva />
         {children}
       </View>
@@ -195,6 +199,27 @@ function AvisoVersionNueva() {
 const estilos = StyleSheet.create({
   marco: { flex: 1, flexDirection: 'row', backgroundColor: colores.fondo },
   contenido: { flex: 1 },
+  marcoAcceso: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  tarjetaAcceso: {
+    flexGrow: 0,
+    flexShrink: 1,
+    flexBasis: 'auto',
+    width: '100%',
+    maxWidth: 440,
+    height: '100%',
+    maxHeight: 640,
+    borderRadius: radios.grande,
+    borderWidth: 1,
+    borderColor: colores.borde,
+    overflow: 'hidden',
+    backgroundColor: colores.superficie,
+    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.08)',
+  },
   menu: {
     width: 240,
     paddingVertical: 20,

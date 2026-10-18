@@ -7,6 +7,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "web": "expo start --web",
+    "web:construir": "expo export --platform web && node scripts/construir-web.mjs",
+    "web:servir": "node scripts/servir-web.mjs",
     "lint": "expo lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -56,6 +58,7 @@
     "eslint-config-prettier": "^10.1.8",
     "jest": "^29.7.0",
     "jest-expo": "^57.0.5",
+    "jimp-compact": "0.16.1",
     "prettier": "^3.9.9",
     "react-test-renderer": "^19.2.3",
     "typescript": "~6.0.3"

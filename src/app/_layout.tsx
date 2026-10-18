@@ -11,6 +11,7 @@ import { obtenerEstadoSuscripcion } from '@/db/suscripcion';
 import { useActualizacion } from '@/features/actualizacion/actualizacion';
 import { HostDialogos } from '@/lib/dialogo';
 import { informarError, instalarManejadorErrores } from '@/lib/errores';
+import { opcionesPantalla } from '@/navegacion/opcionesPantalla';
 import { useSesion } from '@/sesion/store';
 import { useSincronizacionAutomatica } from '@/sync/useSincronizacionAutomatica';
 import { colores } from '@/theme/colores';
@@ -99,12 +100,7 @@ function Navegacion() {
   // Las pantallas con encabezado dejan libre abajo el espacio de los botones del
   // sistema, para que las listas y botones del final no queden debajo de ellos.
   const { bottom } = useSafeAreaInsets();
-  const conEncabezado = (title: string) => ({
-    headerShown: true,
-    title,
-    headerStyle: { backgroundColor: colores.superficie },
-    contentStyle: { paddingBottom: bottom, backgroundColor: colores.fondo },
-  });
+  const conEncabezado = (title: string) => opcionesPantalla(title, bottom);
 
   return (
     <MarcoApp>

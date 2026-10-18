@@ -73,15 +73,16 @@ jobs:
             Devuelve:
             - revisado: true solo si leíste el diff completo y revisaste todos los archivos de la lista; si no pudiste
               leerlo o revisarlo entero, false (y explica en resumen por qué). Nunca pongas true por defecto.
-            - archivos_revisados: cuántos archivos de la lista revisaste. Los archivos generados (lockfiles, binarios)
-              cuentan como revisados si comprobaste en el diff que su cambio es coherente con el resto.
+            - archivos_revisados: la lista de rutas de `.equipo-pr-archivos.txt` que revisaste, copiadas tal cual
+              (una entrada por archivo; no las cuentes ni resumas). Los archivos generados (lockfiles, binarios)
+              van en la lista si comprobaste en el diff que su cambio es coherente con el resto.
             - veredicto: "bloqueado" si hay alguna critica o alta; "cambios_menores" si solo hay media/baja;
               "aprobado" si no hay nada relevante.
             - criticos_o_altos, resumen (1-3 frases) y hallazgos (severidad, tipo, archivo, linea, titulo).
           claude_args: |
             --model sonnet
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Read,Grep,Glob"
-            --json-schema '{"type":"object","properties":{"revisado":{"type":"boolean"},"archivos_revisados":{"type":"integer"},"veredicto":{"type":"string","enum":["aprobado","cambios_menores","bloqueado"]},"resumen":{"type":"string"},"criticos_o_altos":{"type":"integer"},"hallazgos":{"type":"array","items":{"type":"object","properties":{"severidad":{"type":"string","enum":["critica","alta","media","baja","info"]},"tipo":{"type":"string"},"archivo":{"type":"string"},"linea":{"type":"integer"},"titulo":{"type":"string"}},"required":["severidad","archivo","titulo"]}}},"required":["revisado","archivos_revisados","veredicto","resumen","criticos_o_altos","hallazgos"]}'
+            --json-schema '{"type":"object","properties":{"revisado":{"type":"boolean"},"archivos_revisados":{"type":"array","items":{"type":"string"}},"veredicto":{"type":"string","enum":["aprobado","cambios_menores","bloqueado"]},"resumen":{"type":"string"},"criticos_o_altos":{"type":"integer"},"hallazgos":{"type":"array","items":{"type":"object","properties":{"severidad":{"type":"string","enum":["critica","alta","media","baja","info"]},"tipo":{"type":"string"},"archivo":{"type":"string"},"linea":{"type":"integer"},"titulo":{"type":"string"}},"required":["severidad","archivo","titulo"]}}},"required":["revisado","archivos_revisados","veredicto","resumen","criticos_o_altos","hallazgos"]}'
 
       - name: Comentario y veredicto
         if: always() && !cancelled()
@@ -97,18 +98,24 @@ jobs:
             | gsub("[<>\\[\\]`|!]"; "") | .[0:$n];'
           veredicto=$(leer '.veredicto // "sin_veredicto"' sin_veredicto)
           revisado=$(leer '.revisado // false' false)
-          revisados=$(leer '.archivos_revisados // 0' 0)
+          # El modelo devuelve la lista de archivos revisados y aquí se compara con la del PR (contar no se le
+          # pide: se equivocaba aunque hubiera revisado todo). Rutas sin "./" ni espacios al borde.
+          normalizar() { sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's#^\./##' | grep -v '^$' || true; }
+          echo "$RESULTADO" | jq -r '.archivos_revisados[]? | strings' 2>/dev/null | normalizar > "$RUNNER_TEMP/revisados.txt" || true
+          normalizar < .equipo-pr-archivos.txt > "$RUNNER_TEMP/cambiados.txt"
+          grep -vxFf "$RUNNER_TEMP/revisados.txt" "$RUNNER_TEMP/cambiados.txt" > "$RUNNER_TEMP/faltantes.txt" || true
+          faltan=$(grep -c . "$RUNNER_TEMP/faltantes.txt") || faltan=0
           declarados=$(leer '.criticos_o_altos // 0' 0)
           contados=$(leer '[.hallazgos[]? | select((.severidad // "" | ascii_downcase) | test("^(cr.?.?tica|critical|alta|high)$"))] | length' 0)
-          case "$revisados" in ''|*[!0-9]*) revisados=0 ;; esac
           case "$declarados" in ''|*[!0-9]*) declarados=0 ;; esac
           case "$contados" in ''|*[!0-9]*) contados=0 ;; esac
           altos=$(( declarados > contados ? declarados : contados ))
           case "$veredicto" in aprobado|cambios_menores|bloqueado) ;; *) veredicto=sin_veredicto ;; esac
-          cambiados=$(grep -c . .equipo-pr-archivos.txt 2>/dev/null) || cambiados=0
+          cambiados=$(grep -c . "$RUNNER_TEMP/cambiados.txt") || cambiados=0
+          revisados=$(( cambiados - faltan ))
           estado="$veredicto"
           [ "$altos" -gt 0 ] && [ "$estado" != sin_veredicto ] && estado=bloqueado
-          { [ "$revisado" = "true" ] && [ "$cambiados" -ge 1 ] && [ "$revisados" -ge "$cambiados" ]; } || estado="sin_revision"
+          { [ "$revisado" = "true" ] && [ "$cambiados" -ge 1 ] && [ "$faltan" -eq 0 ]; } || estado="sin_revision"
 
           {
             echo "<!-- equipo-revision -->"
@@ -118,6 +125,10 @@ jobs:
               || echo "> El equipo no entregó un resultado."
             echo
             echo "Archivos revisados: $revisados de $cambiados."
+            if [ "$faltan" -gt 0 ]; then
+              echo
+              echo "Sin revisar: $(head -n 20 "$RUNNER_TEMP/faltantes.txt" | jq -Rr "$LIMPIO"' limpio(200)' | paste -sd ',' - | sed 's/,/, /g')"
+            fi
             if [ "$(leer '(.hallazgos // []) | length' 0)" != "0" ]; then
               echo
               echo "| Severidad | Tipo | Archivo:línea | Título |"

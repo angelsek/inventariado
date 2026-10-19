@@ -335,12 +335,23 @@ select pg_temp.debe_fallar(
   format($q$insert into inventariado.roles (negocio_id, nombre, permisos) values (%L, repeat('x', 41), '[]')$q$,
          current_setting('pruebas.negocio_fabi')), '23514');
 -- Nombre repetido (sin importar mayúsculas ni espacios), también contra los predefinidos.
-select pg_temp.debe_fallar(
-  format($q$insert into inventariado.roles (negocio_id, nombre, permisos) values (%L, ' reponedor ', '[]')$q$,
-         current_setting('pruebas.negocio_fabi')), '23505');
-select pg_temp.debe_fallar(
-  format($q$insert into inventariado.roles (negocio_id, nombre, permisos) values (%L, 'CAJERO', '[]')$q$,
-         current_setting('pruebas.negocio_fabi')), '23505');
+-- Desde 20261020000100_editor_roles.sql no es error (trabaría la sincronización): se numera.
+-- Las pruebas de esa numeración están en 92_pruebas_editor_roles.sql.
+insert into inventariado.roles (id, negocio_id, nombre, permisos)
+values ('40000000-0000-0000-0000-0000000000b1', :'negocio_fabi', ' reponedor ', '[]'),
+       ('40000000-0000-0000-0000-0000000000b2', :'negocio_fabi', 'CAJERO', '[]');
+do $$
+begin
+  if (select nombre from inventariado.roles where id = '40000000-0000-0000-0000-0000000000b1')
+       is distinct from 'reponedor (2)'
+     or (select nombre from inventariado.roles where id = '40000000-0000-0000-0000-0000000000b2')
+       is distinct from 'CAJERO (2)' then
+    raise exception 'FALLA: el nombre repetido no se numeró';
+  end if;
+end;
+$$;
+update inventariado.roles set eliminado = true
+ where id in ('40000000-0000-0000-0000-0000000000b1', '40000000-0000-0000-0000-0000000000b2');
 reset role;
 
 -- ---------------------------------------------------------------------------
@@ -401,18 +412,30 @@ select pg_temp.debe_fallar(
 -- Un rol propio sin personas se puede eliminar.
 update inventariado.roles set eliminado = true where id = '40000000-0000-0000-0000-0000000000a2';
 -- Un rol propio con personas no: Beto (c2, ya eliminado) no cuenta; Carla (c1) sí.
+-- Desde 20261020000100_editor_roles.sql no es error (trabaría la sincronización):
+-- la eliminación se ignora y el rol sigue vigente.
 insert into inventariado.roles (id, negocio_id, nombre, permisos)
 values ('40000000-0000-0000-0000-0000000000a3', :'negocio_fabi', 'Vendedor', '["vender"]');
 update inventariado.perfiles set rol_id = '40000000-0000-0000-0000-0000000000a3'
  where id = '30000000-0000-0000-0000-0000000000c1';
-select pg_temp.debe_fallar(
-  $q$update inventariado.roles set eliminado = true where id = '40000000-0000-0000-0000-0000000000a3'$q$,
-  'P0001', 'ROL_CON_PERSONAS');
+update inventariado.roles set eliminado = true where id = '40000000-0000-0000-0000-0000000000a3';
+do $$
+begin
+  if (select eliminado from inventariado.roles where id = '40000000-0000-0000-0000-0000000000a3') then
+    raise exception 'FALLA: se eliminó un rol con personas';
+  end if;
+end;
+$$;
 -- Desactivar a una persona no basta: sigue teniendo el rol.
 update inventariado.perfiles set activo = false where id = '30000000-0000-0000-0000-0000000000c1';
-select pg_temp.debe_fallar(
-  $q$update inventariado.roles set eliminado = true where id = '40000000-0000-0000-0000-0000000000a3'$q$,
-  'P0001', 'ROL_CON_PERSONAS');
+update inventariado.roles set eliminado = true where id = '40000000-0000-0000-0000-0000000000a3';
+do $$
+begin
+  if (select eliminado from inventariado.roles where id = '40000000-0000-0000-0000-0000000000a3') then
+    raise exception 'FALLA: se eliminó un rol con una persona desactivada';
+  end if;
+end;
+$$;
 -- Cambiar de rol a la persona permite eliminar el anterior.
 update inventariado.perfiles set rol_id = :'rol_cajero_fabi', activo = true
  where id = '30000000-0000-0000-0000-0000000000c1';
@@ -517,6 +540,8 @@ alter table inventariado.perfiles enable trigger perfiles_proteger;
 
 -- Se vuelve a ejecutar la migración (como cuando se corre a mano en Supabase).
 \ir ../migrations/20261019000100_roles_permisos.sql
+-- Y la del editor, que reemplaza funciones de la anterior (si no, quedarían las antiguas).
+\ir ../migrations/20261020000100_editor_roles.sql
 \o /dev/null
 
 do $$
@@ -644,12 +669,19 @@ select id, negocio_id, nombre, '["vender", "caja"]'::jsonb, predefinido
 on conflict (id) do update set permisos = excluded.permisos;
 reset role;
 
--- Un rol eliminado no se puede asignar.
+-- Un rol eliminado no se asigna: desde 20261020000100_editor_roles.sql no es error, la
+-- persona conserva el rol que tenía (Bodeguero).
 select pg_temp.como('00000000-0000-0000-0000-0000000000f1');
-select pg_temp.debe_fallar(
-  $q$update inventariado.perfiles set rol_id = '40000000-0000-0000-0000-0000000000a2'
-      where id = '30000000-0000-0000-0000-0000000000c1'$q$,
-  '23503', 'El rol no es de este negocio');
+update inventariado.perfiles set rol_id = '40000000-0000-0000-0000-0000000000a2'
+ where id = '30000000-0000-0000-0000-0000000000c1';
 reset role;
+do $$
+begin
+  if (select r.predefinido from inventariado.perfiles p join inventariado.roles r on r.id = p.rol_id
+       where p.id = '30000000-0000-0000-0000-0000000000c1') is distinct from 'bodeguero' then
+    raise exception 'FALLA: se asignó un rol eliminado';
+  end if;
+end;
+$$;
 
 select 'Todas las pruebas SQL de roles y permisos pasaron';

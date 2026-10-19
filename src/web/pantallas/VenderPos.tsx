@@ -427,12 +427,16 @@ export default function VenderPos() {
 
         {!cajaAbierta ? (
           <Pressable
-            accessibilityRole="button"
+            accessibilityRole={puedeCaja ? 'button' : undefined}
             onPress={puedeCaja ? () => router.push('/caja') : undefined}
             style={estilos.cajaCerrada}
           >
             <Ionicons name="lock-closed-outline" size={18} color={colores.aviso} />
-            <Text style={estilos.textoCaja}>Caja cerrada. Ábrela para cuadrar el turno (F7).</Text>
+            <Text style={estilos.textoCaja}>
+              {puedeCaja
+                ? 'Caja cerrada. Ábrela para cuadrar el turno (F7).'
+                : 'Caja cerrada. Pídele a quien maneja la caja que la abra.'}
+            </Text>
           </Pressable>
         ) : null}
 

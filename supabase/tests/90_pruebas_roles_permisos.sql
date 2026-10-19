@@ -601,7 +601,8 @@ begin
 end;
 $$;
 
--- Una persona que sube sin rol (update desde un equipo que aún no tiene los roles) queda Cajero.
+-- Un update sin rol (equipo que aún no tiene los roles) no deja a la persona sin rol: conserva
+-- el que tenía (aquí, Cajero). El caso con otro rol se prueba más abajo con un upsert.
 update inventariado.perfiles set rol_id = null where id = '30000000-0000-0000-0000-0000000000c1';
 do $$
 begin
@@ -641,6 +642,14 @@ insert into inventariado.roles (id, negocio_id, nombre, permisos, predefinido)
 select id, negocio_id, nombre, '["vender", "caja"]'::jsonb, predefinido
   from inventariado.roles where negocio_id = :'negocio_fabi' and predefinido = 'cajero'
 on conflict (id) do update set permisos = excluded.permisos;
+reset role;
+
+-- Un rol eliminado no se puede asignar.
+select pg_temp.como('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.debe_fallar(
+  $q$update inventariado.perfiles set rol_id = '40000000-0000-0000-0000-0000000000a2'
+      where id = '30000000-0000-0000-0000-0000000000c1'$q$,
+  '23503', 'El rol no es de este negocio');
 reset role;
 
 select 'Todas las pruebas SQL de roles y permisos pasaron';

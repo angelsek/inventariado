@@ -147,7 +147,10 @@ begin
     new.rol_id := null;
   elsif new.rol_id is not null then
     if not exists (
-      select 1 from inventariado.roles where id = new.rol_id and negocio_id = new.negocio_id
+      select 1 from inventariado.roles
+       where id = new.rol_id and negocio_id = new.negocio_id
+         -- Un rol eliminado no se asigna; quien ya lo tenía puede seguir guardándose.
+         and (not eliminado or (tg_op = 'UPDATE' and new.rol_id = old.rol_id))
     ) then
       raise exception 'El rol no es de este negocio' using errcode = '23503';
     end if;

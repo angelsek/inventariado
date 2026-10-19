@@ -101,6 +101,8 @@ export default function UsuariosScreen() {
 
   const soloNumeros = (v: string) => v.replace(/\D/g, '').slice(0, LARGO_PIN);
   const rolDe = (id: string | null) => roles.find((r) => r.id === id);
+  // Rol vigente de una persona: sin rol, o con uno eliminado, es el Cajero.
+  const rolVigente = (p: Perfil) => rolDe(p.rol_id) ?? cajero;
 
   return (
     <Formulario
@@ -141,16 +143,14 @@ export default function UsuariosScreen() {
                 <Selector
                   horizontal
                   opciones={opcionesRol}
-                  valor={p.rol_id ?? cajero?.id ?? ''}
+                  valor={rolVigente(p)?.id ?? ''}
                   onCambio={async (rolId) => {
                     await asignarRol(db, p.id, rolId);
                     despuesDeCambiar();
                   }}
                 />
-                {rolDe(p.rol_id ?? cajero?.id ?? null) ? (
-                  <Text style={estilos.permisos}>
-                    {resumirPermisos(rolDe(p.rol_id ?? cajero?.id ?? null)!)}
-                  </Text>
+                {rolVigente(p) ? (
+                  <Text style={estilos.permisos}>{resumirPermisos(rolVigente(p)!)}</Text>
                 ) : null}
               </View>
             ) : null}

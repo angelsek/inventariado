@@ -114,7 +114,7 @@ export default function VenderScreen() {
 
       {!cajaAbierta ? (
         <Pressable
-          accessibilityRole="button"
+          accessibilityRole={puedeCaja ? 'button' : undefined}
           onPress={puedeCaja ? () => router.push('/caja') : undefined}
           style={estilos.cajaCerrada}
         >

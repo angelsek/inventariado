@@ -1,4 +1,5 @@
 import { migrarBaseDeDatos } from '../migraciones';
+import { borrarDatosLocales } from '../negocio';
 import { asignarRol, crearPerfil, listarPerfiles, obtenerPerfil } from '../perfiles';
 import { listarRoles, obtenerRol } from '../roles';
 import type { BaseLocal } from '../tipos';
@@ -223,4 +224,11 @@ describe('perfiles y roles', () => {
     await asignarRol(db, 'nadie', 'r-1');
     expect(await listarPerfiles(db, NEGOCIO)).toEqual([]);
   });
+});
+
+it('cerrar sesión o eliminar la cuenta borra los roles del equipo', async () => {
+  await insertarRol('r-cajero', 'Cajero', '["vender"]', 'cajero');
+  await borrarDatosLocales(db);
+  expect(await listarRoles(db, NEGOCIO)).toEqual([]);
+  expect(await obtenerRol(db, 'r-cajero')).toBeNull();
 });

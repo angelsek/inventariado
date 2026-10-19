@@ -43,7 +43,8 @@ export const PERMISO_POR_RUTA: Record<string, readonly Permiso[]> = {
   '/cobrar': ['vender'],
   '/caja': ['caja'],
   '/ventas': ['ventas_ver'],
-  '/venta': ['ventas_ver'],
+  // El detalle de una venta lo ve también quien vende: es el comprobante al cobrar.
+  '/venta': ['ventas_ver', 'vender'],
   '/clientes': ['fiado', 'clientes_editar'],
   '/cliente': ['fiado', 'clientes_editar'],
   '/categorias': ['productos_editar'],

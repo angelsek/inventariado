@@ -613,3 +613,34 @@ begin
   end if;
 end;
 $$;
+
+-- Un equipo que aún no tiene el rol de una persona la sube (upsert) sin rol_id: conserva el
+-- que ya tiene en el servidor y no vuelve a Cajero.
+update inventariado.perfiles
+   set rol_id = (select id from inventariado.roles
+                  where negocio_id = :'negocio_fabi' and predefinido = 'bodeguero')
+ where id = '30000000-0000-0000-0000-0000000000c1';
+select pg_temp.como('00000000-0000-0000-0000-0000000000f1');
+insert into inventariado.perfiles (id, negocio_id, nombre, rol, rol_id, pin_hash, activo)
+values ('30000000-0000-0000-0000-0000000000c1', :'negocio_fabi', 'Carla', 'cajero', null, 'h2', true)
+on conflict (id) do update
+  set nombre = excluded.nombre, rol_id = excluded.rol_id, pin_hash = excluded.pin_hash;
+reset role;
+do $$
+begin
+  if (select r.predefinido from inventariado.perfiles p join inventariado.roles r on r.id = p.rol_id
+       where p.id = '30000000-0000-0000-0000-0000000000c1') is distinct from 'bodeguero' then
+    raise exception 'FALLA: el upsert sin rol_id degradó a la persona a Cajero';
+  end if;
+end;
+$$;
+
+-- El upsert de un rol predefinido que ya existe (editar sus permisos) se acepta.
+select pg_temp.como('00000000-0000-0000-0000-0000000000f1');
+insert into inventariado.roles (id, negocio_id, nombre, permisos, predefinido)
+select id, negocio_id, nombre, '["vender", "caja"]'::jsonb, predefinido
+  from inventariado.roles where negocio_id = :'negocio_fabi' and predefinido = 'cajero'
+on conflict (id) do update set permisos = excluded.permisos;
+reset role;
+
+select 'Todas las pruebas SQL de roles y permisos pasaron';

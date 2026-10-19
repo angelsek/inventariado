@@ -150,6 +150,8 @@ function Navegacion() {
           </Stack.Protected>
           <Stack.Protected guard={puede('/ventas')}>
             <Stack.Screen name="ventas" options={conEncabezado('Ventas')} />
+          </Stack.Protected>
+          <Stack.Protected guard={puede('/venta')}>
             <Stack.Screen name="venta/[id]" options={conEncabezado('Venta')} />
           </Stack.Protected>
           <Stack.Protected guard={puede('/compra')}>

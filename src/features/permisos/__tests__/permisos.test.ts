@@ -105,8 +105,11 @@ describe('puedeAbrir', () => {
   });
 
   it('compara el primer segmento: ids y subrutas', () => {
-    expect(puedeAbrir('/venta/123', ['vender'])).toBe(false);
+    expect(puedeAbrir('/venta/123', ['caja'])).toBe(false);
     expect(puedeAbrir('/venta/123', ['ventas_ver'])).toBe(true);
+    // Quien vende ve el comprobante de la venta recién cobrada, pero no la lista.
+    expect(puedeAbrir('/venta/123', ['vender'])).toBe(true);
+    expect(puedeAbrir('/ventas', ['vender'])).toBe(false);
     expect(puedeAbrir('/cliente/9f2', ['fiado'])).toBe(true);
     expect(puedeAbrir('/cliente/9f2', [])).toBe(false);
   });

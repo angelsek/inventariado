@@ -59,7 +59,7 @@ export const GRUPOS_PERMISOS: GrupoPermisos[] = [
       {
         clave: 'clientes_editar',
         texto: 'Editar clientes',
-        detalle: 'Crear y editar clientes y su límite de fiado.',
+        detalle: 'Cambiar los datos y el límite de fiado de los clientes.',
       },
     ],
   },

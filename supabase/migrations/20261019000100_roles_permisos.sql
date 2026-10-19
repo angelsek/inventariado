@@ -20,6 +20,7 @@ immutable
 set search_path = ''
 as $$
   select jsonb_typeof(p_permisos) = 'array'
+     and jsonb_array_length(p_permisos) <= 50
      and not exists (
        select 1 from jsonb_array_elements(p_permisos) e where jsonb_typeof(e) <> 'string'
      );
@@ -151,9 +152,14 @@ begin
       raise exception 'El rol no es de este negocio' using errcode = '23503';
     end if;
   else
-    -- Persona sin rol (APK sin roles o equipo que aún no los descarga): queda como Cajero.
-    select id into new.rol_id from inventariado.roles
-     where negocio_id = new.negocio_id and predefinido = 'cajero';
+    -- Llega sin rol (APK sin roles o equipo que aún no los descarga). En un upsert de una
+    -- persona que ya existe, este BEFORE INSERT corre antes del update y su valor pasa a
+    -- EXCLUDED: se conserva el rol que ya tiene para no degradarla. Si no tiene, Cajero.
+    select rol_id into new.rol_id from inventariado.perfiles where id = new.id;
+    if new.rol_id is null then
+      select id into new.rol_id from inventariado.roles
+       where negocio_id = new.negocio_id and predefinido = 'cajero';
+    end if;
   end if;
 
   return new;
@@ -175,7 +181,9 @@ as $$
 begin
   if tg_op = 'INSERT' then
     -- Los predefinidos los crea solo crear_roles_predefinidos().
-    if new.predefinido is not null and current_user in ('authenticated', 'anon') then
+    -- Un upsert de un rol que ya existe también pasa por aquí: solo se revisa si es nuevo.
+    if new.predefinido is not null and current_user in ('authenticated', 'anon')
+       and not exists (select 1 from inventariado.roles where id = new.id) then
       raise exception 'Los roles predefinidos los crea el sistema' using errcode = '42501';
     end if;
     return new;

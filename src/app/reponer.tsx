@@ -9,6 +9,7 @@ import { obtenerNegocio } from '@/db/negocio';
 import { listarParaReponer, type Producto } from '@/db/productos';
 import { formatearFecha } from '@/lib/formato';
 import { formatearCantidad } from '@/lib/numeros';
+import { usePermiso } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { colores } from '@/theme/colores';
 
@@ -16,6 +17,7 @@ import { colores } from '@/theme/colores';
 export default function ReponerScreen() {
   const db = useBase();
   const { negocioId, versionDatos } = useSesion();
+  const puedeMercaderia = usePermiso('mercaderia');
   const [productos, setProductos] = useState<Producto[]>([]);
 
   useEffect(() => {
@@ -72,7 +74,12 @@ export default function ReponerScreen() {
       {productos.length ? (
         <View style={estilos.botones}>
           <Boton titulo="Compartir lista" variante="secundario" onPress={compartir} />
-          <Boton titulo="Registrar ingreso de mercadería" onPress={() => router.push('/compra')} />
+          {puedeMercaderia ? (
+            <Boton
+              titulo="Registrar ingreso de mercadería"
+              onPress={() => router.push('/compra')}
+            />
+          ) : null}
         </View>
       ) : null}
     </Formulario>

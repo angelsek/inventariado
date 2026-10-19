@@ -12,7 +12,15 @@ import { cambiarPin, listarPerfiles, type Perfil, verificarPin } from '@/db/perf
 import { listarRoles } from '@/db/roles';
 import { esPinValido, LARGO_PIN } from '@/lib/pin';
 import { mensajeDeError, supabase } from '@/lib/supabase';
-import { esperaRestante, registrarAcierto, registrarFallo } from '@/sesion/intentosPin';
+import { guardarAjuste, leerAjuste } from '@/db/ajustes';
+import {
+  AJUSTE_INTENTOS_PIN,
+  esperaRestante,
+  exportarIntentos,
+  importarIntentos,
+  registrarAcierto,
+  registrarFallo,
+} from '@/sesion/intentosPin';
 import { cargarRolSesion, nombreDeRol } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
@@ -49,6 +57,8 @@ export default function PinScreen() {
 
   const comprobar = useCallback(
     async (perfil: Perfil, valor: string) => {
+      // Lo guardado se lee en cada intento: así lo restaura también tras recargar la página.
+      importarIntentos(await leerAjuste(db, AJUSTE_INTENTOS_PIN));
       const espera = esperaRestante(perfil.id);
       if (espera > 0) {
         setError(`Demasiados intentos. Espera ${Math.ceil(espera / 1000)} segundos.`);
@@ -57,9 +67,11 @@ export default function PinScreen() {
       }
       if (await verificarPin(db, perfil.id, valor)) {
         registrarAcierto(perfil.id);
+        await guardarAjuste(db, AJUSTE_INTENTOS_PIN, exportarIntentos());
         entrar(perfil, await cargarRolSesion(db, perfil));
       } else {
         const bloqueo = registrarFallo(perfil.id);
+        await guardarAjuste(db, AJUSTE_INTENTOS_PIN, exportarIntentos());
         setError(
           bloqueo > 0
             ? `Demasiados intentos. Espera ${Math.ceil(bloqueo / 1000)} segundos.`

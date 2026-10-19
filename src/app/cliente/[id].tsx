@@ -37,6 +37,8 @@ export default function ClienteScreen() {
   const db = useBase();
   const { negocioId, versionDatos, datosCambiaron } = useSesion();
   const puedeEditar = usePermiso('clientes_editar');
+  const puedeVerVenta = usePermiso('ventas_ver');
+  const puedeVender = usePermiso('vender');
   const nuevo = id === 'nuevo';
 
   const [cliente, setCliente] = useState<Cliente | null>(null);
@@ -122,8 +124,8 @@ export default function ClienteScreen() {
       {movimientos.map((m) => (
         <Pressable
           key={m.id}
-          accessibilityRole={m.ventaId ? 'button' : undefined}
-          disabled={!m.ventaId}
+          accessibilityRole={m.ventaId && (puedeVerVenta || puedeVender) ? 'button' : undefined}
+          disabled={!m.ventaId || !(puedeVerVenta || puedeVender)}
           onPress={() =>
             m.ventaId && router.push({ pathname: '/venta/[id]', params: { id: m.ventaId } })
           }

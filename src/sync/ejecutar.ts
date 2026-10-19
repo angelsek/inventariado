@@ -74,6 +74,10 @@ async function expulsarPerfilDesactivado(db: BaseLocal) {
   const actual = await obtenerPerfil(db, perfil.id);
   if (!actual || !actual.activo) return salir();
   const rol = await cargarRolSesion(db, actual);
-  // Si mientras tanto la persona cambió de usuario, no se pisa la sesión nueva.
-  if (useSesion.getState().perfil?.id === actual.id) refrescarPerfil(actual, rol);
+  // Si mientras tanto la persona cambió de usuario, no se pisa la sesión nueva. Solo se
+  // actualiza si algo cambió, para no volver a dibujar la app en cada sincronización.
+  const sesion = useSesion.getState();
+  if (sesion.perfil?.id !== actual.id) return;
+  const cambio = JSON.stringify([sesion.perfil, sesion.rol]) !== JSON.stringify([actual, rol]);
+  if (cambio) refrescarPerfil(actual, rol);
 }

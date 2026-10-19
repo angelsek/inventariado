@@ -28,6 +28,9 @@ declare
   v_sufijo text;
   v_n int := 1;
 begin
+  -- Dos subidas a la vez del mismo negocio esperan su turno: si no, ambas podrían elegir
+  -- el mismo nombre y el índice único trabaría a una.
+  perform pg_advisory_xact_lock(hashtext('roles:' || p_negocio_id::text));
   while exists (
     select 1 from inventariado.roles
      where negocio_id = p_negocio_id and id <> p_rol_id and not eliminado

@@ -158,7 +158,8 @@ begin
     -- Llega sin rol (APK sin roles o equipo que aún no los descarga). En un upsert de una
     -- persona que ya existe, este BEFORE INSERT corre antes del update y su valor pasa a
     -- EXCLUDED: se conserva el rol que ya tiene para no degradarla. Si no tiene, Cajero.
-    select rol_id into new.rol_id from inventariado.perfiles where id = new.id;
+    select rol_id into new.rol_id from inventariado.perfiles
+     where id = new.id and negocio_id = new.negocio_id;
     if new.rol_id is null then
       select id into new.rol_id from inventariado.roles
        where negocio_id = new.negocio_id and predefinido = 'cajero';

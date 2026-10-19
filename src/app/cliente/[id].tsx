@@ -25,6 +25,7 @@ import { etiquetaMedio, MEDIOS_ABONO, type MedioPago } from '@/features/ventas/c
 import { formatearCLP, formatearFechaHora } from '@/lib/formato';
 import { parsearMonto } from '@/lib/numeros';
 import { obtenerAutor } from '@/sesion/autor';
+import { usePermiso } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
@@ -34,8 +35,8 @@ const soloDigitos = (v: string) => v.replace(/\D/g, '');
 export default function ClienteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const db = useBase();
-  const { negocioId, perfil, versionDatos, datosCambiaron } = useSesion();
-  const esDueno = perfil?.rol === 'dueno';
+  const { negocioId, versionDatos, datosCambiaron } = useSesion();
+  const puedeEditar = usePermiso('clientes_editar');
   const nuevo = id === 'nuevo';
 
   const [cliente, setCliente] = useState<Cliente | null>(null);
@@ -112,7 +113,7 @@ export default function ClienteScreen() {
           }}
         />
         <Boton titulo="Enviar estado de cuenta" variante="secundario" onPress={compartir} />
-        {esDueno ? (
+        {puedeEditar ? (
           <Boton titulo="Editar datos" variante="secundario" onPress={() => setEditando(true)} />
         ) : null}
       </View>

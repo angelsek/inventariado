@@ -23,6 +23,7 @@ import { MEDIOS_PAGO } from '@/features/ventas/calculos';
 import { informarError } from '@/lib/errores';
 import { formatearCLP } from '@/lib/formato';
 import { formatearCantidad } from '@/lib/numeros';
+import { usePermiso } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { colores } from '@/theme/colores';
 
@@ -33,7 +34,8 @@ const porcentaje = (valor: number) => `${Math.round(valor * 100)} %`;
 /** Reportes del negocio para el dueño: ventas, productos e inventario. */
 export default function EstadisticasScreen() {
   const db = useBase();
-  const { negocioId, perfil, versionDatos } = useSesion();
+  const { negocioId, versionDatos } = useSesion();
+  const puedeVer = usePermiso('reportes');
   const [periodo, setPeriodo] = useState<Periodo>(() => calcularPeriodo('dia', new Date()));
   const [vista, setVista] = useState<Vista>('ventas');
   const [reporte, setReporte] = useState<Reporte | null>(null);
@@ -50,10 +52,10 @@ export default function EstadisticasScreen() {
     if (negocioId && vista === 'inventario') valorizarInventario(db, negocioId).then(setInventario);
   }, [db, negocioId, vista, versionDatos]);
 
-  if (perfil?.rol !== 'dueno') {
+  if (!puedeVer) {
     return (
       <View style={estilos.centro}>
-        <Text style={estilos.nota}>Solo el dueño puede ver los reportes.</Text>
+        <Text style={estilos.nota}>No tienes permiso para ver los reportes.</Text>
       </View>
     );
   }

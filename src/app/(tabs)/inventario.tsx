@@ -11,14 +11,15 @@ import { type Categoria, listarCategorias } from '@/db/categorias';
 import { buscarPorCodigo, listarProductos, type Producto } from '@/db/productos';
 import { formatearCLP } from '@/lib/formato';
 import { formatearCantidad } from '@/lib/numeros';
+import { usePermiso } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { colores, radios } from '@/theme/colores';
 import { avisar } from '@/lib/dialogo';
 
 export default function InventarioScreen() {
   const db = useBase();
-  const { negocioId, perfil, versionDatos } = useSesion();
-  const esDueno = perfil?.rol === 'dueno';
+  const { negocioId, versionDatos } = useSesion();
+  const puedeEditar = usePermiso('productos_editar');
   const [busqueda, setBusqueda] = useState('');
   const [categoriaId, setCategoriaId] = useState<string | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -32,20 +33,20 @@ export default function InventarioScreen() {
 
   useEffect(() => {
     if (!negocioId) return;
-    listarProductos(db, negocioId, { busqueda, categoriaId, incluirInactivos: esDueno }).then(
+    listarProductos(db, negocioId, { busqueda, categoriaId, incluirInactivos: puedeEditar }).then(
       (lista) => {
         setProductos(lista);
         setCargado(true);
       },
     );
-  }, [db, negocioId, busqueda, categoriaId, esDueno, versionDatos]);
+  }, [db, negocioId, busqueda, categoriaId, puedeEditar, versionDatos]);
 
   const alEscanear = async (codigo: string) => {
     setEscaneando(false);
     const producto = await buscarPorCodigo(db, negocioId!, codigo);
     if (producto) {
       router.push(`/producto/${producto.id}`);
-    } else if (esDueno) {
+    } else if (puedeEditar) {
       router.push({ pathname: '/producto/[id]', params: { id: 'nuevo', codigo } });
     } else {
       avisar('Producto no encontrado', `No hay ningún producto con el código ${codigo}.`);
@@ -97,7 +98,7 @@ export default function InventarioScreen() {
         </View>
       ) : null}
 
-      {esDueno ? (
+      {puedeEditar ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -142,7 +143,7 @@ export default function InventarioScreen() {
               <Text style={estilos.textoVacio}>
                 {hayFiltros ? 'No hay productos que coincidan.' : 'Aún no hay productos.'}
               </Text>
-              {!hayFiltros && esDueno ? (
+              {!hayFiltros && puedeEditar ? (
                 <View style={estilos.botonesVacio}>
                   <Boton titulo="Agregar producto" onPress={() => router.push('/producto/nuevo')} />
                   <Boton
@@ -157,7 +158,7 @@ export default function InventarioScreen() {
         }
       />
 
-      {esDueno && productos.length > 0 ? (
+      {puedeEditar && productos.length > 0 ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Nuevo producto"

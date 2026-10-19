@@ -1,21 +1,26 @@
-import { entradaActiva, MENU, menuParaRol } from '../menu';
+import { type Permiso, PERMISOS, ROLES_PREDEFINIDOS } from '@/features/permisos/catalogo';
 
-const textos = (rol: 'dueno' | 'cajero') =>
-  menuParaRol(rol).flatMap((g) => g.entradas.map((e) => e.texto));
+import { entradaActiva, MENU, menuParaPermisos } from '../menu';
+
+const CAJERO = ROLES_PREDEFINIDOS.cajero.permisos;
+const BODEGUERO = ROLES_PREDEFINIDOS.bodeguero.permisos;
+
+const textos = (permisos: readonly Permiso[]) =>
+  menuParaPermisos(permisos).flatMap((g) => g.entradas.map((e) => e.texto));
 
 it('el dueño ve todo el menú, agrupado', () => {
-  expect(menuParaRol('dueno').map((g) => g.titulo)).toEqual([
+  expect(menuParaPermisos(PERMISOS).map((g) => g.titulo)).toEqual([
     'Caja',
     'Inventario',
     'Clientes',
     'Reportes',
     'Configuración',
   ]);
-  expect(textos('dueno')).toHaveLength(MENU.flatMap((g) => g.entradas).length);
+  expect(textos(PERMISOS)).toHaveLength(MENU.flatMap((g) => g.entradas).length);
 });
 
 it('el cajero ve la caja y la consulta, sin entradas del dueño ni grupos vacíos', () => {
-  expect(textos('cajero')).toEqual([
+  expect(textos(CAJERO)).toEqual([
     'Vender',
     'Caja del día',
     'Ventas',
@@ -24,7 +29,17 @@ it('el cajero ve la caja y la consulta, sin entradas del dueño ni grupos vacío
     'Suscripción',
     'Cuenta y equipo',
   ]);
-  expect(menuParaRol('cajero').map((g) => g.titulo)).not.toContain('Reportes');
+  expect(menuParaPermisos(CAJERO).map((g) => g.titulo)).not.toContain('Reportes');
+});
+
+it('el bodeguero ve el inventario, sin caja, ventas ni clientes', () => {
+  expect(textos(BODEGUERO)).toEqual([
+    'Productos',
+    'Ingresos de mercadería',
+    'Conteo de stock',
+    'Suscripción',
+    'Cuenta y equipo',
+  ]);
 });
 
 it('no repite destinos: cada ruta aparece una sola vez en el menú', () => {
@@ -54,6 +69,6 @@ it.each([
 });
 
 it('una ruta de una entrada que el cajero no ve no marca nada para él', () => {
-  expect(entradaActiva('/conteo', 'cajero')).toBeNull();
-  expect(entradaActiva('/conteo', 'dueno')?.texto).toBe('Conteo de stock');
+  expect(entradaActiva('/conteo', CAJERO)).toBeNull();
+  expect(entradaActiva('/conteo', PERMISOS)?.texto).toBe('Conteo de stock');
 });

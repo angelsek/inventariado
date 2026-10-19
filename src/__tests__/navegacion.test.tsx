@@ -99,22 +99,22 @@ it('un cajero no ve la administración de usuarios ni cerrar sesión', async () 
   fireEvent.press(await screen.findByText('Más'));
 
   expect(await screen.findByText('Cambiar de usuario')).toBeTruthy();
-  expect(screen.queryByText('Usuarios y cajeros')).toBeNull();
+  expect(screen.queryByText('Usuarios y permisos')).toBeNull();
   expect(screen.queryByText('Cerrar sesión')).toBeNull();
 });
 
-it('el dueño puede agregar un cajero', async () => {
+it('el dueño puede agregar una persona', async () => {
   await prepararBase(true);
   renderRouter('src/app');
 
   fireEvent.press(await screen.findByText('Ana'));
   marcarPin('1234');
   fireEvent.press(await screen.findByText('Más'));
-  fireEvent.press(await screen.findByText('Usuarios y cajeros'));
+  fireEvent.press(await screen.findByText('Usuarios y permisos'));
 
   fireEvent.changeText(await screen.findByLabelText('Nombre'), 'Pedro');
   fireEvent.changeText(screen.getByLabelText('PIN (4 números)'), '4321');
-  fireEvent.press(screen.getByText('Agregar cajero'));
+  fireEvent.press(screen.getByText('Agregar persona'));
 
   expect(await screen.findByText('Pedro')).toBeTruthy();
   const fila = await mockDb.getFirstAsync<{ pendiente: number }>(

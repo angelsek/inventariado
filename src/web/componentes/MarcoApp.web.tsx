@@ -7,10 +7,11 @@ import { Logotipo } from '@/components/LogoStockeao';
 import { obtenerNegocio } from '@/db/negocio';
 import { useBase } from '@/db/proveedor';
 import { useCarrito } from '@/features/ventas/carrito';
+import { useNombreRol, usePermisos } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores, radios } from '@/theme/colores';
-import { entradaActiva, menuParaRol } from '@/web/navegacion/menu';
+import { entradaActiva, menuParaPermisos } from '@/web/navegacion/menu';
 import { pedirPersistencia } from '@/web/plataforma/persistencia';
 import { registrarServiceWorker, useVersionWeb } from '@/web/plataforma/serviceWorker';
 
@@ -69,8 +70,9 @@ function MenuLateral() {
   const salir = useSesion((s) => s.salir);
   const sync = useSesion((s) => s.sync);
   const enLinea = useEnLinea();
-  const rol = perfil?.rol === 'dueno' ? 'dueno' : 'cajero';
-  const activa = entradaActiva(ruta, rol);
+  const permisos = usePermisos();
+  const nombreRol = useNombreRol();
+  const activa = entradaActiva(ruta, permisos);
   const [negocio, setNegocio] = useState('');
 
   useEffect(() => {
@@ -101,7 +103,7 @@ function MenuLateral() {
         ) : null}
       </View>
       <ScrollView style={estilos.opciones} contentContainerStyle={estilos.listaOpciones}>
-        {menuParaRol(rol).map((grupo) => (
+        {menuParaPermisos(permisos).map((grupo) => (
           <View key={grupo.titulo} style={estilos.grupo}>
             <Text style={estilos.tituloGrupo}>{grupo.titulo.toUpperCase()}</Text>
             {grupo.entradas.map((entrada) => {
@@ -149,7 +151,7 @@ function MenuLateral() {
           {enLinea ? <Ionicons name="refresh" size={14} color={colores.primarioSuave} /> : null}
         </Pressable>
         <Text style={estilos.usuario} numberOfLines={1}>
-          {perfil?.nombre} · {rol === 'dueno' ? 'Dueño' : 'Cajero'}
+          {perfil?.nombre} · {nombreRol}
         </Text>
         <Pressable accessibilityRole="button" onPress={salir}>
           <Text style={estilos.cambiarUsuario}>Cambiar usuario</Text>

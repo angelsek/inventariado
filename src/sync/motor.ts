@@ -127,7 +127,9 @@ function aServidor(tabla: TablaSync, fila: Fila): Fila {
   const resultado: Fila = {};
   for (const columna of tabla.columnas) {
     const valor = fila[columna];
-    resultado[columna] = tabla.booleanas.includes(columna) ? Boolean(valor) : valor;
+    if (tabla.booleanas.includes(columna)) resultado[columna] = Boolean(valor);
+    else if (tabla.json?.includes(columna)) resultado[columna] = leerJson(valor);
+    else resultado[columna] = valor;
   }
   return resultado;
 }
@@ -137,6 +139,16 @@ function aLocal(tabla: TablaSync, fila: Fila): (string | number | null)[] {
     const valor = fila[columna];
     if (valor === undefined || valor === null) return null;
     if (tabla.booleanas.includes(columna)) return valor ? 1 : 0;
+    if (tabla.json?.includes(columna)) return JSON.stringify(valor);
     return valor as string | number;
   });
+}
+
+function leerJson(valor: unknown): unknown {
+  if (typeof valor !== 'string') return valor ?? null;
+  try {
+    return JSON.parse(valor);
+  } catch {
+    return null;
+  }
 }

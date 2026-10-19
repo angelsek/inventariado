@@ -280,6 +280,22 @@ export const migraciones: string[] = [
    ALTER TABLE categorias ADD COLUMN alcohol INTEGER;
    ALTER TABLE negocios ADD COLUMN alcohol_desde TEXT;
    ALTER TABLE negocios ADD COLUMN alcohol_hasta TEXT;`,
+
+  // 8: roles y permisos. Los roles los crea el servidor y llegan al sincronizar;
+  // `permisos` es un arreglo JSON de claves (src/features/permisos/catalogo.ts).
+  // Un perfil sin rol_id (APK vieja o aún sin sincronizar) tiene los permisos del Cajero.
+  `CREATE TABLE roles (
+     id TEXT PRIMARY KEY NOT NULL,
+     negocio_id TEXT NOT NULL,
+     nombre TEXT NOT NULL,
+     permisos TEXT NOT NULL DEFAULT '[]',
+     predefinido TEXT,
+     creado_en TEXT NOT NULL,
+     actualizado_en TEXT NOT NULL,
+     eliminado INTEGER NOT NULL DEFAULT 0,
+     pendiente INTEGER NOT NULL DEFAULT 0
+   );
+   ALTER TABLE perfiles ADD COLUMN rol_id TEXT;`,
 ];
 
 /** Aplica las migraciones pendientes usando PRAGMA user_version. */

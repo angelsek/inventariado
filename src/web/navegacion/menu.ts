@@ -3,7 +3,8 @@
  * Lógica pura (sin React Native) para poder probarla; la dibuja web/componentes/MarcoApp.web.tsx.
  */
 
-export type Rol = 'dueno' | 'cajero';
+import { type Permiso, PERMISOS } from '@/features/permisos/catalogo';
+import { puedeAbrir } from '@/features/permisos/permisos';
 
 export type EntradaMenu = {
   texto: string;
@@ -12,7 +13,8 @@ export type EntradaMenu = {
   ruta: string;
   /** Rutas (además de `ruta`) en que la entrada queda marcada como activa. */
   activaEn: string[];
-  soloDueno?: boolean;
+  /** Permiso extra, además del que pide la ruta (PERMISO_POR_RUTA). */
+  permiso?: Permiso;
 };
 
 export type GrupoMenu = { titulo: string; entradas: EntradaMenu[] };
@@ -40,14 +42,12 @@ export const MENU: GrupoMenu[] = [
         icono: 'download-outline',
         ruta: '/compra',
         activaEn: ['/compras', '/proveedores'],
-        soloDueno: true,
       },
       {
         texto: 'Conteo de stock',
         icono: 'clipboard-outline',
         ruta: '/conteo',
         activaEn: [],
-        soloDueno: true,
       },
     ],
   },
@@ -65,13 +65,18 @@ export const MENU: GrupoMenu[] = [
   {
     titulo: 'Reportes',
     entradas: [
-      { texto: 'Resumen de hoy', icono: 'home-outline', ruta: '/', activaEn: [], soloDueno: true },
+      {
+        texto: 'Resumen de hoy',
+        icono: 'home-outline',
+        ruta: '/',
+        activaEn: [],
+        permiso: 'reportes',
+      },
       {
         texto: 'Reportes',
         icono: 'bar-chart-outline',
         ruta: '/estadisticas',
         activaEn: [],
-        soloDueno: true,
       },
     ],
   },
@@ -83,14 +88,12 @@ export const MENU: GrupoMenu[] = [
         icono: 'storefront-outline',
         ruta: '/negocio',
         activaEn: [],
-        soloDueno: true,
       },
       {
-        texto: 'Usuarios y cajeros',
+        texto: 'Usuarios y permisos',
         icono: 'person-circle-outline',
         ruta: '/usuarios',
         activaEn: [],
-        soloDueno: true,
       },
       { texto: 'Suscripción', icono: 'card-outline', ruta: '/suscripcion', activaEn: [] },
       {
@@ -98,7 +101,6 @@ export const MENU: GrupoMenu[] = [
         icono: 'share-outline',
         ruta: '/exportar',
         activaEn: [],
-        soloDueno: true,
       },
       {
         texto: 'Cuenta y equipo',
@@ -110,11 +112,13 @@ export const MENU: GrupoMenu[] = [
   },
 ];
 
-/** Menú que ve cada rol: el cajero no ve las entradas del dueño ni los grupos que quedan vacíos. */
-export function menuParaRol(rol: Rol): GrupoMenu[] {
+/** Menú según los permisos de la persona: sin las entradas que no puede abrir ni los grupos vacíos. */
+export function menuParaPermisos(permisos: readonly Permiso[]): GrupoMenu[] {
   return MENU.map((grupo) => ({
     ...grupo,
-    entradas: grupo.entradas.filter((e) => rol === 'dueno' || !e.soloDueno),
+    entradas: grupo.entradas.filter(
+      (e) => puedeAbrir(e.ruta, permisos) && (!e.permiso || permisos.includes(e.permiso)),
+    ),
   })).filter((grupo) => grupo.entradas.length > 0);
 }
 
@@ -130,10 +134,13 @@ function dentroDe(ruta: string, base: string): number | null {
 }
 
 /** Entrada del menú que corresponde a `ruta` (la más específica), o null si no hay. */
-export function entradaActiva(ruta: string, rol: Rol = 'dueno'): EntradaMenu | null {
+export function entradaActiva(
+  ruta: string,
+  permisos: readonly Permiso[] = PERMISOS,
+): EntradaMenu | null {
   let mejor: EntradaMenu | null = null;
   let largo = -1;
-  for (const grupo of menuParaRol(rol)) {
+  for (const grupo of menuParaPermisos(permisos)) {
     for (const entrada of grupo.entradas) {
       for (const base of [entrada.ruta, ...entrada.activaEn]) {
         const coincide = dentroDe(ruta, base);

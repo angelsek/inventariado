@@ -8,6 +8,8 @@ export type TablaSync = {
   columnas: readonly string[];
   /** Columnas guardadas como 0/1 en SQLite y como boolean en Postgres. */
   booleanas: readonly string[];
+  /** Columnas guardadas como texto JSON en SQLite y como jsonb en Postgres. */
+  json?: readonly string[];
 };
 
 const control = ['creado_en', 'actualizado_en', 'eliminado'] as const;
@@ -24,8 +26,15 @@ export const TABLAS_SYNC: readonly TablaSync[] = [
     booleanas: ['eliminado'],
   },
   {
+    // Antes de perfiles: perfiles.rol_id la referencia.
+    nombre: 'roles',
+    columnas: ['id', 'negocio_id', 'nombre', 'permisos', 'predefinido', ...control],
+    booleanas: ['eliminado'],
+    json: ['permisos'],
+  },
+  {
     nombre: 'perfiles',
-    columnas: ['id', 'negocio_id', 'nombre', 'rol', 'pin_hash', 'activo', ...control],
+    columnas: ['id', 'negocio_id', 'nombre', 'rol', 'rol_id', 'pin_hash', 'activo', ...control],
     booleanas: ['activo', 'eliminado'],
   },
   {

@@ -11,6 +11,8 @@ export type Perfil = {
   negocio_id: string;
   nombre: string;
   rol: Rol;
+  /** Rol con los permisos (tabla roles). Null en el dueño y en perfiles aún sin rol. */
+  rol_id: string | null;
   activo: boolean;
 };
 
@@ -24,7 +26,7 @@ export async function listarPerfiles(
   opciones: { soloActivos?: boolean } = {},
 ): Promise<Perfil[]> {
   const filas = await db.getAllAsync<FilaPerfil>(
-    `SELECT id, negocio_id, nombre, rol, activo FROM perfiles
+    `SELECT id, negocio_id, nombre, rol, rol_id, activo FROM perfiles
       WHERE negocio_id = ? AND eliminado = 0 ${opciones.soloActivos ? 'AND activo = 1' : ''}
       ORDER BY rol = 'cajero', nombre COLLATE NOCASE`,
     negocioId,
@@ -34,7 +36,7 @@ export async function listarPerfiles(
 
 export async function obtenerPerfil(db: BaseLocal, id: string): Promise<Perfil | null> {
   const fila = await db.getFirstAsync<FilaPerfil>(
-    'SELECT id, negocio_id, nombre, rol, activo FROM perfiles WHERE id = ? AND eliminado = 0',
+    'SELECT id, negocio_id, nombre, rol, rol_id, activo FROM perfiles WHERE id = ? AND eliminado = 0',
     id,
   );
   return fila ? aPerfil(fila) : null;
@@ -42,17 +44,19 @@ export async function obtenerPerfil(db: BaseLocal, id: string): Promise<Perfil |
 
 export async function crearPerfil(
   db: BaseLocal,
-  datos: { negocioId: string; nombre: string; rol: Rol; pin: string },
+  datos: { negocioId: string; nombre: string; rol: Rol; pin: string; rolId?: string | null },
 ): Promise<Perfil> {
   const id = randomUUID();
   const ahora = new Date().toISOString();
+  const rolId = datos.rol === 'dueno' ? null : (datos.rolId ?? null);
   await db.runAsync(
-    `INSERT INTO perfiles (id, negocio_id, nombre, rol, pin_hash, activo, creado_en, actualizado_en, pendiente)
-     VALUES (?, ?, ?, ?, ?, 1, ?, ?, 1)`,
+    `INSERT INTO perfiles (id, negocio_id, nombre, rol, rol_id, pin_hash, activo, creado_en, actualizado_en, pendiente)
+     VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, 1)`,
     id,
     datos.negocioId,
     datos.nombre.trim(),
     datos.rol,
+    rolId,
     await hashPin(id, datos.pin),
     ahora,
     ahora,
@@ -62,8 +66,20 @@ export async function crearPerfil(
     negocio_id: datos.negocioId,
     nombre: datos.nombre.trim(),
     rol: datos.rol,
+    rol_id: rolId,
     activo: true,
   };
+}
+
+/** Cambia el rol de una persona. El dueño no tiene rol: siempre tiene todos los permisos. */
+export async function asignarRol(db: BaseLocal, perfilId: string, rolId: string): Promise<void> {
+  await db.runAsync(
+    `UPDATE perfiles SET rol_id = ?, actualizado_en = ?, pendiente = pendiente + 1
+      WHERE id = ? AND rol <> 'dueno'`,
+    rolId,
+    new Date().toISOString(),
+    perfilId,
+  );
 }
 
 export async function cambiarPin(db: BaseLocal, perfilId: string, pin: string): Promise<void> {

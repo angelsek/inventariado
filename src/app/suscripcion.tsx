@@ -12,6 +12,7 @@ import { administrarEnPlay } from '@/features/suscripcion/googlePlay';
 import { PlanesPlay } from '@/features/suscripcion/PlanesPlay';
 import { formatearCLP, formatearFecha, formatearFechaHora } from '@/lib/formato';
 import { mensajeDeError, supabase } from '@/lib/supabase';
+import { usePermiso } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
@@ -44,8 +45,8 @@ const ETIQUETA_ESTADO: Record<Estado, { texto: string; color: string }> = {
 
 export default function SuscripcionScreen() {
   const db = useBase();
-  const { negocioId, perfil, suscripcion } = useSesion();
-  const esDueno = perfil?.rol === 'dueno';
+  const { negocioId, suscripcion } = useSesion();
+  const puedeGestionar = usePermiso('suscripcion');
   const [planes, setPlanes] = useState<Plan[]>([]);
   const [telefonos, setTelefonos] = useState<{
     limite: number;
@@ -171,7 +172,7 @@ export default function SuscripcionScreen() {
         <>
           <Text style={estilos.seccion}>Planes</Text>
           <PlanesPlay />
-          {esDueno && suscripcion?.estado !== 'prueba' ? (
+          {puedeGestionar && suscripcion?.estado !== 'prueba' ? (
             <View style={estilos.boton}>
               <Boton
                 titulo="Cambiar tarjeta o cancelar (Google Play)"
@@ -209,7 +210,7 @@ export default function SuscripcionScreen() {
         </>
       ) : null}
 
-      {esDueno && CANAL !== 'play' ? (
+      {puedeGestionar && CANAL !== 'play' ? (
         <View style={estilos.tarjeta}>
           <Text style={estilos.plan}>¿Cómo pagar?</Text>
           <Text style={estilos.nota}>
@@ -247,7 +248,7 @@ export default function SuscripcionScreen() {
                     : 'Sin conexiones'}
                 </Text>
               </View>
-              {esDueno && d.id !== miDispositivo ? (
+              {puedeGestionar && d.id !== miDispositivo ? (
                 <Text
                   accessibilityRole="button"
                   style={estilos.peligro}

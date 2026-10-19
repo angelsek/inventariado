@@ -42,6 +42,20 @@ it('el bodeguero ve el inventario, sin caja, ventas ni clientes', () => {
   ]);
 });
 
+it('"Roles" aparece con "usuarios" y no sin él', () => {
+  expect(textos(['usuarios'])).toContain('Roles');
+  expect(textos(PERMISOS)).toContain('Roles');
+  expect(textos(CAJERO)).not.toContain('Roles');
+  expect(textos(BODEGUERO)).not.toContain('Roles');
+  expect(textos(['reportes'])).not.toContain('Roles');
+});
+
+it('/roles y /rol/x marcan la entrada "Roles"', () => {
+  expect(entradaActiva('/roles')?.texto).toBe('Roles');
+  expect(entradaActiva('/rol/abc')?.texto).toBe('Roles');
+  expect(entradaActiva('/usuarios')?.texto).toBe('Usuarios y permisos');
+});
+
 it('no repite destinos: cada ruta aparece una sola vez en el menú', () => {
   const rutas = MENU.flatMap((g) => g.entradas.flatMap((e) => [e.ruta, ...e.activaEn]));
   expect(new Set(rutas).size).toBe(rutas.length);

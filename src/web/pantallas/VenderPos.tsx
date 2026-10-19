@@ -27,6 +27,7 @@ import { avisar, hayDialogoAbierto } from '@/lib/dialogo';
 import { formatearCLP } from '@/lib/formato';
 import { formatearCantidad, parsearCantidad, parsearMonto } from '@/lib/numeros';
 import { obtenerAutor } from '@/sesion/autor';
+import { usePermiso } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores, radios } from '@/theme/colores';
@@ -48,6 +49,7 @@ export default function VenderPos() {
   const db = useBase();
   const negocioId = useSesion((s) => s.negocioId);
   const datosCambiaron = useSesion((s) => s.datosCambiaron);
+  const puedeCaja = usePermiso('caja');
   const carrito = useCarrito();
   const { subtotal, descuento, total } = calcularTotales(carrito.items, carrito.descuentoGeneral);
 
@@ -425,12 +427,16 @@ export default function VenderPos() {
 
         {!cajaAbierta ? (
           <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/caja')}
+            accessibilityRole={puedeCaja ? 'button' : undefined}
+            onPress={puedeCaja ? () => router.push('/caja') : undefined}
             style={estilos.cajaCerrada}
           >
             <Ionicons name="lock-closed-outline" size={18} color={colores.aviso} />
-            <Text style={estilos.textoCaja}>Caja cerrada. Ábrela para cuadrar el turno (F7).</Text>
+            <Text style={estilos.textoCaja}>
+              {puedeCaja
+                ? 'Caja cerrada. Ábrela para cuadrar el turno (F7).'
+                : 'Caja cerrada. Pídele a quien maneja la caja que la abra.'}
+            </Text>
           </Pressable>
         ) : null}
 

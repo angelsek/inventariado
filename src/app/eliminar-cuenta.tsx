@@ -7,23 +7,23 @@ import { Campo } from '@/components/Campo';
 import { Formulario } from '@/components/Formulario';
 import { mensajeDeError } from '@/lib/supabase';
 import { eliminarNegocio } from '@/sesion/cuenta';
-import { useSesion } from '@/sesion/store';
+import { usePermiso } from '@/sesion/permisos';
 import { colores } from '@/theme/colores';
 
 const CONFIRMACION = 'ELIMINAR';
 
-/** Eliminar el negocio y todos sus datos (exigido por Google Play). Solo el dueño. */
+/** Eliminar el negocio y todos sus datos (exigido por Google Play). Pide el permiso Eliminar cuenta. */
 export default function EliminarCuentaScreen() {
   const db = useBase();
-  const perfil = useSesion((s) => s.perfil);
+  const puedeEliminar = usePermiso('cuenta_eliminar');
   const [confirmacion, setConfirmacion] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [eliminando, setEliminando] = useState(false);
 
-  if (perfil?.rol !== 'dueno') {
+  if (!puedeEliminar) {
     return (
-      <Formulario titulo="Eliminar cuenta" error="Solo el dueño puede eliminar el negocio.">
+      <Formulario titulo="Eliminar cuenta" error="No tienes permiso para eliminar el negocio.">
         <View />
       </Formulario>
     );

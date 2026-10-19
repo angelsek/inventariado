@@ -5,6 +5,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Boton } from '@/components/Boton';
 import { formatearFecha } from '@/lib/formato';
 import { mensajeDeError } from '@/lib/supabase';
+import { usePermiso } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores, radios } from '@/theme/colores';
@@ -35,8 +36,8 @@ const enDias = (dias: number) => {
  */
 export function PlanesPlay() {
   const db = useBase();
-  const { negocioId, perfil, suscripcion } = useSesion();
-  const esDueno = perfil?.rol === 'dueno';
+  const { negocioId, suscripcion } = useSesion();
+  const puedeGestionar = usePermiso('suscripcion');
   const [planes, setPlanes] = useState<PlanPlay[] | null>(null);
   const [comprando, setComprando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +46,7 @@ export function PlanesPlay() {
   const cargar = useCallback(async () => {
     try {
       // Si una compra anterior quedó a medias, se termina de activar primero.
-      if (negocioId && esDueno && (await revisarComprasPendientes(negocioId)) > 0) {
+      if (negocioId && puedeGestionar && (await revisarComprasPendientes(negocioId)) > 0) {
         await sincronizarAhora(db);
       }
       return { planes: await obtenerPlanesPlay(), error: null };
@@ -55,7 +56,7 @@ export function PlanesPlay() {
         error: `No se pudo conectar con Google Play. Revisa tu conexión. ${mensajeDeError(e)}`,
       };
     }
-  }, [db, negocioId, esDueno]);
+  }, [db, negocioId, puedeGestionar]);
 
   const aplicar = useCallback((r: Awaited<ReturnType<typeof cargar>>) => {
     setPlanes(r.planes);
@@ -79,7 +80,7 @@ export function PlanesPlay() {
     });
   }, [db, negocioId]);
 
-  if (!esDueno) {
+  if (!puedeGestionar) {
     return (
       <View style={estilos.tarjeta}>
         <Text style={estilos.nota}>

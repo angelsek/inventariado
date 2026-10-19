@@ -9,6 +9,7 @@ import { confirmarCierreSesion } from '@/features/cuenta/cierreSesion';
 import { formatearFechaHora } from '@/lib/formato';
 import { supabase } from '@/lib/supabase';
 import { versionActual } from '@/lib/version';
+import { useNombreRol, usePermiso } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
@@ -24,6 +25,8 @@ export default function CuentaYEquipo() {
   const db = useBase();
   const { negocioId, perfil, sync, salir, versionDatos } = useSesion();
   const esDueno = perfil?.rol === 'dueno';
+  const nombreRol = useNombreRol();
+  const puedeEliminar = usePermiso('cuenta_eliminar');
   const [negocio, setNegocio] = useState('');
   const [esAdmin, setEsAdmin] = useState(false);
 
@@ -58,10 +61,7 @@ export default function CuentaYEquipo() {
     <ScrollView style={estilos.pantalla} contentContainerStyle={estilos.contenido}>
       <Seccion titulo="Usuario y equipo">
         <Fila etiqueta="Negocio" valor={negocio} />
-        <Fila
-          etiqueta="Usuario"
-          valor={`${perfil?.nombre ?? ''} · ${esDueno ? 'Dueño' : 'Cajero'}`}
-        />
+        <Fila etiqueta="Usuario" valor={`${perfil?.nombre ?? ''} · ${nombreRol}`} />
         <Fila
           etiqueta="Sincronización"
           valor={estadoSync}
@@ -104,7 +104,7 @@ export default function CuentaYEquipo() {
         <Text style={estilos.version}>Stockeao {versionActual().texto}</Text>
       </Seccion>
 
-      {esDueno ? (
+      {puedeEliminar ? (
         <Seccion titulo="Zona de peligro" peligro>
           <Text style={estilos.nota}>
             Elimina el negocio y todos sus datos de todos los equipos. No se puede deshacer.

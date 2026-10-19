@@ -1,5 +1,6 @@
 import { migrarBaseDeDatos } from '@/db/migraciones';
-import { cambiarActivo, crearPerfil, listarPerfiles } from '@/db/perfiles';
+import { asignarRol, cambiarActivo, crearPerfil, listarPerfiles } from '@/db/perfiles';
+import { listarRoles, obtenerRol } from '@/db/roles';
 import { crearProducto, listarProductos, registrarMovimiento } from '@/db/productos';
 import { anularVenta, obtenerVenta, registrarVenta } from '@/db/ventas';
 import type { BaseLocal } from '@/db/tipos';
@@ -197,5 +198,150 @@ describe('sincronizar', () => {
       motivoAnulacion: 'Error',
     });
     expect((await listarProductos(a, NEGOCIO))[0].stock).toBe(10);
+  });
+});
+
+describe('sincronizar roles y permisos', () => {
+  const AHORA = '2026-10-19T10:00:00.000Z';
+  const insertarRol = (db: BaseLocal, id: string, permisos: string, pendiente = 1) =>
+    db.runAsync(
+      `INSERT INTO roles (id, negocio_id, nombre, permisos, predefinido, creado_en, actualizado_en, pendiente)
+       VALUES (?, ?, 'Auxiliar', ?, NULL, ?, ?, ?)`,
+      id,
+      NEGOCIO,
+      permisos,
+      AHORA,
+      AHORA,
+      pendiente,
+    );
+  const leerPermisos = (db: BaseLocal, id: string) =>
+    db.getFirstAsync<{ permisos: string }>('SELECT permisos FROM roles WHERE id = ?', id);
+
+  it('sube los permisos como arreglo (jsonb) y los baja guardados como texto JSON', async () => {
+    const remoto = crearRemotoFalso();
+    const a = await nuevoTelefono();
+    const b = await nuevoTelefono();
+
+    await insertarRol(a, 'rol-1', '["stock","vender"]');
+    await sincronizar(a, remoto, NEGOCIO);
+
+    const [subida] = remoto.filas('roles');
+    expect(Array.isArray(subida.permisos)).toBe(true);
+    expect(subida.permisos).toEqual(['stock', 'vender']);
+    expect(subida).toMatchObject({ nombre: 'Auxiliar', eliminado: false });
+
+    await sincronizar(b, remoto, NEGOCIO);
+    const bajada = await leerPermisos(b, 'rol-1');
+    expect(typeof bajada?.permisos).toBe('string');
+    expect(JSON.parse(bajada!.permisos)).toEqual(['stock', 'vender']);
+  });
+
+  it('el servidor entrega permisos como arreglo y quedan legibles en la base local', async () => {
+    const remoto = crearRemotoFalso();
+    const a = await nuevoTelefono();
+    remoto.escribir('roles', {
+      id: 'rol-9',
+      negocio_id: NEGOCIO,
+      nombre: 'Cajero',
+      permisos: ['vender', 'caja'],
+      predefinido: 'cajero',
+      creado_en: AHORA,
+      actualizado_en: AHORA,
+      eliminado: false,
+    });
+
+    await sincronizar(a, remoto, NEGOCIO);
+
+    expect(await listarRoles(a, NEGOCIO)).toMatchObject([
+      { id: 'rol-9', predefinido: 'cajero', permisos: ['vender', 'caja'], eliminado: false },
+    ]);
+  });
+
+  it('un rol eliminado en otro equipo llega marcado como eliminado', async () => {
+    const remoto = crearRemotoFalso();
+    const a = await nuevoTelefono();
+    const b = await nuevoTelefono();
+    await insertarRol(a, 'rol-1', '[]');
+    await sincronizar(a, remoto, NEGOCIO);
+    await sincronizar(b, remoto, NEGOCIO);
+
+    remoto.escribir('roles', { ...remoto.filas('roles')[0], eliminado: true });
+    await sincronizar(b, remoto, NEGOCIO);
+
+    expect(await listarRoles(b, NEGOCIO)).toEqual([]);
+    expect(await obtenerRol(b, 'rol-1')).toMatchObject({ eliminado: true });
+  });
+
+  it('un cambio de permisos del servidor no pisa un cambio local pendiente', async () => {
+    const remoto = crearRemotoFalso();
+    const a = await nuevoTelefono();
+    await insertarRol(a, 'rol-1', '["vender"]');
+    await sincronizar(a, remoto, NEGOCIO);
+
+    remoto.escribir('roles', { ...remoto.filas('roles')[0], permisos: ['caja'] });
+    await a.runAsync(
+      `UPDATE roles SET permisos = '["stock"]', pendiente = pendiente + 1 WHERE id = 'rol-1'`,
+    );
+    remoto.fallar = true;
+    await expect(sincronizar(a, remoto, NEGOCIO)).rejects.toThrow('sin conexión');
+    expect(JSON.parse((await leerPermisos(a, 'rol-1'))!.permisos)).toEqual(['stock']);
+  });
+
+  it('roles se sube antes que perfiles y rol_id viaja al servidor y de vuelta', async () => {
+    const remoto = crearRemotoFalso();
+    const a = await nuevoTelefono();
+    const b = await nuevoTelefono();
+    const orden: string[] = [];
+    const subirOriginal = remoto.subir;
+    remoto.subir = async (tabla, filas) => {
+      orden.push(tabla);
+      return subirOriginal(tabla, filas);
+    };
+
+    await insertarRol(a, 'rol-1', '["stock"]');
+    await crearPerfil(a, {
+      negocioId: NEGOCIO,
+      nombre: 'Beto',
+      rol: 'cajero',
+      pin: '1234',
+      rolId: 'rol-1',
+    });
+    await crearPerfil(a, { negocioId: NEGOCIO, nombre: 'Ana', rol: 'dueno', pin: '4321' });
+    await sincronizar(a, remoto, NEGOCIO);
+
+    expect(orden.indexOf('roles')).toBeGreaterThanOrEqual(0);
+    expect(orden.indexOf('roles')).toBeLessThan(orden.indexOf('perfiles'));
+    const subidos = remoto.filas('perfiles');
+    expect(subidos.find((p) => p.nombre === 'Beto')).toMatchObject({ rol_id: 'rol-1' });
+    expect(subidos.find((p) => p.nombre === 'Ana')).toMatchObject({ rol_id: null });
+
+    await sincronizar(b, remoto, NEGOCIO);
+    const perfiles = await listarPerfiles(b, NEGOCIO);
+    expect(perfiles.find((p) => p.nombre === 'Beto')?.rol_id).toBe('rol-1');
+    expect(perfiles.find((p) => p.nombre === 'Ana')?.rol_id).toBeNull();
+  });
+
+  it('asignarRol en un equipo cambia el rol en el otro', async () => {
+    const remoto = crearRemotoFalso();
+    const a = await nuevoTelefono();
+    const b = await nuevoTelefono();
+    await insertarRol(a, 'rol-1', '["vender"]');
+    await insertarRol(a, 'rol-2', '["stock"]');
+    const beto = await crearPerfil(a, {
+      negocioId: NEGOCIO,
+      nombre: 'Beto',
+      rol: 'cajero',
+      pin: '1234',
+      rolId: 'rol-1',
+    });
+    await sincronizar(a, remoto, NEGOCIO);
+    await sincronizar(b, remoto, NEGOCIO);
+
+    await asignarRol(a, beto.id, 'rol-2');
+    expect(await contarPendientes(a)).toBe(1);
+    await sincronizar(a, remoto, NEGOCIO);
+    await sincronizar(b, remoto, NEGOCIO);
+
+    expect((await listarPerfiles(b, NEGOCIO))[0].rol_id).toBe('rol-2');
   });
 });

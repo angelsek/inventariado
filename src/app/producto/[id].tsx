@@ -26,6 +26,7 @@ import { HistorialStock } from '@/features/inventario/HistorialStock';
 import { formatearCLP } from '@/lib/formato';
 import { formatearCantidad, parsearCantidad, parsearMonto } from '@/lib/numeros';
 import { obtenerAutor } from '@/sesion/autor';
+import { usePermiso } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
@@ -56,8 +57,8 @@ export default function ProductoScreen() {
   const { id, codigo } = useLocalSearchParams<{ id: string; codigo?: string }>();
   const esNuevo = id === 'nuevo';
   const db = useBase();
-  const { negocioId, perfil, versionDatos, datosCambiaron } = useSesion();
-  const esDueno = perfil?.rol === 'dueno';
+  const { negocioId, versionDatos, datosCambiaron } = useSesion();
+  const puedeEditar = usePermiso('productos_editar');
 
   const [producto, setProducto] = useState<Producto | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -130,7 +131,7 @@ export default function ProductoScreen() {
     );
   }
 
-  if (!esDueno) {
+  if (!puedeEditar) {
     return producto ? <DetalleSoloLectura producto={producto} /> : null;
   }
 

@@ -11,14 +11,19 @@ import { type Categoria, listarCategorias } from '@/db/categorias';
 import { buscarPorCodigo, listarProductos, type Producto } from '@/db/productos';
 import { formatearCLP } from '@/lib/formato';
 import { formatearCantidad } from '@/lib/numeros';
+import { puedeAbrir } from '@/features/permisos/permisos';
+import { usePermiso, usePermisos } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { colores, radios } from '@/theme/colores';
 import { avisar } from '@/lib/dialogo';
 
 export default function InventarioScreen() {
   const db = useBase();
-  const { negocioId, perfil, versionDatos } = useSesion();
-  const esDueno = perfil?.rol === 'dueno';
+  const { negocioId, versionDatos } = useSesion();
+  const puedeEditar = usePermiso('productos_editar');
+  const permisos = usePermisos();
+  // Cada acción aparece solo si la persona puede abrir su destino.
+  const acciones = ACCIONES.filter((a) => puedeAbrir(a.destino, permisos));
   const [busqueda, setBusqueda] = useState('');
   const [categoriaId, setCategoriaId] = useState<string | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -32,20 +37,20 @@ export default function InventarioScreen() {
 
   useEffect(() => {
     if (!negocioId) return;
-    listarProductos(db, negocioId, { busqueda, categoriaId, incluirInactivos: esDueno }).then(
+    listarProductos(db, negocioId, { busqueda, categoriaId, incluirInactivos: puedeEditar }).then(
       (lista) => {
         setProductos(lista);
         setCargado(true);
       },
     );
-  }, [db, negocioId, busqueda, categoriaId, esDueno, versionDatos]);
+  }, [db, negocioId, busqueda, categoriaId, puedeEditar, versionDatos]);
 
   const alEscanear = async (codigo: string) => {
     setEscaneando(false);
     const producto = await buscarPorCodigo(db, negocioId!, codigo);
     if (producto) {
       router.push(`/producto/${producto.id}`);
-    } else if (esDueno) {
+    } else if (puedeEditar) {
       router.push({ pathname: '/producto/[id]', params: { id: 'nuevo', codigo } });
     } else {
       avisar('Producto no encontrado', `No hay ningún producto con el código ${codigo}.`);
@@ -97,35 +102,21 @@ export default function InventarioScreen() {
         </View>
       ) : null}
 
-      {esDueno ? (
+      {acciones.length > 0 ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={estilos.accionesScroll}
           contentContainerStyle={estilos.acciones}
         >
-          <Accion icono="download-outline" texto="Ingreso" onPress={() => router.push('/compra')} />
-          <Accion
-            icono="alert-circle-outline"
-            texto="Reponer"
-            onPress={() => router.push('/reponer')}
-          />
-          <Accion icono="clipboard-outline" texto="Conteo" onPress={() => router.push('/conteo')} />
-          <Accion
-            icono="pricetags-outline"
-            texto="Categorías"
-            onPress={() => router.push('/categorias')}
-          />
-          <Accion
-            icono="people-outline"
-            texto="Proveedores"
-            onPress={() => router.push('/proveedores')}
-          />
-          <Accion
-            icono="document-text-outline"
-            texto="Importar"
-            onPress={() => router.push('/importar')}
-          />
+          {acciones.map((a) => (
+            <Accion
+              key={a.destino}
+              icono={a.icono}
+              texto={a.texto}
+              onPress={() => router.push(a.destino)}
+            />
+          ))}
         </ScrollView>
       ) : null}
 
@@ -142,7 +133,7 @@ export default function InventarioScreen() {
               <Text style={estilos.textoVacio}>
                 {hayFiltros ? 'No hay productos que coincidan.' : 'Aún no hay productos.'}
               </Text>
-              {!hayFiltros && esDueno ? (
+              {!hayFiltros && puedeEditar ? (
                 <View style={estilos.botonesVacio}>
                   <Boton titulo="Agregar producto" onPress={() => router.push('/producto/nuevo')} />
                   <Boton
@@ -157,7 +148,7 @@ export default function InventarioScreen() {
         }
       />
 
-      {esDueno && productos.length > 0 ? (
+      {puedeEditar && productos.length > 0 ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Nuevo producto"
@@ -175,6 +166,20 @@ export default function InventarioScreen() {
 }
 
 // Color de fondo del círculo con la inicial, según el nombre (siempre el mismo por producto).
+// Accesos del inventario; cada uno pide el permiso de su ruta (PERMISO_POR_RUTA).
+const ACCIONES: {
+  icono: React.ComponentProps<typeof Ionicons>['name'];
+  texto: string;
+  destino: '/compra' | '/reponer' | '/conteo' | '/categorias' | '/proveedores' | '/importar';
+}[] = [
+  { icono: 'download-outline', texto: 'Ingreso', destino: '/compra' },
+  { icono: 'alert-circle-outline', texto: 'Reponer', destino: '/reponer' },
+  { icono: 'clipboard-outline', texto: 'Conteo', destino: '/conteo' },
+  { icono: 'pricetags-outline', texto: 'Categorías', destino: '/categorias' },
+  { icono: 'people-outline', texto: 'Proveedores', destino: '/proveedores' },
+  { icono: 'document-text-outline', texto: 'Importar', destino: '/importar' },
+];
+
 const TONOS = ['#E6EFEC', '#E8F0FB', '#FFF3E0', '#F3E8FA', '#FDECEA', '#EAF6E9'];
 const tono = (texto: string) =>
   TONOS[[...texto].reduce((suma, letra) => suma + letra.charCodeAt(0), 0) % TONOS.length];

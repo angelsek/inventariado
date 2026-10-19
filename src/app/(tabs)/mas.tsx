@@ -10,6 +10,7 @@ import { useActualizacion } from '@/features/actualizacion/actualizacion';
 import { confirmarCierreSesion } from '@/features/cuenta/cierreSesion';
 import { supabase } from '@/lib/supabase';
 import { versionActual } from '@/lib/version';
+import { useNombreRol, usePermiso } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores, radios } from '@/theme/colores';
@@ -18,7 +19,17 @@ export default function MasScreen() {
   const db = useBase();
   const { negocioId, perfil, sync, salir, versionDatos } = useSesion();
   const [negocio, setNegocio] = useState('');
+  // Cerrar sesión desvincula el equipo de la cuenta: sigue siendo solo del dueño.
   const esDueno = perfil?.rol === 'dueno';
+  const nombreRol = useNombreRol();
+  const puedeReportes = usePermiso('reportes');
+  const puedeFiado = usePermiso('fiado');
+  const puedeEditarClientes = usePermiso('clientes_editar');
+  const puedeClientes = puedeFiado || puedeEditarClientes;
+  const puedeNegocio = usePermiso('negocio');
+  const puedeUsuarios = usePermiso('usuarios');
+  const puedeEliminar = usePermiso('cuenta_eliminar');
+  const puedeExportar = usePermiso('exportar');
 
   const [esAdmin, setEsAdmin] = useState(false);
   const nueva = useActualizacion((s) => s.nueva);
@@ -46,23 +57,25 @@ export default function MasScreen() {
       <View style={estilos.tarjeta}>
         <Text style={estilos.negocio}>{negocio}</Text>
         <Text style={estilos.usuario}>
-          {perfil?.nombre} · {esDueno ? 'Dueño' : 'Cajero'}
+          {perfil?.nombre} · {nombreRol}
         </Text>
       </View>
 
       <View style={[estilos.tarjeta, { marginTop: 12 }]}>
-        {esDueno ? (
+        {puedeReportes ? (
           <Opcion
             icono="bar-chart-outline"
             texto="Reportes del negocio"
             onPress={() => router.push('/estadisticas')}
           />
         ) : null}
-        <Opcion
-          icono="people-circle-outline"
-          texto="Clientes y fiado"
-          onPress={() => router.push('/clientes')}
-        />
+        {puedeClientes ? (
+          <Opcion
+            icono="people-circle-outline"
+            texto="Clientes y fiado"
+            onPress={() => router.push('/clientes')}
+          />
+        ) : null}
       </View>
 
       <Text style={estilos.seccion}>Sincronización</Text>
@@ -78,24 +91,24 @@ export default function MasScreen() {
       <Text style={estilos.seccion}>Cuenta</Text>
       <View style={estilos.tarjeta}>
         <Opcion icono="people-outline" texto="Cambiar de usuario" onPress={salir} />
-        {esDueno ? (
+        {puedeNegocio ? (
           <Opcion
             icono="storefront-outline"
             texto="Datos del negocio"
             onPress={() => router.push('/negocio')}
           />
         ) : null}
-        {esDueno ? (
+        {puedeUsuarios ? (
           <Opcion
             icono="person-add-outline"
-            texto="Usuarios y cajeros"
+            texto="Usuarios y permisos"
             onPress={() => router.push('/usuarios')}
           />
         ) : null}
         {esDueno ? (
           <Opcion icono="log-out-outline" texto="Cerrar sesión" peligro onPress={confirmarCierre} />
         ) : null}
-        {esDueno ? (
+        {puedeEliminar ? (
           <Opcion
             icono="trash-outline"
             texto="Eliminar cuenta y datos"
@@ -112,7 +125,7 @@ export default function MasScreen() {
           texto="Suscripción"
           onPress={() => router.push('/suscripcion')}
         />
-        {esDueno ? (
+        {puedeExportar ? (
           <Opcion
             icono="download-outline"
             texto="Exportar datos"

@@ -15,6 +15,7 @@ import { codigoVenta, textoComprobante } from '@/features/ventas/comprobante';
 import { formatearCLP, formatearFechaHora } from '@/lib/formato';
 import { formatearCantidad } from '@/lib/numeros';
 import { obtenerAutor } from '@/sesion/autor';
+import { usePermiso } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
@@ -22,7 +23,8 @@ import { colores } from '@/theme/colores';
 export default function VentaScreen() {
   const { id, recien } = useLocalSearchParams<{ id: string; recien?: string }>();
   const db = useBase();
-  const { negocioId, perfil, versionDatos, datosCambiaron } = useSesion();
+  const { negocioId, versionDatos, datosCambiaron } = useSesion();
+  const puedeAnular = usePermiso('ventas_anular');
   const [venta, setVenta] = useState<DetalleVenta | null>(null);
   const [anulando, setAnulando] = useState(false);
   const [motivo, setMotivo] = useState('');
@@ -135,7 +137,7 @@ export default function VentaScreen() {
       <View style={estilos.botones}>
         {esRecien ? <Boton titulo="Nueva venta" onPress={() => router.back()} /> : null}
         <Boton titulo="Compartir comprobante" variante="secundario" onPress={compartir} />
-        {!anulada && perfil?.rol === 'dueno' ? (
+        {!anulada && puedeAnular ? (
           <Boton titulo="Anular venta" variante="peligro" onPress={() => setAnulando(true)} />
         ) : null}
       </View>

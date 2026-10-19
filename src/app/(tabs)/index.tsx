@@ -11,6 +11,8 @@ import { resumirVentas } from '@/db/ventas';
 import { rangoDelDia } from '@/lib/fechas';
 import { formatearCLP } from '@/lib/formato';
 import { obtenerAutor } from '@/sesion/autor';
+import { puedeAbrir } from '@/features/permisos/permisos';
+import { usePermisos } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { colores, radios } from '@/theme/colores';
 
@@ -25,24 +27,28 @@ type Resumen = {
   cajaAbierta: boolean;
 };
 
-type Atajo = { icono: NombreIcono; texto: string; destino: Href; soloDueno?: boolean };
+// Cada atajo aparece solo si la persona puede abrir su destino (PERMISO_POR_RUTA).
+type Atajo = { icono: NombreIcono; texto: string; destino: Href & string };
 
 // Todo lo que se hace en el día, con botones grandes y un solo toque.
 const ATAJOS: Atajo[] = [
   // Productos, Vender y Caja están en la barra de abajo.
   { icono: 'receipt-outline', texto: 'Ventas del día', destino: '/ventas' },
   { icono: 'people-outline', texto: 'Clientes y fiado', destino: '/clientes' },
-  { icono: 'download-outline', texto: 'Llegó mercadería', destino: '/compra', soloDueno: true },
-  { icono: 'alert-circle-outline', texto: 'Por reponer', destino: '/reponer', soloDueno: true },
-  { icono: 'bar-chart-outline', texto: 'Reportes', destino: '/estadisticas', soloDueno: true },
-  { icono: 'clipboard-outline', texto: 'Contar stock', destino: '/conteo', soloDueno: true },
+  { icono: 'download-outline', texto: 'Llegó mercadería', destino: '/compra' },
+  { icono: 'alert-circle-outline', texto: 'Por reponer', destino: '/reponer' },
+  { icono: 'bar-chart-outline', texto: 'Reportes', destino: '/estadisticas' },
+  { icono: 'clipboard-outline', texto: 'Contar stock', destino: '/conteo' },
 ];
 
 /** Pantalla de inicio: resumen del día y accesos grandes a cada tarea. */
 export default function InicioScreen() {
   const db = useBase();
   const { negocioId, perfil, versionDatos } = useSesion();
-  const esDueno = perfil?.rol === 'dueno';
+  const permisos = usePermisos();
+  const puede = (ruta: string) => puedeAbrir(ruta, permisos);
+  // El total vendido lo ve quien ve las ventas o los reportes.
+  const veVentas = permisos.includes('ventas_ver') || permisos.includes('reportes');
   const [resumen, setResumen] = useState<Resumen | null>(null);
 
   const cargar = useCallback(() => {
@@ -78,22 +84,24 @@ export default function InicioScreen() {
       <Text style={estilos.saludo}>Hola, {perfil?.nombre}</Text>
       {resumen?.negocio ? <Text style={estilos.negocio}>{resumen.negocio}</Text> : null}
 
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.navigate('/vender')}
-        style={({ pressed }) => [estilos.vender, pressed && estilos.presionado]}
-      >
-        <View style={estilos.iconoVender}>
-          <Ionicons name="cart" size={34} color={colores.primario} />
-        </View>
-        <View style={estilos.flex}>
-          <Text style={estilos.textoVender}>Nueva venta</Text>
-          <Text style={estilos.notaVender}>Escanea o busca los productos</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={28} color={colores.superficie} />
-      </Pressable>
+      {puede('/vender') ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.navigate('/vender')}
+          style={({ pressed }) => [estilos.vender, pressed && estilos.presionado]}
+        >
+          <View style={estilos.iconoVender}>
+            <Ionicons name="cart" size={34} color={colores.primario} />
+          </View>
+          <View style={estilos.flex}>
+            <Text style={estilos.textoVender}>Nueva venta</Text>
+            <Text style={estilos.notaVender}>Escanea o busca los productos</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={28} color={colores.superficie} />
+        </Pressable>
+      ) : null}
 
-      {resumen && !resumen.cajaAbierta ? (
+      {resumen && !resumen.cajaAbierta && puede('/caja') ? (
         <Pressable
           accessibilityRole="button"
           onPress={() => router.navigate('/caja')}
@@ -106,30 +114,34 @@ export default function InicioScreen() {
 
       <Text style={estilos.seccion}>Hoy</Text>
       <View style={estilos.tarjeta}>
-        <Dato
-          etiqueta="Vendido"
-          valor={formatearCLP(resumen?.ventasHoy ?? 0)}
-          nota={`${resumen?.cantidadHoy ?? 0} venta(s)`}
-        />
-        <View style={estilos.separador} />
+        {veVentas ? (
+          <>
+            <Dato
+              etiqueta="Vendido"
+              valor={formatearCLP(resumen?.ventasHoy ?? 0)}
+              nota={`${resumen?.cantidadHoy ?? 0} venta(s)`}
+            />
+            <View style={estilos.separador} />
+          </>
+        ) : null}
         <Dato
           etiqueta="Stock bajo"
           valor={String(resumen?.stockBajo ?? 0)}
           color={resumen?.stockBajo ? colores.aviso : colores.texto}
-          onPress={esDueno ? () => router.push('/reponer') : undefined}
+          onPress={puede('/reponer') ? () => router.push('/reponer') : undefined}
         />
         <View style={estilos.separador} />
         <Dato
           etiqueta="Sin stock"
           valor={String(resumen?.sinStock ?? 0)}
           color={resumen?.sinStock ? colores.error : colores.texto}
-          onPress={esDueno ? () => router.push('/reponer') : undefined}
+          onPress={puede('/reponer') ? () => router.push('/reponer') : undefined}
         />
       </View>
 
       <Text style={estilos.seccion}>¿Qué quieres hacer?</Text>
       <View style={estilos.grilla}>
-        {ATAJOS.filter((a) => esDueno || !a.soloDueno).map((a) => (
+        {ATAJOS.filter((a) => puede(a.destino)).map((a) => (
           <Pressable
             key={a.texto}
             accessibilityRole="button"

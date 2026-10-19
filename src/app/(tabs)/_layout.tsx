@@ -16,7 +16,9 @@ import { useActualizacion } from '@/features/actualizacion/actualizacion';
 import { AvisoActualizacion } from '@/features/actualizacion/AvisoActualizacion';
 import { AvisoSuscripcion } from '@/features/suscripcion/AvisoSuscripcion';
 import { ElegirPlan } from '@/features/suscripcion/ElegirPlan';
+import { puedeAbrir } from '@/features/permisos/permisos';
 import { avisoSuscripcion } from '@/features/suscripcion/estado';
+import { usePermisos } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { colores } from '@/theme/colores';
 
@@ -58,6 +60,8 @@ export default function TabsLayout() {
   // Espacio de los botones del sistema (atrás, inicio...), distinto en cada teléfono:
   // 0 con gestos en algunos modelos, ~48 px con la barra de tres botones.
   const { bottom } = useSafeAreaInsets();
+  const permisos = usePermisos();
+  const puede = (ruta: string) => puedeAbrir(ruta, permisos);
 
   // Versión de Play: un negocio que nunca ha pagado (solo la prueba sin tarjeta
   // del servidor) elige plan primero; la prueba de 14 días la da Google.
@@ -96,14 +100,19 @@ export default function TabsLayout() {
           name="inventario"
           options={{ title: 'Productos', tabBarIcon: icono('cube-outline') }}
         />
-        <Tabs.Screen
-          name="vender"
-          options={{
-            title: 'Vender',
-            tabBarButton: (props) => <BotonVender {...(props as PropsBotonPestana)} />,
-          }}
-        />
-        <Tabs.Screen name="caja" options={{ title: 'Caja', tabBarIcon: icono('cash-outline') }} />
+        {/* Vender y Caja solo aparecen con su permiso (src/features/permisos/permisos.ts). */}
+        <Tabs.Protected guard={puede('/vender')}>
+          <Tabs.Screen
+            name="vender"
+            options={{
+              title: 'Vender',
+              tabBarButton: (props) => <BotonVender {...(props as PropsBotonPestana)} />,
+            }}
+          />
+        </Tabs.Protected>
+        <Tabs.Protected guard={puede('/caja')}>
+          <Tabs.Screen name="caja" options={{ title: 'Caja', tabBarIcon: icono('cash-outline') }} />
+        </Tabs.Protected>
         <Tabs.Screen name="mas" options={{ title: 'Más', tabBarIcon: icono('menu-outline') }} />
       </Tabs>
     </View>

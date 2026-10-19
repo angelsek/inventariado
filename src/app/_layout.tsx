@@ -11,6 +11,8 @@ import { obtenerEstadoSuscripcion } from '@/db/suscripcion';
 import { useActualizacion } from '@/features/actualizacion/actualizacion';
 import { HostDialogos } from '@/lib/dialogo';
 import { informarError, instalarManejadorErrores } from '@/lib/errores';
+import { puedeAbrir } from '@/features/permisos/permisos';
+import { usePermisos } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { useSincronizacionAutomatica } from '@/sync/useSincronizacionAutomatica';
 import { colores } from '@/theme/colores';
@@ -96,6 +98,9 @@ function Navegacion() {
 
   useSincronizacionAutomatica();
 
+  const permisos = usePermisos();
+  const puede = (ruta: string) => puedeAbrir(ruta, permisos);
+
   // Las pantallas con encabezado dejan libre abajo el espacio de los botones del
   // sistema, para que las listas y botones del final no queden debajo de ellos.
   const { bottom } = useSafeAreaInsets();
@@ -121,29 +126,59 @@ function Navegacion() {
         </Stack.Protected>
 
         <Stack.Protected guard={!!negocioId && !!perfil}>
+          {/* (tabs) va primero: si se pierde un permiso, la app vuelve aquí. */}
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="usuarios" options={conEncabezado('Usuarios')} />
           <Stack.Screen name="producto/[id]" options={conEncabezado('Producto')} />
-          <Stack.Screen name="categorias" options={conEncabezado('Categorías')} />
-          <Stack.Screen name="importar" options={conEncabezado('Importar productos')} />
-          <Stack.Screen name="cobrar" options={conEncabezado('Cobrar')} />
-          <Stack.Screen name="ventas" options={conEncabezado('Ventas')} />
-          <Stack.Screen name="venta/[id]" options={conEncabezado('Venta')} />
-          <Stack.Screen name="compra" options={conEncabezado('Ingreso de mercadería')} />
-          <Stack.Screen name="compras" options={conEncabezado('Ingresos anteriores')} />
-          <Stack.Screen name="proveedores" options={conEncabezado('Proveedores')} />
-          <Stack.Screen name="reponer" options={conEncabezado('Por reponer')} />
-          <Stack.Screen name="conteo" options={conEncabezado('Conteo de inventario')} />
           <Stack.Screen name="suscripcion" options={conEncabezado('Suscripción')} />
           <Stack.Screen name="admin" options={conEncabezado('Administración')} />
           <Stack.Screen name="reportes" options={conEncabezado('Reportes')} />
-          <Stack.Screen name="estadisticas" options={conEncabezado('Reportes del negocio')} />
-          <Stack.Screen name="clientes" options={conEncabezado('Clientes y fiado')} />
-          <Stack.Screen name="cliente/[id]" options={conEncabezado('Cliente')} />
-          <Stack.Screen name="negocio" options={conEncabezado('Datos del negocio')} />
-          <Stack.Screen name="exportar" options={conEncabezado('Exportar datos')} />
           <Stack.Screen name="comentario" options={conEncabezado('Enviar comentario')} />
-          <Stack.Screen name="eliminar-cuenta" options={conEncabezado('Eliminar cuenta')} />
+
+          {/*
+          Pantallas con permiso (src/features/permisos/permisos.ts): no se abren aunque
+          se escriba la dirección en el PC.
+        */}
+          <Stack.Protected guard={puede('/usuarios')}>
+            <Stack.Screen name="usuarios" options={conEncabezado('Usuarios y permisos')} />
+          </Stack.Protected>
+          <Stack.Protected guard={puede('/categorias')}>
+            <Stack.Screen name="categorias" options={conEncabezado('Categorías')} />
+            <Stack.Screen name="importar" options={conEncabezado('Importar productos')} />
+          </Stack.Protected>
+          <Stack.Protected guard={puede('/cobrar')}>
+            <Stack.Screen name="cobrar" options={conEncabezado('Cobrar')} />
+          </Stack.Protected>
+          <Stack.Protected guard={puede('/ventas')}>
+            <Stack.Screen name="ventas" options={conEncabezado('Ventas')} />
+          </Stack.Protected>
+          <Stack.Protected guard={puede('/venta')}>
+            <Stack.Screen name="venta/[id]" options={conEncabezado('Venta')} />
+          </Stack.Protected>
+          <Stack.Protected guard={puede('/compra')}>
+            <Stack.Screen name="compra" options={conEncabezado('Ingreso de mercadería')} />
+            <Stack.Screen name="compras" options={conEncabezado('Ingresos anteriores')} />
+            <Stack.Screen name="proveedores" options={conEncabezado('Proveedores')} />
+          </Stack.Protected>
+          <Stack.Protected guard={puede('/conteo')}>
+            <Stack.Screen name="reponer" options={conEncabezado('Por reponer')} />
+            <Stack.Screen name="conteo" options={conEncabezado('Conteo de inventario')} />
+          </Stack.Protected>
+          <Stack.Protected guard={puede('/estadisticas')}>
+            <Stack.Screen name="estadisticas" options={conEncabezado('Reportes del negocio')} />
+          </Stack.Protected>
+          <Stack.Protected guard={puede('/clientes')}>
+            <Stack.Screen name="clientes" options={conEncabezado('Clientes y fiado')} />
+            <Stack.Screen name="cliente/[id]" options={conEncabezado('Cliente')} />
+          </Stack.Protected>
+          <Stack.Protected guard={puede('/negocio')}>
+            <Stack.Screen name="negocio" options={conEncabezado('Datos del negocio')} />
+          </Stack.Protected>
+          <Stack.Protected guard={puede('/exportar')}>
+            <Stack.Screen name="exportar" options={conEncabezado('Exportar datos')} />
+          </Stack.Protected>
+          <Stack.Protected guard={puede('/eliminar-cuenta')}>
+            <Stack.Screen name="eliminar-cuenta" options={conEncabezado('Eliminar cuenta')} />
+          </Stack.Protected>
         </Stack.Protected>
 
         {/*

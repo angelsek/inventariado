@@ -150,8 +150,8 @@ begin
     ) then
       raise exception 'El rol no es de este negocio' using errcode = '23503';
     end if;
-  elsif tg_op = 'INSERT' then
-    -- Persona creada por una APK sin roles: queda como Cajero.
+  else
+    -- Persona sin rol (APK sin roles o equipo que aún no los descarga): queda como Cajero.
     select id into new.rol_id from inventariado.roles
      where negocio_id = new.negocio_id and predefinido = 'cajero';
   end if;
@@ -186,6 +186,9 @@ begin
   end if;
   if new.predefinido is distinct from old.predefinido then
     raise exception 'No se puede cambiar si un rol es predefinido' using errcode = '42501';
+  end if;
+  if new.eliminado and not old.eliminado and old.predefinido is not null then
+    raise exception 'Los roles predefinidos no se pueden eliminar' using errcode = '42501';
   end if;
   if new.eliminado and not old.eliminado and exists (
     select 1 from inventariado.perfiles where rol_id = new.id and not eliminado

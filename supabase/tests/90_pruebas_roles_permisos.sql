@@ -393,25 +393,32 @@ reset role;
 -- No se elimina un rol que tiene personas
 -- ---------------------------------------------------------------------------
 
--- Beto (c2, ya eliminado) no cuenta; Carla (c1) tiene el rol Bodeguero.
-select pg_temp.como('00000000-0000-0000-0000-0000000000f1');
+-- Los roles predefinidos no se eliminan (con o sin personas).
 select pg_temp.debe_fallar(
   format($q$update inventariado.roles set eliminado = true where id = %L$q$,
          current_setting('pruebas.rol_bodeguero_fabi')),
-  'P0001', 'ROL_CON_PERSONAS');
--- Un rol sin personas se puede eliminar.
+  '42501', 'Los roles predefinidos no se pueden eliminar');
+-- Un rol propio sin personas se puede eliminar.
 update inventariado.roles set eliminado = true where id = '40000000-0000-0000-0000-0000000000a2';
--- Cambiar de rol a la persona permite eliminar el anterior.
-update inventariado.perfiles set rol_id = :'rol_cajero_fabi' where id = '30000000-0000-0000-0000-0000000000c1';
-update inventariado.roles set eliminado = true where id = :'rol_bodeguero_fabi';
--- Y el nombre de un rol eliminado se puede reutilizar.
-insert into inventariado.roles (negocio_id, nombre, permisos) values (:'negocio_fabi', 'Solo mirar', '["stock"]');
+-- Un rol propio con personas no: Beto (c2, ya eliminado) no cuenta; Carla (c1) sí.
+insert into inventariado.roles (id, negocio_id, nombre, permisos)
+values ('40000000-0000-0000-0000-0000000000a3', :'negocio_fabi', 'Vendedor', '["vender"]');
+update inventariado.perfiles set rol_id = '40000000-0000-0000-0000-0000000000a3'
+ where id = '30000000-0000-0000-0000-0000000000c1';
+select pg_temp.debe_fallar(
+  $q$update inventariado.roles set eliminado = true where id = '40000000-0000-0000-0000-0000000000a3'$q$,
+  'P0001', 'ROL_CON_PERSONAS');
 -- Desactivar a una persona no basta: sigue teniendo el rol.
 update inventariado.perfiles set activo = false where id = '30000000-0000-0000-0000-0000000000c1';
 select pg_temp.debe_fallar(
-  format($q$update inventariado.roles set eliminado = true where id = %L$q$,
-         current_setting('pruebas.rol_cajero_fabi')),
+  $q$update inventariado.roles set eliminado = true where id = '40000000-0000-0000-0000-0000000000a3'$q$,
   'P0001', 'ROL_CON_PERSONAS');
+-- Cambiar de rol a la persona permite eliminar el anterior.
+update inventariado.perfiles set rol_id = :'rol_cajero_fabi', activo = true
+ where id = '30000000-0000-0000-0000-0000000000c1';
+update inventariado.roles set eliminado = true where id = '40000000-0000-0000-0000-0000000000a3';
+-- Y el nombre de un rol eliminado se puede reutilizar.
+insert into inventariado.roles (negocio_id, nombre, permisos) values (:'negocio_fabi', 'Vendedor', '["stock"]');
 reset role;
 
 -- ---------------------------------------------------------------------------
@@ -493,6 +500,8 @@ reset role;
 -- ---------------------------------------------------------------------------
 
 -- Se deja el negocio de Gabo como estaba antes: sin roles y con un cajero sin rol_id.
+-- (Sin el trigger, que hoy le pondría el rol Cajero a quien quede sin rol.)
+alter table inventariado.perfiles disable trigger perfiles_proteger;
 insert into inventariado.perfiles (id, negocio_id, nombre, rol, pin_hash)
 values ('30000000-0000-0000-0000-0000000000d1', :'negocio_gabo', 'Dora', 'cajero', 'h'),
        ('30000000-0000-0000-0000-0000000000d2', :'negocio_gabo', 'Eli', 'cajero', 'h');
@@ -504,6 +513,7 @@ insert into inventariado.perfiles (id, negocio_id, nombre, rol, rol_id, pin_hash
 values ('30000000-0000-0000-0000-0000000000c3', :'negocio_fabi', 'Fran', 'cajero',
         '40000000-0000-0000-0000-0000000000a1', 'h');
 update inventariado.perfiles set rol_id = null where id = '30000000-0000-0000-0000-0000000000c1';
+alter table inventariado.perfiles enable trigger perfiles_proteger;
 
 -- Se vuelve a ejecutar la migración (como cuando se corre a mano en Supabase).
 \ir ../migrations/20261019000100_roles_permisos.sql
@@ -587,6 +597,19 @@ begin
   -- Los roles de otros negocios no se tocan.
   if (select count(*) from inventariado.roles where negocio_id = current_setting('pruebas.negocio_fabi')::uuid) < 3 then
     raise exception 'FALLA: se borraron roles de otro negocio';
+  end if;
+end;
+$$;
+
+-- Una persona que sube sin rol (update desde un equipo que aún no tiene los roles) queda Cajero.
+update inventariado.perfiles set rol_id = null where id = '30000000-0000-0000-0000-0000000000c1';
+do $$
+begin
+  if (select rol_id from inventariado.perfiles where id = '30000000-0000-0000-0000-0000000000c1')
+     is distinct from (select id from inventariado.roles
+                        where negocio_id = current_setting('pruebas.negocio_fabi')::uuid
+                          and predefinido = 'cajero') then
+    raise exception 'FALLA: una persona sin rol no quedó como Cajero';
   end if;
 end;
 $$;

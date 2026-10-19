@@ -144,11 +144,15 @@ function aLocal(tabla: TablaSync, fila: Fila): (string | number | null)[] {
   });
 }
 
+/**
+ * Columna JSON local -> valor para el servidor. Un texto ilegible sube como arreglo
+ * vacío: un null lo rechazaría el servidor (NOT NULL) y trabaría toda la sincronización.
+ */
 function leerJson(valor: unknown): unknown {
-  if (typeof valor !== 'string') return valor ?? null;
+  if (typeof valor !== 'string') return valor ?? [];
   try {
     return JSON.parse(valor);
   } catch {
-    return null;
+    return [];
   }
 }

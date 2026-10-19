@@ -1,4 +1,4 @@
-import { useBase } from '@/db/proveedor';
+import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -14,29 +14,25 @@ import {
   listarPerfiles,
   type Perfil,
 } from '@/db/perfiles';
+import { useBase } from '@/db/proveedor';
 import { listarRoles, type Rol } from '@/db/roles';
-import { GRUPOS_PERMISOS } from '@/features/permisos/catalogo';
+import { editorDe, resumirPermisos, rolesAsignables } from '@/features/permisos/edicionRoles';
 import { esPinValido, LARGO_PIN } from '@/lib/pin';
-import { usePermiso } from '@/sesion/permisos';
+import { usePermiso, usePermisos } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
 
-/** Textos de los permisos de un rol, para que el dueño vea qué puede hacer cada uno. */
-const resumirPermisos = (rol: Rol) =>
-  GRUPOS_PERMISOS.flatMap((g) => g.permisos)
-    .filter((p) => rol.permisos.includes(p.clave))
-    .map((p) => p.texto)
-    .join(' · ') || 'Solo ver productos';
-
 /**
  * Personas del negocio y su rol (permiso "usuarios"). Nadie más que el dueño toca el
- * perfil del dueño, y nadie cambia su propio rol ni se desactiva a sí mismo.
+ * perfil del dueño, y nadie cambia su propio rol ni se desactiva a sí mismo. Solo se
+ * asignan roles que no dan más permisos de los que tiene quien los asigna.
  */
 export default function UsuariosScreen() {
   const db = useBase();
   const { negocioId, perfil: actual, versionDatos, datosCambiaron } = useSesion();
   const puedeAdministrar = usePermiso('usuarios');
+  const permisosPropios = usePermisos();
   const [perfiles, setPerfiles] = useState<Perfil[]>([]);
   const [roles, setRoles] = useState<Rol[]>([]);
   const [nombre, setNombre] = useState('');
@@ -68,14 +64,23 @@ export default function UsuariosScreen() {
   }
 
   const cajero = roles.find((r) => r.predefinido === 'cajero');
-  const rolElegido = rolNuevo ?? cajero?.id ?? null;
-  const opcionesRol = roles.map((r) => ({ valor: r.id, etiqueta: r.nombre }));
+  const asignables = rolesAsignables(roles, editorDe(actual, roles, permisosPropios));
+  const esAsignable = (id: string | null | undefined) => asignables.some((r) => r.id === id);
+  // Por defecto el Cajero; si quien agrega no puede darlo, el primer rol que sí puede.
+  const rolElegido =
+    (esAsignable(rolNuevo) ? rolNuevo : null) ??
+    (esAsignable(cajero?.id) ? cajero!.id : (asignables[0]?.id ?? null));
+  const opcionesRol = asignables.map((r) => ({ valor: r.id, etiqueta: r.nombre }));
   const nombreRol = (p: Perfil) =>
     p.rol === 'dueno' ? 'Dueño' : (roles.find((r) => r.id === p.rol_id)?.nombre ?? 'Cajero');
 
   const agregar = async () => {
     if (!nombre.trim()) return setError('Ingresa el nombre de la persona.');
     if (!esPinValido(pin)) return setError(`El PIN debe tener ${LARGO_PIN} números.`);
+    // Sin un rol que se pueda dar, la persona quedaría como Cajero aunque quien agrega no lo tenga.
+    if (roles.length > 0 && !rolElegido) {
+      return setError('No tienes un rol que puedas dar. Pídele al dueño que agregue a la persona.');
+    }
     setError(null);
     await crearPerfil(db, {
       negocioId: negocioId!,
@@ -113,9 +118,12 @@ export default function UsuariosScreen() {
       {perfiles.map((p) => {
         const esDueno = p.rol === 'dueno';
         const esYo = p.id === actual.id;
+        // Quien no es dueño no toca a alguien con un rol que da más permisos que el suyo:
+        // cambiarle el PIN le permitiría entrar con esos permisos.
+        const alAlcance = roles.length === 0 || esAsignable(rolVigente(p)?.id ?? null);
         // El perfil del dueño solo lo toca el dueño; el rol y el estado propios no se cambian.
-        const puedeTocar = !esDueno || actual.rol === 'dueno';
-        const puedeCambiarRol = !esDueno && !esYo;
+        const puedeTocar = esDueno ? actual.rol === 'dueno' : esYo || alAlcance;
+        const puedeCambiarRol = !esDueno && !esYo && alAlcance;
         return (
           <View key={p.id} style={estilos.tarjeta}>
             <View style={estilos.fila}>
@@ -181,6 +189,10 @@ export default function UsuariosScreen() {
           </View>
         );
       })}
+
+      <Text accessibilityRole="button" style={estilos.enlace} onPress={() => router.push('/roles')}>
+        Editar roles y permisos
+      </Text>
 
       <Text style={estilos.seccion}>Nueva persona</Text>
       <Campo etiqueta="Nombre" value={nombre} onChangeText={setNombre} />

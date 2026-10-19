@@ -95,6 +95,12 @@ export const MENU: GrupoMenu[] = [
         ruta: '/usuarios',
         activaEn: [],
       },
+      {
+        texto: 'Roles',
+        icono: 'shield-checkmark-outline',
+        ruta: '/roles',
+        activaEn: ['/rol'],
+      },
       { texto: 'Suscripción', icono: 'card-outline', ruta: '/suscripcion', activaEn: [] },
       {
         texto: 'Exportar datos',

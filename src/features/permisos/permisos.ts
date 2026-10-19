@@ -58,6 +58,8 @@ export const PERMISO_POR_RUTA: Record<string, readonly Permiso[]> = {
   '/exportar': ['exportar'],
   '/negocio': ['negocio'],
   '/usuarios': ['usuarios'],
+  '/roles': ['usuarios'],
+  '/rol': ['usuarios'],
   '/eliminar-cuenta': ['cuenta_eliminar'],
 };
 

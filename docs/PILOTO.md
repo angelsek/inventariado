@@ -174,7 +174,7 @@ Además, cada dueño puede descargar sus datos desde **Más → Exportar datos**
 1. Instala la app desde el enlace fijo del APK (paso 2) o pásale el archivo.
 2. El dueño crea su cuenta y negocio en el teléfono principal (14 días de prueba).
 3. Carga del catálogo: importar desde Excel (Inventario → Importar) o escaneando productos.
-4. Agrega a los cajeros (Más → Usuarios y cajeros) con su PIN.
+4. Agrega a los cajeros (Más → Usuarios y permisos) con su PIN y su rol (`docs/PERMISOS.md`).
 5. Instala la app en los otros teléfonos e inicia sesión con la misma cuenta.
 6. Primer día: abrir caja, vender, cerrar caja. Revisa con el dueño que el cierre cuadre.
 7. Pídeles que usen **Más → Enviar comentario o problema** para todo lo que noten.

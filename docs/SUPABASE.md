@@ -36,6 +36,10 @@ columna, la publicación se detiene.
 Es **obligatoria antes de publicar la web**. Es compatible con las apps Android
 ya instaladas: el tipo por defecto es `telefono`, así que siguen registrándose igual.
 
+`20261019000100_roles_permisos.sql` (perfiles y permisos) crea la tabla `roles` y la columna
+`perfiles.rol_id`, con los roles predefinidos de cada negocio. Es **obligatoria antes de publicar
+el APK o la web** con ese cambio: si falta, la sincronización falla. Ver `docs/PERMISOS.md`.
+
 ## 3. Exponer el esquema
 
 En **Project Settings → Data API → Exposed schemas**, agregar `inventariado` a la lista

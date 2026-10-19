@@ -29,7 +29,7 @@ import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
 
-type Borrador = { nombre: string; permisos: Permiso[] };
+type Borrador = { nombre: string; permisos: Permiso[]; nombreCargado: string };
 
 const mensajeDe = (e: unknown) => (e instanceof Error ? e.message : 'No se pudo guardar el rol.');
 
@@ -49,7 +49,7 @@ export default function RolScreen() {
   const [roles, setRoles] = useState<Rol[]>([]);
   const [personas, setPersonas] = useState(0);
   const [borrador, setBorrador] = useState<Borrador | null>(
-    nuevo ? { nombre: '', permisos: [] } : null,
+    nuevo ? { nombre: '', permisos: [], nombreCargado: '' } : null,
   );
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
@@ -61,7 +61,14 @@ export default function RolScreen() {
     obtenerRol(db, id).then((r) => {
       setRol(r);
       // El borrador se arma una vez: una sincronización no borra lo que se está editando.
-      setBorrador((b) => b ?? (r ? { nombre: r.nombre, permisos: r.permisos } : null));
+      // Solo el nombre se pone al día si nadie lo tocó (el servidor pudo numerarlo).
+      setBorrador((b) => {
+        if (!b)
+          return r ? { nombre: r.nombre, permisos: r.permisos, nombreCargado: r.nombre } : null;
+        return r && b.nombre === b.nombreCargado
+          ? { ...b, nombre: r.nombre, nombreCargado: r.nombre }
+          : b;
+      });
     });
     contarPersonasPorRol(db, negocioId).then((c) => setPersonas(c[id] ?? 0));
   }, [db, negocioId, id, nuevo]);
@@ -142,7 +149,7 @@ export default function RolScreen() {
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Restablecer',
-        onPress: () => setBorrador({ nombre: borrador.nombre, permisos: [...fabrica.permisos] }),
+        onPress: () => setBorrador({ ...borrador, permisos: [...fabrica.permisos] }),
       },
     ]);
   };

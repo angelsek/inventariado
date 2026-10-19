@@ -18,7 +18,7 @@ create or replace function inventariado.nombre_rol_libre(
 )
 returns text
 language plpgsql
-stable
+-- Volátil a propósito: debe ver las filas que el mismo comando acaba de escribir.
 security invoker
 set search_path = ''
 as $$

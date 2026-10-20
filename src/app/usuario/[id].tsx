@@ -183,7 +183,11 @@ export default function UsuarioScreen() {
             }),
           );
         }
-        avisar('Cambios guardados', 'Llegan a los demás equipos al sincronizar.');
+        avisar(
+          'Cambios guardados',
+          'Llegan a los demás equipos al sincronizar. Si otro equipo ya había cambiado los ' +
+            'permisos de esta persona, se mantiene ese cambio.',
+        );
       }
     } catch {
       setError('No se pudieron guardar los cambios. Intenta de nuevo.');

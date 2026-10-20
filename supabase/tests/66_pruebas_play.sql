@@ -43,7 +43,7 @@ set role service_role;
 update inventariado.suscripciones set pagado_hasta = null, plan_id = 'pro'
  where negocio_id = :'negocio_ana';
 select inventariado.aplicar_compra_play('token-1', :'negocio_ana', 'stockeao_basico', 'basico',
-  'SUBSCRIPTION_STATE_PENDING', now() + interval '14 days', true, '00000000-0000-0000-0000-00000000000a', false);
+  'SUBSCRIPTION_STATE_PENDING', now() + interval '7 days', true, '00000000-0000-0000-0000-00000000000a', false);
 do $$
 begin
   if (select pagado_hasta from inventariado.suscripciones
@@ -53,7 +53,7 @@ begin
 end;
 $$;
 
--- La compra queda activa (prueba de 14 días de Google): el negocio queda pagado hasta esa fecha.
+-- La compra queda activa (prueba de 7 días de Google): el negocio queda pagado hasta esa fecha.
 select inventariado.aplicar_compra_play('token-1', :'negocio_ana', 'stockeao_basico', 'basico',
   'SUBSCRIPTION_STATE_ACTIVE', '2030-01-15T00:00:00Z', true, null, true);
 do $$

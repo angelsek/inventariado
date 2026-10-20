@@ -22,14 +22,14 @@ select set_config('pruebas.negocio_beto', :'negocio_beto', false);
 insert into auth.users (id, email) values ('00000000-0000-0000-0000-00000000000c', 'carla@inventariado.cl');
 insert into inventariado.administradores (usuario_id) values ('00000000-0000-0000-0000-00000000000c');
 
--- Los negocios anteriores a esta fase recibieron prueba de 14 días.
+-- Los negocios anteriores a esta fase recibieron prueba gratis (hoy de 7 días).
 do $$
 declare
   s inventariado.suscripciones;
 begin
   select * into s from inventariado.suscripciones where negocio_id = current_setting('pruebas.negocio_ana')::uuid;
   if s is null or s.plan_id <> 'pro' or inventariado.estado_suscripcion(s) <> 'prueba'
-     or s.prueba_hasta < now() + interval '13 days' then
+     or s.prueba_hasta < now() + interval '6 days' then
     raise exception 'FALLA: suscripción de prueba incorrecta: %', s;
   end if;
 end;
@@ -186,7 +186,7 @@ begin
 
   -- El pago se suma después de la prueba: no se pierden los días gratis.
   hasta := inventariado.admin_registrar_pago(current_setting('pruebas.negocio_ana')::uuid, 'pro', 1, 19990, 'Transferencia');
-  if hasta < now() + interval '13 days' + interval '28 days' then
+  if hasta < now() + interval '6 days' + interval '28 days' then
     raise exception 'FALLA: el pago no respetó los días de prueba: %', hasta;
   end if;
 

@@ -5,10 +5,12 @@
 // Resultado: docs/legal-web/*.html, listos para publicar (ver docs/PLAY_STORE.md).
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
-const { FECHA_LEGAL, PRIVACIDAD, TERMINOS } = await import(join(raiz, 'src/legal/textos.ts'));
+const { FECHA_LEGAL, PRIVACIDAD, TERMINOS } = await import(
+  pathToFileURL(join(raiz, 'src/legal/textos.ts')).href
+);
 
 const correo = process.env.CONTACTO_CORREO || '[correo de contacto]';
 const salida = join(raiz, 'docs/legal-web');

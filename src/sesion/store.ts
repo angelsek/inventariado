@@ -1,13 +1,9 @@
 import { create } from 'zustand';
 
 import type { Perfil } from '@/db/perfiles';
-import type { Permiso } from '@/features/permisos/catalogo';
 import type { EstadoSuscripcion } from '@/features/suscripcion/estado';
 
 export type EstadoSync = 'inactivo' | 'sincronizando' | 'ok' | 'error';
-
-/** Rol de la persona que usa la app (null: dueño, o persona sin rol todavía). */
-export type RolSesion = { nombre: string; permisos: readonly Permiso[]; eliminado: boolean };
 
 type Sesion = {
   /** true cuando ya se leyó la base local al abrir la app. */
@@ -16,8 +12,6 @@ type Sesion = {
   negocioId: string | null;
   /** Persona usando la app ahora (null: falta ingresar el PIN). */
   perfil: Perfil | null;
-  /** Rol del perfil; los permisos se calculan con src/sesion/permisos.ts. */
-  rol: RolSesion | null;
   sync: {
     estado: EstadoSync;
     ultima: string | null;
@@ -34,9 +28,9 @@ type Sesion = {
   cargar(negocioId: string | null): void;
   vincular(negocioId: string): void;
   desvincular(): void;
-  entrar(perfil: Perfil, rol?: RolSesion | null): void;
-  /** Actualiza el perfil y su rol tras sincronizar (el dueño pudo cambiarlos en otro equipo). */
-  refrescarPerfil(perfil: Perfil, rol: RolSesion | null): void;
+  entrar(perfil: Perfil): void;
+  /** Actualiza el perfil tras sincronizar (el dueño pudo cambiar sus permisos en otro equipo). */
+  refrescarPerfil(perfil: Perfil): void;
   salir(): void;
   actualizarSync(cambios: Partial<Sesion['sync']>): void;
   datosCambiaron(): void;
@@ -55,19 +49,17 @@ export const useSesion = create<Sesion>((set) => ({
   cargada: false,
   negocioId: null,
   perfil: null,
-  rol: null,
   sync: syncInicial,
   versionDatos: 0,
   suscripcion: null,
   avisoSalida: null,
 
   cargar: (negocioId) => set({ cargada: true, negocioId }),
-  vincular: (negocioId) => set({ negocioId, perfil: null, rol: null }),
-  desvincular: () =>
-    set({ negocioId: null, perfil: null, rol: null, sync: syncInicial, suscripcion: null }),
-  entrar: (perfil, rol = null) => set({ perfil, rol }),
-  refrescarPerfil: (perfil, rol) => set({ perfil, rol }),
-  salir: () => set({ perfil: null, rol: null }),
+  vincular: (negocioId) => set({ negocioId, perfil: null }),
+  desvincular: () => set({ negocioId: null, perfil: null, sync: syncInicial, suscripcion: null }),
+  entrar: (perfil) => set({ perfil }),
+  refrescarPerfil: (perfil) => set({ perfil }),
+  salir: () => set({ perfil: null }),
   actualizarSync: (cambios) => set((s) => ({ sync: { ...s.sync, ...cambios } })),
   datosCambiaron: () => set((s) => ({ versionDatos: s.versionDatos + 1 })),
   fijarSuscripcion: (suscripcion) => set({ suscripcion }),

@@ -1,4 +1,4 @@
-import { PERMISOS, ROLES_PREDEFINIDOS } from '../catalogo';
+import { GRUPOS_PERMISOS, PERMISOS, PERMISOS_INICIALES } from '../catalogo';
 import {
   esPermiso,
   parsearPermisos,
@@ -11,45 +11,38 @@ const { readFileSync } = require('node:fs') as {
   readFileSync(ruta: string, codificacion: 'utf8'): string;
 };
 
-const CAJERO = ROLES_PREDEFINIDOS.cajero.permisos;
+// Una persona con los permisos con que parte al agregarla.
+const CAJERO = PERMISOS_INICIALES;
 
 describe('permisosDePerfil', () => {
-  it('el dueño siempre tiene todo, aunque tenga un rol o este eliminado', () => {
-    expect(permisosDePerfil({ rol: 'dueno' }, null)).toEqual([...PERMISOS]);
-    expect(permisosDePerfil({ rol: 'dueno' }, { permisos: [], eliminado: false })).toEqual([
-      ...PERMISOS,
+  it('el dueño siempre tiene todo, aunque su lista guardada esté vacía', () => {
+    expect(permisosDePerfil({ rol: 'dueno', permisos: [] })).toEqual([...PERMISOS]);
+    expect(permisosDePerfil({ rol: 'dueno', permisos: ['vender'] })).toEqual([...PERMISOS]);
+  });
+
+  it('las demás personas tienen solo su lista', () => {
+    expect(permisosDePerfil({ rol: 'cajero', permisos: ['vender', 'caja'] })).toEqual([
+      'vender',
+      'caja',
     ]);
-    expect(permisosDePerfil({ rol: 'dueno' }, { permisos: ['vender'], eliminado: true })).toEqual([
-      ...PERMISOS,
-    ]);
   });
 
-  it('sin rol tiene los permisos del Cajero', () => {
-    expect(permisosDePerfil({ rol: 'cajero' }, null)).toEqual(CAJERO);
+  it('una lista vacía no da nada (no cae a los permisos iniciales)', () => {
+    expect(permisosDePerfil({ rol: 'cajero', permisos: [] })).toEqual([]);
   });
 
-  it('con el rol eliminado vuelve a los permisos del Cajero', () => {
-    const rol = { permisos: [...PERMISOS], eliminado: true };
-    expect(permisosDePerfil({ rol: 'cajero' }, rol)).toEqual(CAJERO);
+  it('entrega los permisos en el orden del catálogo, sin repetir ni claves desconocidas', () => {
+    expect(
+      permisosDePerfil({ rol: 'cajero', permisos: ['reportes', 'stock', 'stock', 'xx'] as never }),
+    ).toEqual(['stock', 'reportes']);
   });
 
-  it('devuelve una copia: modificar el resultado no cambia el Cajero predefinido', () => {
-    permisosDePerfil({ rol: 'cajero' }, null).push('usuarios');
-    expect(ROLES_PREDEFINIDOS.cajero.permisos).not.toContain('usuarios');
-  });
-
-  it('usa los permisos del rol y los entrega en el orden del catálogo', () => {
-    const rol = { permisos: ['stock', 'reportes'] as const, eliminado: false };
-    expect(permisosDePerfil({ rol: 'cajero' }, rol)).toEqual(['stock', 'reportes']);
-  });
-
-  it('ignora claves desconocidas', () => {
-    const rol = { permisos: ['vender', 'inventada'] as never, eliminado: false };
-    expect(permisosDePerfil({ rol: 'cajero' }, rol)).toEqual(['vender']);
-  });
-
-  it('un rol sin permisos no da nada (no cae al Cajero)', () => {
-    expect(permisosDePerfil({ rol: 'cajero' }, { permisos: [], eliminado: false })).toEqual([]);
+  it('devuelve una copia: modificar el resultado no cambia el perfil ni el catálogo', () => {
+    const perfil = { rol: 'cajero', permisos: ['vender'] as const };
+    permisosDePerfil(perfil).push('usuarios');
+    expect(perfil.permisos).toEqual(['vender']);
+    permisosDePerfil({ rol: 'dueno', permisos: [] }).pop();
+    expect(PERMISOS).toHaveLength(15);
   });
 });
 
@@ -121,15 +114,20 @@ describe('puedeAbrir', () => {
     expect(puedeAbrir('/venta/1?a=/usuarios', [])).toBe(false);
   });
 
-  it('/roles y /rol/x piden "usuarios"', () => {
-    for (const ruta of ['/roles', '/rol/nuevo', '/rol/abc']) {
+  it('/usuarios y /usuario/x piden "usuarios"', () => {
+    for (const ruta of ['/usuarios', '/usuario/nuevo', '/usuario/abc']) {
       expect(puedeAbrir(ruta, [])).toBe(false);
       expect(puedeAbrir(ruta, CAJERO)).toBe(false);
       expect(puedeAbrir(ruta, ['reportes'])).toBe(false);
       expect(puedeAbrir(ruta, ['usuarios'])).toBe(true);
     }
-    expect(PERMISO_POR_RUTA['/roles']).toEqual(['usuarios']);
-    expect(PERMISO_POR_RUTA['/rol']).toEqual(['usuarios']);
+    expect(PERMISO_POR_RUTA['/usuarios']).toEqual(['usuarios']);
+    expect(PERMISO_POR_RUTA['/usuario']).toEqual(['usuarios']);
+  });
+
+  it('las pantallas de roles ya no existen: sus rutas no piden permiso', () => {
+    expect(PERMISO_POR_RUTA['/roles']).toBeUndefined();
+    expect(PERMISO_POR_RUTA['/rol']).toBeUndefined();
   });
 
   it('con varias opciones basta una', () => {
@@ -144,11 +142,19 @@ describe('puedeAbrir', () => {
     expect(puedeAbrir('/constructor', [])).toBe(true);
   });
 
-  it('un Cajero predefinido no llega a reportes, negocio, exportar, compras ni usuarios', () => {
-    for (const ruta of ['/estadisticas', '/negocio', '/exportar', '/compra', '/usuarios']) {
+  it('una persona con los permisos iniciales no llega a reportes, negocio, exportar ni usuarios', () => {
+    for (const ruta of ['/estadisticas', '/negocio', '/exportar', '/usuarios']) {
       expect(puedeAbrir(ruta, CAJERO)).toBe(false);
     }
-    for (const ruta of ['/vender', '/cobrar', '/caja', '/ventas', '/clientes']) {
+    for (const ruta of [
+      '/vender',
+      '/cobrar',
+      '/caja',
+      '/ventas',
+      '/clientes',
+      '/compra',
+      '/conteo',
+    ]) {
       expect(puedeAbrir(ruta, CAJERO)).toBe(true);
     }
   });
@@ -173,41 +179,39 @@ describe('catálogo', () => {
     expect(new Set(PERMISOS).size).toBe(PERMISOS.length);
   });
 
-  it('todo rol predefinido usa solo permisos válidos', () => {
-    for (const rol of Object.values(ROLES_PREDEFINIDOS)) {
-      for (const clave of rol.permisos) expect(esPermiso(clave)).toBe(true);
+  it('los permisos iniciales son válidos, no se repiten y no incluyen los delicados', () => {
+    expect(new Set(PERMISOS_INICIALES).size).toBe(PERMISOS_INICIALES.length);
+    for (const clave of PERMISOS_INICIALES) expect(esPermiso(clave)).toBe(true);
+    expect(PERMISOS_INICIALES).toEqual([
+      'vender',
+      'ventas_ver',
+      'caja',
+      'fiado',
+      'productos_editar',
+      'mercaderia',
+      'stock',
+    ]);
+    for (const delicado of ['usuarios', 'cuenta_eliminar', 'suscripcion', 'negocio'] as const) {
+      expect(PERMISOS_INICIALES).not.toContain(delicado);
     }
-    expect(ROLES_PREDEFINIDOS.administrador.permisos).toEqual([...PERMISOS]);
+  });
+
+  it('cada permiso aparece una vez en los grupos que ve el dueño', () => {
+    const claves = GRUPOS_PERMISOS.flatMap((g) => g.permisos.map((p) => p.clave));
+    expect([...claves].sort()).toEqual([...PERMISOS].sort());
   });
 });
 
-describe('roles predefinidos y la migración SQL', () => {
+describe('permisos iniciales y la migración SQL', () => {
   // Jest corre desde la raíz del proyecto.
-  const sql: string = readFileSync('supabase/migrations/20261019000100_roles_permisos.sql', 'utf8');
-  // Fragmento del insert de crear_roles_predefinidos.
-  const inicio = sql.indexOf('create or replace function inventariado.crear_roles_predefinidos');
-  const insercion = sql.slice(inicio, sql.indexOf('$$;', sql.indexOf('as $$', inicio) + 5));
-
-  const permisosEnSql = (predefinido: string): string[] => {
-    const re = new RegExp("'(\\[[^']*\\])'::jsonb,\\s*'" + predefinido + "'");
-    const coincide = insercion.match(re);
-    if (!coincide) throw new Error(`No se encontró el rol ${predefinido} en la migración`);
-    return JSON.parse(coincide[1]);
-  };
-
-  it.each(['administrador', 'cajero', 'bodeguero'] as const)(
-    'el rol %s tiene los mismos permisos en la app y en el SQL',
-    (clave) => {
-      expect(permisosEnSql(clave)).toEqual(ROLES_PREDEFINIDOS[clave].permisos);
-    },
+  const sql: string = readFileSync(
+    'supabase/migrations/20261021000100_permisos_por_persona.sql',
+    'utf8',
   );
 
-  it.each([
-    ['administrador', 'Administrador'],
-    ['cajero', 'Cajero'],
-    ['bodeguero', 'Bodeguero'],
-  ] as const)('el nombre del rol %s coincide', (clave, nombre) => {
-    expect(ROLES_PREDEFINIDOS[clave].nombre).toBe(nombre);
-    expect(insercion).toContain(`'${nombre}'`);
+  it('el valor por defecto del servidor coincide con PERMISOS_INICIALES', () => {
+    const coincide = sql.match(/set default\s+'(\[[^']*\])'::jsonb/i);
+    if (!coincide) throw new Error('No se encontró el valor por defecto en la migración');
+    expect(JSON.parse(coincide[1])).toEqual([...PERMISOS_INICIALES]);
   });
 });

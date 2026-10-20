@@ -8,6 +8,7 @@ import { crearProducto, listarProductos } from '@/db/productos';
 import type { BaseLocal } from '@/db/tipos';
 import { useSesion } from '@/sesion/store';
 import { crearBaseEnMemoria } from '@/test/baseEnMemoria';
+import { PERMISOS_CAJERO } from '@/test/personas';
 
 jest.mock('expo-crypto', () => require('@/test/mockExpoCrypto'));
 
@@ -75,7 +76,13 @@ async function prepararBase() {
     ahora,
   );
   await crearPerfil(mockDb, { negocioId: NEGOCIO, nombre: 'Ana', rol: 'dueno', pin: '1234' });
-  await crearPerfil(mockDb, { negocioId: NEGOCIO, nombre: 'Carla', rol: 'cajero', pin: '5678' });
+  await crearPerfil(mockDb, {
+    negocioId: NEGOCIO,
+    nombre: 'Carla',
+    rol: 'cajero',
+    pin: '5678',
+    permisos: PERMISOS_CAJERO,
+  });
   await guardarAjuste(mockDb, AJUSTE_NEGOCIO, NEGOCIO);
 }
 

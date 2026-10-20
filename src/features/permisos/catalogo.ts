@@ -1,8 +1,7 @@
 /**
- * Permisos que el dueño puede dar a cada rol. Las claves se guardan en la tabla
- * `roles` (columna `permisos`): nunca se renombra una clave publicada, solo se
- * agregan nuevas. Ver productos y stock, Inicio y "Cambiar de usuario" no
- * necesitan permiso.
+ * Permisos que el dueño puede dar a cada persona. Las claves se guardan en
+ * `perfiles.permisos`: nunca se renombra una clave publicada, solo se agregan nuevas.
+ * Ver productos y stock, Inicio y "Cambiar de usuario" no necesitan permiso.
  */
 export const PERMISOS = [
   'vender',
@@ -101,7 +100,7 @@ export const GRUPOS_PERMISOS: GrupoPermisos[] = [
       {
         clave: 'usuarios',
         texto: 'Usuarios y permisos',
-        detalle: 'Agregar personas, cambiar su PIN y su rol.',
+        detalle: 'Agregar personas, cambiar su PIN y sus permisos.',
       },
       {
         clave: 'suscripcion',
@@ -117,14 +116,18 @@ export const GRUPOS_PERMISOS: GrupoPermisos[] = [
   },
 ];
 
-export type RolPredefinido = 'administrador' | 'cajero' | 'bodeguero';
-
 /**
- * Roles que se crean solos en cada negocio (los crea el servidor; ver
- * supabase/migrations/20261019000100_roles_permisos.sql, que repite estas listas).
+ * Permisos con que parte una persona nueva: lo típico de un almacén de barrio, donde quien
+ * cobra también ingresa mercadería y cuenta stock. El dueño los cambia con interruptores.
+ * El servidor usa la misma lista como valor por defecto
+ * (supabase/migrations/20261021000100_permisos_por_persona.sql).
  */
-export const ROLES_PREDEFINIDOS: Record<RolPredefinido, { nombre: string; permisos: Permiso[] }> = {
-  administrador: { nombre: 'Administrador', permisos: [...PERMISOS] },
-  cajero: { nombre: 'Cajero', permisos: ['vender', 'ventas_ver', 'caja', 'fiado'] },
-  bodeguero: { nombre: 'Bodeguero', permisos: ['productos_editar', 'mercaderia', 'stock'] },
-};
+export const PERMISOS_INICIALES: readonly Permiso[] = [
+  'vender',
+  'ventas_ver',
+  'caja',
+  'fiado',
+  'productos_editar',
+  'mercaderia',
+  'stock',
+];

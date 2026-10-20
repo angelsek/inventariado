@@ -1,18 +1,16 @@
 import { useShallow } from 'zustand/react/shallow';
 
 import type { Perfil } from '@/db/perfiles';
-import { obtenerRol } from '@/db/roles';
-import type { BaseLocal } from '@/db/tipos';
 import type { Permiso } from '@/features/permisos/catalogo';
 import { permisosDePerfil } from '@/features/permisos/permisos';
 
-import { type RolSesion, useSesion } from './store';
+import { useSesion } from './store';
 
-type EstadoPermisos = Pick<ReturnType<typeof useSesion.getState>, 'perfil' | 'rol'>;
+type EstadoPermisos = Pick<ReturnType<typeof useSesion.getState>, 'perfil'>;
 
 /** Permisos de la persona que usa la app (ninguno si nadie ingresó su PIN). */
-export const permisosDeSesion = ({ perfil, rol }: EstadoPermisos): Permiso[] =>
-  perfil ? permisosDePerfil(perfil, rol) : [];
+export const permisosDeSesion = ({ perfil }: EstadoPermisos): Permiso[] =>
+  perfil ? permisosDePerfil(perfil) : [];
 
 /** ¿La persona que usa la app tiene `permiso`? */
 export function usePermiso(permiso: Permiso): boolean {
@@ -24,19 +22,15 @@ export function usePermisos(): Permiso[] {
   return useSesion(useShallow(permisosDeSesion));
 }
 
-/** Nombre que se muestra junto al de la persona: "Dueño", su rol o "Cajero". */
-export function nombreDeRol(perfil: Pick<Perfil, 'rol'>, rol: RolSesion | null): string {
-  if (perfil.rol === 'dueno') return 'Dueño';
-  return rol && !rol.eliminado ? rol.nombre : 'Cajero';
-}
+/** Texto junto al nombre de una persona: "Dueño" para el dueño, nada para las demás. */
+export const etiquetaPersona = (perfil: Pick<Perfil, 'rol'>): string =>
+  perfil.rol === 'dueno' ? 'Dueño' : '';
 
-export function useNombreRol(): string {
-  return useSesion((s) => (s.perfil ? nombreDeRol(s.perfil, s.rol) : ''));
-}
-
-/** Lee de la base local el rol del perfil para guardarlo en la sesión. */
-export async function cargarRolSesion(db: BaseLocal, perfil: Perfil): Promise<RolSesion | null> {
-  if (perfil.rol === 'dueno' || !perfil.rol_id) return null;
-  const rol = await obtenerRol(db, perfil.rol_id);
-  return rol ? { nombre: rol.nombre, permisos: rol.permisos, eliminado: rol.eliminado } : null;
+/** Nombre de la persona que usa la app, con " · Dueño" si corresponde. */
+export function useNombreConEtiqueta(): string {
+  return useSesion((s) => {
+    if (!s.perfil) return '';
+    const etiqueta = etiquetaPersona(s.perfil);
+    return etiqueta ? `${s.perfil.nombre} · ${etiqueta}` : s.perfil.nombre;
+  });
 }

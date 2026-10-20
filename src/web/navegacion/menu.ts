@@ -93,13 +93,7 @@ export const MENU: GrupoMenu[] = [
         texto: 'Usuarios y permisos',
         icono: 'person-circle-outline',
         ruta: '/usuarios',
-        activaEn: [],
-      },
-      {
-        texto: 'Roles',
-        icono: 'shield-checkmark-outline',
-        ruta: '/roles',
-        activaEn: ['/rol'],
+        activaEn: ['/usuario'],
       },
       { texto: 'Suscripción', icono: 'card-outline', ruta: '/suscripcion', activaEn: [] },
       {

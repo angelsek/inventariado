@@ -1,10 +1,8 @@
-import { type Permiso, PERMISOS, ROLES_PREDEFINIDOS } from './catalogo';
+import { type Permiso, PERMISOS } from './catalogo';
 
 /**
  * Lógica pura de permisos (sin React ni base de datos) para poder probarla.
- * El dueño siempre tiene todo. Una persona sin rol, o con un rol eliminado,
- * tiene los permisos del Cajero: así una APK vieja o un equipo que aún no
- * sincroniza nunca muestran más de la cuenta.
+ * El dueño siempre tiene todo; las demás personas, su propia lista.
  */
 
 export const esPermiso = (valor: unknown): valor is Permiso =>
@@ -24,13 +22,10 @@ export function parsearPermisos(valor: unknown): Permiso[] {
   return PERMISOS.filter((p) => lista.includes(p));
 }
 
-export function permisosDePerfil(
-  perfil: { rol: string },
-  rol: { permisos: readonly Permiso[]; eliminado: boolean } | null,
-): Permiso[] {
+/** Permisos de una persona. Una lista vacía deja solo lo que no pide permiso. */
+export function permisosDePerfil(perfil: { rol: string; permisos: readonly Permiso[] }): Permiso[] {
   if (perfil.rol === 'dueno') return [...PERMISOS];
-  if (!rol || rol.eliminado) return [...ROLES_PREDEFINIDOS.cajero.permisos];
-  return PERMISOS.filter((p) => rol.permisos.includes(p));
+  return PERMISOS.filter((p) => perfil.permisos.includes(p));
 }
 
 /**
@@ -58,8 +53,7 @@ export const PERMISO_POR_RUTA: Record<string, readonly Permiso[]> = {
   '/exportar': ['exportar'],
   '/negocio': ['negocio'],
   '/usuarios': ['usuarios'],
-  '/roles': ['usuarios'],
-  '/rol': ['usuarios'],
+  '/usuario': ['usuarios'],
   '/eliminar-cuenta': ['cuenta_eliminar'],
 };
 

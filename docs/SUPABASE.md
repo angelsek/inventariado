@@ -36,13 +36,15 @@ columna, la publicación se detiene.
 Es **obligatoria antes de publicar la web**. Es compatible con las apps Android
 ya instaladas: el tipo por defecto es `telefono`, así que siguen registrándose igual.
 
-`20261019000100_roles_permisos.sql` (perfiles y permisos) crea la tabla `roles` y la columna
-`perfiles.rol_id`, con los roles predefinidos de cada negocio. Es **obligatoria antes de publicar
-el APK o la web** con ese cambio: si falta, la sincronización falla. Ver `docs/PERMISOS.md`.
+`20261019000100_roles_permisos.sql` y `20261020000100_editor_roles.sql` (roles y editor de roles)
+ya se ejecutaron y quedaron **sin uso**: la app ya no sincroniza la tabla `roles` ni
+`perfiles.rol_id`. No las borres por ahora; su limpieza queda para más adelante.
 
-`20261020000100_editor_roles.sql` (editor de roles) resuelve en el servidor los choques de roles
-hechos sin internet. Se ejecuta **después** de la de roles y es obligatoria antes de publicar el
-editor. Si vuelves a ejecutar `20261019000100_roles_permisos.sql`, vuelve a ejecutar también esta.
+`20261021000100_permisos_por_persona.sql` (permisos por persona) agrega `perfiles.permisos` y
+`perfiles.permisos_en`, migra los datos desde los roles, deja 7 permisos por defecto para las
+personas nuevas, valida el formato y crea el trigger `proteger_permisos`. Es **obligatoria antes de
+fusionar el PR y de publicar el APK o la web** con ese cambio: si falta, la sincronización falla.
+Ver `docs/PERMISOS.md`.
 
 ## 3. Exponer el esquema
 

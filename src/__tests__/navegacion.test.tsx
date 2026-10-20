@@ -6,10 +6,11 @@ import { AJUSTE_NEGOCIO, guardarAjuste } from '@/db/ajustes';
 import { migrarBaseDeDatos } from '@/db/migraciones';
 import { crearPerfil } from '@/db/perfiles';
 import type { BaseLocal } from '@/db/tipos';
-import { PERMISOS, ROLES_PREDEFINIDOS } from '@/features/permisos/catalogo';
+import { type Permiso, PERMISOS_INICIALES } from '@/features/permisos/catalogo';
 import { reiniciarIntentos } from '@/sesion/intentosPin';
 import { useSesion } from '@/sesion/store';
 import { crearBaseEnMemoria } from '@/test/baseEnMemoria';
+import { PERMISOS_CAJERO } from '@/test/personas';
 
 jest.mock('expo-crypto', () => require('@/test/mockExpoCrypto'));
 
@@ -41,13 +42,8 @@ jest.mock('@/sync/useSincronizacionAutomatica', () => ({ useSincronizacionAutoma
 
 const NEGOCIO = 'negocio-1';
 
-// Roles del negocio: los tres predefinidos (los crea el servidor) y uno propio con solo reportes.
-const ROLES: [string, string, string[], string | null][] = [
-  ['rol-admin', 'Administrador', [...PERMISOS], 'administrador'],
-  ['rol-cajero', 'Cajero', ROLES_PREDEFINIDOS.cajero.permisos, 'cajero'],
-  ['rol-bodeguero', 'Bodeguero', ROLES_PREDEFINIDOS.bodeguero.permisos, 'bodeguero'],
-  ['rol-analista', 'Analista', ['reportes'], null],
-];
+// Permisos de las personas de prueba (cada una tiene los suyos, no hay roles).
+const PERMISOS_BODEGUERO: Permiso[] = ['productos_editar', 'mercaderia', 'stock'];
 
 async function prepararBase(conNegocio: boolean) {
   mockDb = crearBaseEnMemoria();
@@ -63,34 +59,35 @@ async function prepararBase(conNegocio: boolean) {
     ahora,
   );
   await crearPerfil(mockDb, { negocioId: NEGOCIO, nombre: 'Ana', rol: 'dueno', pin: '1234' });
-  await crearPerfil(mockDb, { negocioId: NEGOCIO, nombre: 'Carla', rol: 'cajero', pin: '5678' });
+  await crearPerfil(mockDb, {
+    negocioId: NEGOCIO,
+    nombre: 'Carla',
+    rol: 'cajero',
+    pin: '5678',
+    permisos: PERMISOS_CAJERO,
+  });
   await guardarAjuste(mockDb, AJUSTE_NEGOCIO, NEGOCIO);
-  for (const [id, nombre, permisos, predefinido] of ROLES) {
-    await mockDb.runAsync(
-      `INSERT INTO roles (id, negocio_id, nombre, permisos, predefinido, creado_en, actualizado_en)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      id,
-      NEGOCIO,
-      nombre,
-      JSON.stringify(permisos),
-      predefinido,
-      ahora,
-      ahora,
-    );
-  }
 }
 
-/** Agrega una persona con su rol y PIN (los roles ya existen en la base). */
-const agregarPersona = (nombre: string, rolId: string, pin: string) =>
-  crearPerfil(mockDb, { negocioId: NEGOCIO, nombre, rol: 'cajero', rolId, pin });
+/** Agrega una persona con sus permisos (sin `permisos` parte con los iniciales) y su PIN. */
+const agregarPersona = (nombre: string, pin: string, permisos?: readonly Permiso[]) =>
+  crearPerfil(mockDb, { negocioId: NEGOCIO, nombre, rol: 'cajero', pin, permisos });
 
 const marcarPin = (pin: string) => {
   for (const digito of pin) fireEvent.press(screen.getByLabelText(digito));
 };
 
+const filaDe = (nombre: string) =>
+  mockDb.getFirstAsync<{ permisos: string; nombre: string; activo: number; pendiente: number }>(
+    'SELECT nombre, permisos, activo, pendiente FROM perfiles WHERE nombre = ?',
+    nombre,
+  );
+const permisosGuardados = async (nombre: string): Promise<string[]> =>
+  JSON.parse((await filaDe(nombre))!.permisos);
+
 beforeEach(() => {
   reiniciarIntentos();
-  useSesion.setState({ cargada: false, negocioId: null, perfil: null, rol: null, versionDatos: 0 });
+  useSesion.setState({ cargada: false, negocioId: null, perfil: null, versionDatos: 0 });
 });
 
 it('sin negocio vinculado muestra la bienvenida', async () => {
@@ -141,15 +138,14 @@ it('el dueño puede agregar una persona', async () => {
   marcarPin('1234');
   fireEvent.press(await screen.findByText('Más'));
   fireEvent.press(await screen.findByText('Usuarios y permisos'));
+  fireEvent.press(await screen.findByText('Nueva persona'));
 
   fireEvent.changeText(await screen.findByLabelText('Nombre'), 'Pedro');
   fireEvent.changeText(screen.getByLabelText('PIN (4 números)'), '4321');
   fireEvent.press(screen.getByText('Agregar persona'));
 
   expect(await screen.findByText('Pedro')).toBeTruthy();
-  const fila = await mockDb.getFirstAsync<{ pendiente: number }>(
-    "SELECT pendiente FROM perfiles WHERE nombre = 'Pedro'",
-  );
+  const fila = await filaDe('Pedro');
   expect(fila?.pendiente).toBe(1);
 });
 
@@ -165,8 +161,7 @@ const entrar = async (nombre: string, pin: string) => {
 };
 
 const irA = async (
-  ruta:
-    '/estadisticas' | '/negocio' | '/exportar' | '/compra' | '/usuarios' | '/roles' | '/rol/nuevo',
+  ruta: '/estadisticas' | '/negocio' | '/exportar' | '/compra' | '/usuarios' | '/usuario/nuevo',
 ) => {
   await act(async () => {
     router.push(ruta);
@@ -174,9 +169,9 @@ const irA = async (
 };
 
 describe('permisos en la navegación', () => {
-  it('un Bodeguero no ve las pestañas Vender ni Caja, y sí Productos', async () => {
+  it('quien solo tiene inventario no ve las pestañas Vender ni Caja, y sí Productos', async () => {
     await prepararBase(true);
-    await agregarPersona('Beto', 'rol-bodeguero', '1111');
+    await agregarPersona('Beto', '1111', PERMISOS_BODEGUERO);
     montar();
 
     await entrar('Beto', '1111');
@@ -185,12 +180,66 @@ describe('permisos en la navegación', () => {
     expect(screen.getByText('Más')).toBeTruthy();
     expect(screen.queryByLabelText('Vender')).toBeNull();
     expect(screen.queryByText('Caja')).toBeNull();
-    expect(useSesion.getState().rol?.nombre).toBe('Bodeguero');
+    expect(useSesion.getState().perfil?.permisos).toEqual(PERMISOS_BODEGUERO);
   });
 
-  it('un Bodeguero no llega a /estadisticas ni a /usuarios escribiendo la ruta', async () => {
+  it('quien no tiene "vender" no ve Vender aunque tenga los demás permisos iniciales', async () => {
     await prepararBase(true);
-    await agregarPersona('Beto', 'rol-bodeguero', '1111');
+    await agregarPersona(
+      'Vera',
+      '2222',
+      PERMISOS_INICIALES.filter((p) => p !== 'vender'),
+    );
+    montar();
+
+    await entrar('Vera', '2222');
+
+    expect(await screen.findByText('Caja')).toBeTruthy();
+    expect(screen.queryByLabelText('Vender')).toBeNull();
+  });
+
+  it('un cajero que también hace inventario ve Vender y las acciones de Productos', async () => {
+    await prepararBase(true);
+    // Sin lista de permisos: parte con los 7 iniciales (vender, ver ventas, caja, fiado,
+    // editar productos, mercadería y conteo de stock).
+    await agregarPersona('Cira', '3333');
+    montar();
+
+    await entrar('Cira', '3333');
+
+    expect(await screen.findByLabelText('Vender')).toBeTruthy();
+    expect(screen.getByText('Caja')).toBeTruthy();
+    fireEvent.press(screen.getByText('Productos'));
+    expect(await screen.findByText('Agregar producto')).toBeTruthy();
+    for (const accion of [
+      'Ingreso',
+      'Reponer',
+      'Conteo',
+      'Categorías',
+      'Proveedores',
+      'Importar',
+    ]) {
+      expect(screen.getByText(accion)).toBeTruthy();
+    }
+    fireEvent.press(screen.getByText('Ingreso'));
+    await waitFor(() => expect(pathname()).toBe('/compra'));
+  });
+
+  it('un cajero con solo los 4 permisos de caja no ve las acciones de inventario', async () => {
+    await prepararBase(true);
+    montar();
+    await entrar('Carla', '5678');
+
+    fireEvent.press(await screen.findByText('Productos'));
+    await screen.findByText('Aún no hay productos.');
+    expect(screen.queryByText('Agregar producto')).toBeNull();
+    expect(screen.queryByText('Ingreso')).toBeNull();
+    expect(screen.queryByText('Conteo')).toBeNull();
+  });
+
+  it('quien solo tiene inventario no llega a /estadisticas ni a /usuarios escribiendo la ruta', async () => {
+    await prepararBase(true);
+    await agregarPersona('Beto', '1111', PERMISOS_BODEGUERO);
     montar();
     await entrar('Beto', '1111');
     await screen.findByText('Productos');
@@ -202,11 +251,15 @@ describe('permisos en la navegación', () => {
     await irA('/usuarios');
     expect(screen.queryByText('Usuarios y permisos')).toBeNull();
     expect(pathname()).not.toBe('/usuarios');
+
+    await irA('/usuario/nuevo');
+    expect(pathname()).not.toBe('/usuario/nuevo');
+    expect(screen.queryByText('Agregar persona')).toBeNull();
   });
 
-  it('un Bodeguero sí llega a /compra (tiene mercadería)', async () => {
+  it('quien tiene mercadería sí llega a /compra', async () => {
     await prepararBase(true);
-    await agregarPersona('Beto', 'rol-bodeguero', '1111');
+    await agregarPersona('Beto', '1111', PERMISOS_BODEGUERO);
     montar();
     await entrar('Beto', '1111');
     await screen.findByText('Productos');
@@ -216,7 +269,7 @@ describe('permisos en la navegación', () => {
   });
 
   it.each(['/estadisticas', '/negocio', '/exportar', '/compra'] as const)(
-    'un Cajero que escribe %s no llega a esa pantalla',
+    'un cajero con solo los 4 permisos de caja que escribe %s no llega a esa pantalla',
     async (ruta) => {
       await prepararBase(true);
       montar();
@@ -229,7 +282,7 @@ describe('permisos en la navegación', () => {
     },
   );
 
-  it('un Cajero ve Vender y Caja', async () => {
+  it('un cajero ve Vender y Caja', async () => {
     await prepararBase(true);
     montar();
     await entrar('Carla', '5678');
@@ -238,9 +291,9 @@ describe('permisos en la navegación', () => {
     expect(screen.getByText('Caja')).toBeTruthy();
   });
 
-  it('un rol con reportes ve "Reportes del negocio" en Más y puede abrirlos', async () => {
+  it('quien tiene reportes ve "Reportes del negocio" en Más y puede abrirlos', async () => {
     await prepararBase(true);
-    await agregarPersona('Rosa', 'rol-analista', '2222');
+    await agregarPersona('Rosa', '2222', ['reportes']);
     montar();
     await entrar('Rosa', '2222');
 
@@ -253,7 +306,7 @@ describe('permisos en la navegación', () => {
     await waitFor(() => expect(pathname()).toBe('/estadisticas'));
   });
 
-  it('un Cajero no ve "Reportes del negocio" en Más', async () => {
+  it('un cajero no ve "Reportes del negocio" en Más', async () => {
     await prepararBase(true);
     montar();
     await entrar('Carla', '5678');
@@ -263,17 +316,15 @@ describe('permisos en la navegación', () => {
     expect(screen.queryByText('Reportes del negocio')).toBeNull();
   });
 
-  it('una persona con un rol eliminado queda con los permisos del Cajero', async () => {
+  it('una persona sin ningún permiso no ve Vender ni Caja pero puede entrar', async () => {
     await prepararBase(true);
-    await agregarPersona('Rosa', 'rol-analista', '2222');
-    await mockDb.runAsync("UPDATE roles SET eliminado = 1 WHERE id = 'rol-analista'");
+    await agregarPersona('Nadia', '4444', []);
     montar();
-    await entrar('Rosa', '2222');
+    await entrar('Nadia', '4444');
 
-    expect(await screen.findByLabelText('Vender')).toBeTruthy();
-    fireEvent.press(screen.getByText('Más'));
-    expect(await screen.findByText('Cambiar de usuario')).toBeTruthy();
-    expect(screen.queryByText('Reportes del negocio')).toBeNull();
+    expect(await screen.findByText('Productos')).toBeTruthy();
+    expect(screen.queryByLabelText('Vender')).toBeNull();
+    expect(screen.queryByText('Caja')).toBeNull();
   });
 
   it('el dueño ve todas las opciones de Más y entra a cualquier pantalla', async () => {
@@ -299,101 +350,6 @@ describe('permisos en la navegación', () => {
     expect(pathname()).toBe('/estadisticas');
   });
 
-  it('se puede asignar un rol al crear una persona', async () => {
-    await prepararBase(true);
-    montar();
-    await entrar('Ana', '1234');
-    fireEvent.press(await screen.findByText('Más'));
-    fireEvent.press(await screen.findByText('Usuarios y permisos'));
-
-    fireEvent.changeText(await screen.findByLabelText('Nombre'), 'Pedro');
-    fireEvent.changeText(screen.getByLabelText('PIN (4 números)'), '4321');
-    // El selector de la sección "Nueva persona" es el último de la pantalla.
-    const bodegueros = await screen.findAllByText('Bodeguero');
-    fireEvent.press(bodegueros[bodegueros.length - 1]);
-    fireEvent.press(screen.getByText('Agregar persona'));
-
-    await waitFor(async () => {
-      const fila = await mockDb.getFirstAsync<{ rol_id: string; pendiente: number }>(
-        "SELECT rol_id, pendiente FROM perfiles WHERE nombre = 'Pedro'",
-      );
-      expect(fila).toEqual({ rol_id: 'rol-bodeguero', pendiente: 1 });
-    });
-  });
-
-  it('sin elegir rol, la persona nueva queda como Cajero', async () => {
-    await prepararBase(true);
-    montar();
-    await entrar('Ana', '1234');
-    fireEvent.press(await screen.findByText('Más'));
-    fireEvent.press(await screen.findByText('Usuarios y permisos'));
-
-    fireEvent.changeText(await screen.findByLabelText('Nombre'), 'Pedro');
-    fireEvent.changeText(screen.getByLabelText('PIN (4 números)'), '4321');
-    fireEvent.press(screen.getByText('Agregar persona'));
-
-    await waitFor(async () => {
-      const fila = await mockDb.getFirstAsync<{ rol_id: string }>(
-        "SELECT rol_id FROM perfiles WHERE nombre = 'Pedro'",
-      );
-      expect(fila?.rol_id).toBe('rol-cajero');
-    });
-  });
-
-  it('se le puede cambiar el rol a una persona', async () => {
-    await prepararBase(true);
-    montar();
-    await entrar('Ana', '1234');
-    fireEvent.press(await screen.findByText('Más'));
-    fireEvent.press(await screen.findByText('Usuarios y permisos'));
-
-    // El primer selector es el de Carla (el dueño no tiene).
-    const analistas = await screen.findAllByText('Analista');
-    fireEvent.press(analistas[0]);
-
-    await waitFor(async () => {
-      const fila = await mockDb.getFirstAsync<{ rol_id: string; pendiente: number }>(
-        "SELECT rol_id, pendiente FROM perfiles WHERE nombre = 'Carla'",
-      );
-      expect(fila?.rol_id).toBe('rol-analista');
-      expect(fila?.pendiente).toBeGreaterThan(1);
-    });
-    // El dueño no cambió.
-    const dueno = await mockDb.getFirstAsync<{ rol_id: string | null }>(
-      "SELECT rol_id FROM perfiles WHERE nombre = 'Ana'",
-    );
-    expect(dueno?.rol_id).toBeNull();
-  });
-
-  it('quien administra usuarios sin ser dueño no ve "Cambiar PIN" del dueño', async () => {
-    await prepararBase(true);
-    await agregarPersona('Uma', 'rol-admin', '3333');
-    montar();
-    await entrar('Uma', '3333');
-    fireEvent.press(await screen.findByText('Más'));
-    fireEvent.press(await screen.findByText('Usuarios y permisos'));
-
-    await screen.findByText('Carla');
-    // Uma y Carla tienen "Cambiar PIN"; Ana (dueña) no.
-    expect(screen.getAllByText('Cambiar PIN')).toHaveLength(2);
-    // No hay interruptor para activar o desactivar a la dueña ni a sí misma.
-    expect(screen.queryByLabelText('Activo: Ana')).toBeNull();
-    expect(screen.queryByLabelText('Activo: Uma')).toBeNull();
-    expect(screen.getByLabelText('Activo: Carla')).toBeTruthy();
-  });
-
-  it('el dueño ve "Cambiar PIN" de todas las personas', async () => {
-    await prepararBase(true);
-    await agregarPersona('Uma', 'rol-admin', '3333');
-    montar();
-    await entrar('Ana', '1234');
-    fireEvent.press(await screen.findByText('Más'));
-    fireEvent.press(await screen.findByText('Usuarios y permisos'));
-
-    await screen.findByText('Carla');
-    expect(screen.getAllByText('Cambiar PIN')).toHaveLength(3);
-  });
-
   it('tras 5 PIN incorrectos seguidos bloquea el ingreso, incluso con el PIN correcto', async () => {
     await prepararBase(true);
     montar();
@@ -412,161 +368,252 @@ describe('permisos en la navegación', () => {
   });
 });
 
-describe('editor de roles', () => {
-  const abrirRoles = async () => {
+describe('usuarios y permisos por persona', () => {
+  const abrirUsuarios = async () => {
     fireEvent.press(await screen.findByText('Más'));
     fireEvent.press(await screen.findByText('Usuarios y permisos'));
-    fireEvent.press(await screen.findByText('Editar roles y permisos'));
   };
-
-  const insertarRolPropio = async (id: string, nombre: string, permisos: string[]) => {
-    const ahora = new Date().toISOString();
-    await mockDb.runAsync(
-      `INSERT INTO roles (id, negocio_id, nombre, permisos, predefinido, creado_en, actualizado_en)
-       VALUES (?, ?, ?, ?, NULL, ?, ?)`,
-      id,
-      NEGOCIO,
-      nombre,
-      JSON.stringify(permisos),
-      ahora,
-      ahora,
-    );
+  const abrirPersona = async (nombre: string) => {
+    await abrirUsuarios();
+    fireEvent.press(await screen.findByLabelText(`Editar a ${nombre}`));
+    await screen.findByLabelText('Nombre');
   };
+  const interruptor = (texto: string) => screen.getByLabelText(texto);
+  const estaActivo = (texto: string) => interruptor(texto).props.value === true;
+  const estaDeshabilitado = (texto: string) => interruptor(texto).props.disabled === true;
+  const cambiar = (texto: string, valor: boolean) =>
+    fireEvent(interruptor(texto), 'valueChange', valor);
 
-  it('un Bodeguero no llega a /roles ni a /rol/nuevo escribiendo la ruta', async () => {
-    await prepararBase(true);
-    await agregarPersona('Beto', 'rol-bodeguero', '1111');
-    montar();
-    await entrar('Beto', '1111');
-    await screen.findByText('Productos');
-
-    await irA('/roles');
-    expect(pathname()).not.toBe('/roles');
-    expect(screen.queryByText('Nuevo rol')).toBeNull();
-
-    await irA('/rol/nuevo');
-    expect(pathname()).not.toBe('/rol/nuevo');
-    expect(screen.queryByText('Crear rol')).toBeNull();
+  beforeEach(() => {
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  it('el dueño crea un rol desde Usuarios y permisos y queda pendiente en la base', async () => {
+  it('la lista muestra el resumen de permisos de cada persona', async () => {
     await prepararBase(true);
     montar();
     await entrar('Ana', '1234');
-    await abrirRoles();
+    await abrirUsuarios();
 
-    fireEvent.press(await screen.findByText('Nuevo rol'));
-    fireEvent.changeText(await screen.findByLabelText('Nombre'), '  Jefe de turno ');
-    fireEvent(screen.getByLabelText('Vender y cobrar'), 'valueChange', true);
-    fireEvent.press(screen.getByText('Crear rol'));
+    expect(await screen.findByText('Todos los permisos')).toBeTruthy();
+    expect(
+      screen.getByText('Vender y cobrar · Ver ventas anteriores · Caja del día · Clientes y fiado'),
+    ).toBeTruthy();
+    expect(screen.getByText('Nueva persona')).toBeTruthy();
+  });
+
+  it('una persona nueva parte con los 7 permisos iniciales y el dueño apaga uno antes de guardar', async () => {
+    await prepararBase(true);
+    montar();
+    await entrar('Ana', '1234');
+    await irA('/usuario/nuevo');
+
+    fireEvent.changeText(await screen.findByLabelText('Nombre'), '  Pedro  ');
+    fireEvent.changeText(screen.getByLabelText('PIN (4 números)'), '4321');
+    for (const texto of [
+      'Vender y cobrar',
+      'Ver ventas anteriores',
+      'Caja del día',
+      'Clientes y fiado',
+      'Editar productos',
+      'Ingresos de mercadería',
+      'Conteo de stock',
+    ]) {
+      expect(estaActivo(texto)).toBe(true);
+    }
+    for (const texto of ['Anular ventas', 'Reportes del negocio', 'Usuarios y permisos']) {
+      expect(estaActivo(texto)).toBe(false);
+    }
+
+    cambiar('Caja del día', false);
+    cambiar('Reportes del negocio', true);
+    fireEvent.press(screen.getByText('Agregar persona'));
 
     await waitFor(async () => {
-      const fila = await mockDb.getFirstAsync<{
-        nombre: string;
-        permisos: string;
-        predefinido: string | null;
-        pendiente: number;
-      }>(
-        "SELECT nombre, permisos, predefinido, pendiente FROM roles WHERE nombre = 'Jefe de turno'",
-      );
-      expect(fila).toEqual({
-        nombre: 'Jefe de turno',
-        permisos: '["vender"]',
-        predefinido: null,
-        pendiente: 1,
+      expect((await filaDe('Pedro'))?.pendiente).toBe(1);
+    });
+    expect(await permisosGuardados('Pedro')).toEqual([
+      'vender',
+      'ventas_ver',
+      'fiado',
+      'productos_editar',
+      'mercaderia',
+      'stock',
+      'reportes',
+    ]);
+  });
+
+  it('no agrega a la persona sin nombre ni con un PIN incompleto', async () => {
+    await prepararBase(true);
+    montar();
+    await entrar('Ana', '1234');
+    await irA('/usuario/nuevo');
+
+    fireEvent.press(await screen.findByText('Agregar persona'));
+    expect(await screen.findByText('Ingresa el nombre de la persona.')).toBeTruthy();
+
+    fireEvent.changeText(screen.getByLabelText('Nombre'), 'Pedro');
+    fireEvent.changeText(screen.getByLabelText('PIN (4 números)'), '12');
+    fireEvent.press(screen.getByText('Agregar persona'));
+    expect(await screen.findByText('El PIN debe tener 4 números.')).toBeTruthy();
+    expect(await filaDe('Pedro')).toBeNull();
+  });
+
+  it('el dueño edita los permisos de otra persona y queda pendiente de sincronizar', async () => {
+    await prepararBase(true);
+    montar();
+    await entrar('Ana', '1234');
+    await abrirPersona('Carla');
+
+    expect(estaActivo('Vender y cobrar')).toBe(true);
+    expect(estaActivo('Editar productos')).toBe(false);
+    cambiar('Editar productos', true);
+    cambiar('Clientes y fiado', false);
+    fireEvent.press(screen.getByText('Guardar'));
+
+    await waitFor(async () => {
+      expect(await permisosGuardados('Carla')).toEqual([
+        'vender',
+        'ventas_ver',
+        'caja',
+        'productos_editar',
+      ]);
+    });
+    expect((await filaDe('Carla'))!.pendiente).toBeGreaterThan(1);
+    // El dueño no cambió.
+    expect(await permisosGuardados('Ana')).toEqual([]);
+  });
+
+  it('el dueño renombra a una persona y la desactiva', async () => {
+    await prepararBase(true);
+    montar();
+    await entrar('Ana', '1234');
+    await abrirPersona('Carla');
+
+    fireEvent.changeText(screen.getByLabelText('Nombre'), '  Carla   Soto ');
+    cambiar('Activo', false);
+    fireEvent.press(screen.getByText('Guardar'));
+
+    await waitFor(async () => {
+      expect(await filaDe('Carla Soto')).not.toBeNull();
+    });
+    expect((await filaDe('Carla Soto'))!.activo).toBe(0);
+    expect(await filaDe('Carla')).toBeNull();
+  });
+
+  it('al editar al dueño solo se cambia nombre y PIN: sin interruptores ni "Activo"', async () => {
+    await prepararBase(true);
+    montar();
+    await entrar('Ana', '1234');
+    await abrirPersona('Ana');
+
+    expect(screen.getByText('Dueño: tiene todos los permisos.')).toBeTruthy();
+    expect(screen.queryByLabelText('Activo')).toBeNull();
+    expect(screen.queryByLabelText('Vender y cobrar')).toBeNull();
+    expect(screen.getByLabelText('PIN nuevo (déjalo vacío para no cambiarlo)')).toBeTruthy();
+
+    fireEvent.changeText(screen.getByLabelText('Nombre'), 'Ana María');
+    fireEvent.press(screen.getByText('Guardar'));
+    await waitFor(async () => {
+      expect(await filaDe('Ana María')).not.toBeNull();
+    });
+    expect(await permisosGuardados('Ana María')).toEqual([]);
+  });
+
+  describe('quien tiene "usuarios" sin ser dueño', () => {
+    const PERMISOS_UMA: Permiso[] = [...PERMISOS_CAJERO, 'usuarios'];
+
+    it('no puede editar al dueño', async () => {
+      await prepararBase(true);
+      await agregarPersona('Uma', '3333', PERMISOS_UMA);
+      montar();
+      await entrar('Uma', '3333');
+      await abrirPersona('Ana');
+
+      expect(await screen.findByText('Solo el dueño puede cambiar sus datos.')).toBeTruthy();
+      expect(screen.queryByText('Guardar')).toBeNull();
+      expect(screen.queryByLabelText('PIN nuevo (déjalo vacío para no cambiarlo)')).toBeNull();
+      expect(screen.getByLabelText('Nombre').props.editable).toBe(false);
+    });
+
+    it('no puede cambiar sus propios permisos', async () => {
+      await prepararBase(true);
+      await agregarPersona('Uma', '3333', PERMISOS_UMA);
+      montar();
+      await entrar('Uma', '3333');
+      await abrirPersona('Uma');
+
+      expect(await screen.findByText(/No puedes cambiar tus propios permisos/)).toBeTruthy();
+      expect(estaDeshabilitado('Vender y cobrar')).toBe(true);
+      expect(estaDeshabilitado('Usuarios y permisos')).toBe(true);
+      expect(screen.queryByLabelText('Activo')).toBeNull();
+      // Sí puede cambiarse el PIN.
+      expect(screen.getByLabelText('PIN nuevo (déjalo vacío para no cambiarlo)')).toBeTruthy();
+    });
+
+    it('no puede activar un permiso que no tiene, solo los suyos', async () => {
+      await prepararBase(true);
+      await agregarPersona('Uma', '3333', PERMISOS_UMA);
+      montar();
+      await entrar('Uma', '3333');
+      await abrirPersona('Carla');
+
+      expect(estaDeshabilitado('Anular ventas')).toBe(true);
+      expect(estaDeshabilitado('Reportes del negocio')).toBe(true);
+      // Uma tiene "usuarios": puede dárselo a otra persona.
+      expect(estaDeshabilitado('Usuarios y permisos')).toBe(false);
+      expect(estaDeshabilitado('Editar productos')).toBe(true);
+      expect(estaDeshabilitado('Caja del día')).toBe(false);
+
+      // Aunque el evento llegara, no se guarda un permiso ajeno.
+      cambiar('Anular ventas', true);
+      fireEvent.press(screen.getByText('Guardar'));
+      await act(async () => {});
+      expect(await permisosGuardados('Carla')).toEqual([...PERMISOS_CAJERO]);
+    });
+
+    it('sí puede dar y quitar los permisos que tiene', async () => {
+      await prepararBase(true);
+      await agregarPersona('Uma', '3333', PERMISOS_UMA);
+      montar();
+      await entrar('Uma', '3333');
+      await abrirPersona('Carla');
+
+      cambiar('Caja del día', false);
+      fireEvent.press(screen.getByText('Guardar'));
+      await waitFor(async () => {
+        expect(await permisosGuardados('Carla')).toEqual(['vender', 'ventas_ver', 'fiado']);
       });
     });
-  });
 
-  it('crear un rol con el nombre de otro muestra el error y no guarda nada', async () => {
-    await prepararBase(true);
-    montar();
-    await entrar('Ana', '1234');
-    await abrirRoles();
+    it('no puede editar a quien tiene permisos que él no tiene', async () => {
+      await prepararBase(true);
+      await agregarPersona('Uma', '3333', PERMISOS_UMA);
+      await agregarPersona('Rosa', '2222', ['vender', 'reportes']);
+      montar();
+      await entrar('Uma', '3333');
+      await abrirPersona('Rosa');
 
-    fireEvent.press(await screen.findByText('Nuevo rol'));
-    fireEvent.changeText(await screen.findByLabelText('Nombre'), 'cajero');
-    fireEvent.press(screen.getByText('Crear rol'));
-
-    expect(await screen.findByText(/Ya existe un rol llamado "Cajero"/)).toBeTruthy();
-    const n = await mockDb.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM roles');
-    expect(n?.n).toBe(ROLES.length);
-  });
-
-  it('un Administrador que no es dueño ve su propio rol sin botón Guardar', async () => {
-    await prepararBase(true);
-    await agregarPersona('Uma', 'rol-admin', '3333');
-    montar();
-    await entrar('Uma', '3333');
-    await abrirRoles();
-
-    fireEvent.press(await screen.findByLabelText('Rol Administrador'));
-
-    expect(await screen.findByText(/No puedes cambiar tu propio rol/)).toBeTruthy();
-    expect(screen.queryByText('Guardar')).toBeNull();
-    expect(screen.queryByText('Restablecer')).toBeNull();
-  });
-
-  it('un rol con reportes y usuarios no ve Administrador ni "Cambiar PIN" de Uma', async () => {
-    await prepararBase(true);
-    await insertarRolPropio('rol-gerente', 'Gerente', ['reportes', 'usuarios']);
-    await agregarPersona('Gus', 'rol-gerente', '4444');
-    await agregarPersona('Uma', 'rol-admin', '3333');
-    montar();
-    await entrar('Gus', '4444');
-    fireEvent.press(await screen.findByText('Más'));
-    fireEvent.press(await screen.findByText('Usuarios y permisos'));
-
-    await screen.findByText('Uma');
-    // Solo la etiqueta del rol de Uma: Administrador no es una opción para nadie.
-    expect(screen.getAllByText('Administrador')).toHaveLength(1);
-    expect(screen.queryByLabelText('Activo: Uma')).toBeNull();
-    // Gus solo puede cambiarse el PIN a sí mismo: Uma (Administrador) y Carla (Cajero) tienen más.
-    expect(screen.getAllByText('Cambiar PIN')).toHaveLength(1);
-    expect(screen.queryByLabelText('Activo: Carla')).toBeNull();
-    // Sí puede dar los roles que no superan al suyo.
-    expect(screen.getAllByText('Analista').length).toBeGreaterThan(0);
-  });
-
-  it('el dueño elimina un rol propio sin personas', async () => {
-    await prepararBase(true);
-    await insertarRolPropio('rol-temporal', 'Temporal', ['stock']);
-    const alerta = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    montar();
-    await entrar('Ana', '1234');
-    await abrirRoles();
-
-    fireEvent.press(await screen.findByLabelText('Rol Temporal'));
-    fireEvent.press(await screen.findByText('Eliminar rol'));
-    expect(alerta).toHaveBeenCalledWith('Eliminar rol', expect.stringContaining('Temporal'), [
-      expect.objectContaining({ text: 'Cancelar' }),
-      expect.objectContaining({ text: 'Eliminar' }),
-    ]);
-    const botones = alerta.mock.calls[0][2]!;
-    await act(async () => {
-      botones.find((b) => b.text === 'Eliminar')!.onPress!();
+      expect(await screen.findByText('Esta persona tiene permisos que tú no tienes.')).toBeTruthy();
+      expect(screen.queryByText('Guardar')).toBeNull();
+      expect(estaDeshabilitado('Vender y cobrar')).toBe(true);
     });
 
-    await waitFor(async () => {
-      const fila = await mockDb.getFirstAsync<{ eliminado: number; pendiente: number }>(
-        "SELECT eliminado, pendiente FROM roles WHERE id = 'rol-temporal'",
-      );
-      expect(fila?.eliminado).toBe(1);
-      expect(fila?.pendiente).toBeGreaterThan(0);
+    it('la persona nueva parte solo con los iniciales que él puede dar', async () => {
+      await prepararBase(true);
+      // Uma puede agregar personas, pero no tiene "Editar productos" ni inventario.
+      await agregarPersona('Uma', '3333', ['usuarios', 'vender', 'caja']);
+      montar();
+      await entrar('Uma', '3333');
+      await irA('/usuario/nuevo');
+
+      await screen.findByLabelText('Nombre');
+      expect(estaActivo('Vender y cobrar')).toBe(true);
+      expect(estaActivo('Caja del día')).toBe(true);
+      expect(estaActivo('Editar productos')).toBe(false);
+      expect(estaDeshabilitado('Editar productos')).toBe(true);
     });
-    alerta.mockRestore();
-  });
-
-  it('un rol con personas no ofrece "Eliminar rol"', async () => {
-    await prepararBase(true);
-    await insertarRolPropio('rol-temporal', 'Temporal', ['stock']);
-    await agregarPersona('Tina', 'rol-temporal', '5555');
-    montar();
-    await entrar('Ana', '1234');
-    await abrirRoles();
-
-    fireEvent.press(await screen.findByLabelText('Rol Temporal'));
-    expect(await screen.findByText(/primero cambia de rol a sus personas/)).toBeTruthy();
-    expect(screen.queryByText('Eliminar rol')).toBeNull();
   });
 });

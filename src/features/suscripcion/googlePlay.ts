@@ -1,7 +1,7 @@
 /**
  * Suscripción con Google Play Billing (solo en la versión instalada desde Play).
  *
- * Flujo: la app pide a Google la compra del plan (con la prueba de 14 días) →
+ * Flujo: la app pide a Google la compra del plan (con la prueba de 7 días) →
  * Google cobra con la tarjeta de la cuenta del cliente → la app manda el token de
  * compra a la función verificar-compra-play de Supabase, que lo confirma con
  * Google y activa la suscripción del negocio para todos sus teléfonos → la app

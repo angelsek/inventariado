@@ -21,8 +21,8 @@ export function ElegirPlan() {
         </View>
         <Text style={estilos.titulo}>Elige tu plan</Text>
         <Text style={estilos.subtitulo}>
-          Prueba Stockeao gratis por 14 días. Si no te convence, cancelas desde Play Store y no
-          pagas nada.
+          Prueba Stockeao gratis por 7 días. Si no te convence, cancelas desde Play Store y no pagas
+          nada.
         </Text>
         <PlanesPlay />
         <Text accessibilityRole="button" style={estilos.enlace} onPress={salir}>

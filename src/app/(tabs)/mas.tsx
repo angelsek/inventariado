@@ -10,7 +10,7 @@ import { useActualizacion } from '@/features/actualizacion/actualizacion';
 import { confirmarCierreSesion } from '@/features/cuenta/cierreSesion';
 import { supabase } from '@/lib/supabase';
 import { versionActual } from '@/lib/version';
-import { useNombreRol, usePermiso } from '@/sesion/permisos';
+import { useNombreConEtiqueta, usePermiso } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores, radios } from '@/theme/colores';
@@ -21,7 +21,7 @@ export default function MasScreen() {
   const [negocio, setNegocio] = useState('');
   // Cerrar sesión desvincula el equipo de la cuenta: sigue siendo solo del dueño.
   const esDueno = perfil?.rol === 'dueno';
-  const nombreRol = useNombreRol();
+  const nombreConEtiqueta = useNombreConEtiqueta();
   const puedeReportes = usePermiso('reportes');
   const puedeFiado = usePermiso('fiado');
   const puedeEditarClientes = usePermiso('clientes_editar');
@@ -56,9 +56,7 @@ export default function MasScreen() {
     <ScrollView style={estilos.pantalla} contentContainerStyle={estilos.contenido}>
       <View style={estilos.tarjeta}>
         <Text style={estilos.negocio}>{negocio}</Text>
-        <Text style={estilos.usuario}>
-          {perfil?.nombre} · {nombreRol}
-        </Text>
+        <Text style={estilos.usuario}>{nombreConEtiqueta}</Text>
       </View>
 
       <View style={[estilos.tarjeta, { marginTop: 12 }]}>

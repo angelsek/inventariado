@@ -7,7 +7,7 @@ import { Logotipo } from '@/components/LogoStockeao';
 import { obtenerNegocio } from '@/db/negocio';
 import { useBase } from '@/db/proveedor';
 import { useCarrito } from '@/features/ventas/carrito';
-import { useNombreRol, usePermisos } from '@/sesion/permisos';
+import { useNombreConEtiqueta, usePermisos } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores, radios } from '@/theme/colores';
@@ -66,12 +66,11 @@ function MenuLateral() {
   const ruta = usePathname();
   const negocioId = useSesion((s) => s.negocioId);
   const versionDatos = useSesion((s) => s.versionDatos);
-  const perfil = useSesion((s) => s.perfil);
   const salir = useSesion((s) => s.salir);
   const sync = useSesion((s) => s.sync);
   const enLinea = useEnLinea();
   const permisos = usePermisos();
-  const nombreRol = useNombreRol();
+  const nombreConEtiqueta = useNombreConEtiqueta();
   const activa = entradaActiva(ruta, permisos);
   const [negocio, setNegocio] = useState('');
 
@@ -151,7 +150,7 @@ function MenuLateral() {
           {enLinea ? <Ionicons name="refresh" size={14} color={colores.primarioSuave} /> : null}
         </Pressable>
         <Text style={estilos.usuario} numberOfLines={1}>
-          {perfil?.nombre} · {nombreRol}
+          {nombreConEtiqueta}
         </Text>
         <Pressable accessibilityRole="button" onPress={salir}>
           <Text style={estilos.cambiarUsuario}>Cambiar usuario</Text>

@@ -296,6 +296,18 @@ export const migraciones: string[] = [
      pendiente INTEGER NOT NULL DEFAULT 0
    );
    ALTER TABLE perfiles ADD COLUMN rol_id TEXT;`,
+
+  // 9: permisos por persona. Cada persona hereda los permisos de su rol (o del Cajero);
+  // el dueño no usa la lista. La tabla roles y rol_id quedan sin uso. Se borra el cursor
+  // de perfiles para volver a bajarlos completos con la columna nueva.
+  `ALTER TABLE perfiles ADD COLUMN permisos TEXT NOT NULL DEFAULT '[]';
+   UPDATE perfiles SET permisos = COALESCE(
+       (SELECT r.permisos FROM roles r WHERE r.id = perfiles.rol_id AND r.eliminado = 0),
+       (SELECT r.permisos FROM roles r
+         WHERE r.negocio_id = perfiles.negocio_id AND r.predefinido = 'cajero'),
+       '["vender","ventas_ver","caja","fiado"]')
+    WHERE rol <> 'dueno';
+   DELETE FROM sync_cursores WHERE tabla = 'perfiles';`,
 ];
 
 /** Aplica las migraciones pendientes usando PRAGMA user_version. */

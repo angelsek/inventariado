@@ -9,7 +9,7 @@ import { confirmarCierreSesion } from '@/features/cuenta/cierreSesion';
 import { formatearFechaHora } from '@/lib/formato';
 import { supabase } from '@/lib/supabase';
 import { versionActual } from '@/lib/version';
-import { useNombreRol, usePermiso } from '@/sesion/permisos';
+import { useNombreConEtiqueta, usePermiso } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
@@ -25,7 +25,7 @@ export default function CuentaYEquipo() {
   const db = useBase();
   const { negocioId, perfil, sync, salir, versionDatos } = useSesion();
   const esDueno = perfil?.rol === 'dueno';
-  const nombreRol = useNombreRol();
+  const nombreConEtiqueta = useNombreConEtiqueta();
   const puedeEliminar = usePermiso('cuenta_eliminar');
   const [negocio, setNegocio] = useState('');
   const [esAdmin, setEsAdmin] = useState(false);
@@ -61,7 +61,7 @@ export default function CuentaYEquipo() {
     <ScrollView style={estilos.pantalla} contentContainerStyle={estilos.contenido}>
       <Seccion titulo="Usuario y equipo">
         <Fila etiqueta="Negocio" valor={negocio} />
-        <Fila etiqueta="Usuario" valor={`${perfil?.nombre ?? ''} · ${nombreRol}`} />
+        <Fila etiqueta="Usuario" valor={nombreConEtiqueta} />
         <Fila
           etiqueta="Sincronización"
           valor={estadoSync}

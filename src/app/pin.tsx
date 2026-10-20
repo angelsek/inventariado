@@ -9,7 +9,6 @@ import { Campo } from '@/components/Campo';
 import { TecladoPin } from '@/components/TecladoPin';
 import { obtenerNegocio } from '@/db/negocio';
 import { cambiarPin, listarPerfiles, type Perfil, verificarPin } from '@/db/perfiles';
-import { listarRoles } from '@/db/roles';
 import { esPinValido, LARGO_PIN } from '@/lib/pin';
 import { mensajeDeError, supabase } from '@/lib/supabase';
 import { guardarAjuste, leerAjuste } from '@/db/ajustes';
@@ -21,7 +20,7 @@ import {
   registrarAcierto,
   registrarFallo,
 } from '@/sesion/intentosPin';
-import { cargarRolSesion, nombreDeRol } from '@/sesion/permisos';
+import { etiquetaPersona } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
@@ -32,7 +31,6 @@ export default function PinScreen() {
   const { negocioId, entrar, versionDatos } = useSesion();
   const [negocio, setNegocio] = useState('');
   const [perfiles, setPerfiles] = useState<Perfil[]>([]);
-  const [roles, setRoles] = useState<Map<string, string>>(new Map());
   const [elegido, setElegido] = useState<Perfil | null>(null);
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -42,18 +40,7 @@ export default function PinScreen() {
     if (!negocioId) return;
     obtenerNegocio(db, negocioId).then((n) => setNegocio(n?.nombre ?? ''));
     listarPerfiles(db, negocioId, { soloActivos: true }).then(setPerfiles);
-    listarRoles(db, negocioId).then((lista) =>
-      setRoles(new Map(lista.map((r) => [r.id, r.nombre]))),
-    );
   }, [db, negocioId, versionDatos]);
-
-  const textoRol = (perfil: Perfil) =>
-    nombreDeRol(
-      perfil,
-      perfil.rol_id && roles.has(perfil.rol_id)
-        ? { nombre: roles.get(perfil.rol_id)!, permisos: [], eliminado: false }
-        : null,
-    );
 
   // Los intentos se comprueban de a uno: si dos se cruzaran, la lectura de lo guardado
   // del segundo pisaría el fallo recién anotado por el primero y contaría de menos.
@@ -72,7 +59,7 @@ export default function PinScreen() {
       if (await verificarPin(db, perfil.id, valor)) {
         registrarAcierto(perfil.id);
         await guardarAjuste(db, AJUSTE_INTENTOS_PIN, exportarIntentos());
-        entrar(perfil, await cargarRolSesion(db, perfil));
+        entrar(perfil);
       } else {
         const bloqueo = registrarFallo(perfil.id);
         await guardarAjuste(db, AJUSTE_INTENTOS_PIN, exportarIntentos());
@@ -139,7 +126,9 @@ export default function PinScreen() {
               />
               <View>
                 <Text style={estilos.nombre}>{perfil.nombre}</Text>
-                <Text style={estilos.rol}>{textoRol(perfil)}</Text>
+                {etiquetaPersona(perfil) ? (
+                  <Text style={estilos.rol}>{etiquetaPersona(perfil)}</Text>
+                ) : null}
               </View>
             </Pressable>
           ))}

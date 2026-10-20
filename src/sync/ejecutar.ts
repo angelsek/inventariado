@@ -5,7 +5,6 @@ import { dispositivoDesvinculado, obtenerEstadoSuscripcion } from '@/db/suscripc
 import type { BaseLocal } from '@/db/tipos';
 import { mensajeDeError, supabase } from '@/lib/supabase';
 import { cerrarSesion } from '@/sesion/cuenta';
-import { cargarRolSesion } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 
 import { contarPendientes, sincronizar } from './motor';
@@ -66,18 +65,16 @@ async function ejecutar(db: BaseLocal): Promise<void> {
 
 /**
  * Si otro teléfono desactivó al perfil que está usando la app, vuelve a la pantalla de PIN.
- * Si le cambió el rol o los permisos, se aplican sin cerrar la sesión.
+ * Si le cambió los permisos o el nombre, se aplican sin cerrar la sesión.
  */
 async function expulsarPerfilDesactivado(db: BaseLocal) {
   const { perfil, salir, refrescarPerfil } = useSesion.getState();
   if (!perfil) return;
   const actual = await obtenerPerfil(db, perfil.id);
   if (!actual || !actual.activo) return salir();
-  const rol = await cargarRolSesion(db, actual);
   // Si mientras tanto la persona cambió de usuario, no se pisa la sesión nueva. Solo se
   // actualiza si algo cambió, para no volver a dibujar la app en cada sincronización.
   const sesion = useSesion.getState();
   if (sesion.perfil?.id !== actual.id) return;
-  const cambio = JSON.stringify([sesion.perfil, sesion.rol]) !== JSON.stringify([actual, rol]);
-  if (cambio) refrescarPerfil(actual, rol);
+  if (JSON.stringify(sesion.perfil) !== JSON.stringify(actual)) refrescarPerfil(actual);
 }

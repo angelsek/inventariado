@@ -26,16 +26,11 @@ export const TABLAS_SYNC: readonly TablaSync[] = [
     booleanas: ['eliminado'],
   },
   {
-    // Antes de perfiles: perfiles.rol_id la referencia.
-    nombre: 'roles',
-    columnas: ['id', 'negocio_id', 'nombre', 'permisos', 'predefinido', ...control],
-    booleanas: ['eliminado'],
-    json: ['permisos'],
-  },
-  {
     nombre: 'perfiles',
-    columnas: ['id', 'negocio_id', 'nombre', 'rol', 'rol_id', 'pin_hash', 'activo', ...control],
+    // La tabla roles y rol_id ya no se usan (permisos por persona desde la migración 9).
+    columnas: ['id', 'negocio_id', 'nombre', 'rol', 'permisos', 'pin_hash', 'activo', ...control],
     booleanas: ['activo', 'eliminado'],
+    json: ['permisos'],
   },
   {
     nombre: 'categorias',

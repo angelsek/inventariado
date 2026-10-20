@@ -69,13 +69,14 @@ export async function crearPerfil(
   const permisos =
     datos.rol === 'dueno' ? [] : ordenarPermisos(datos.permisos ?? PERMISOS_INICIALES);
   await db.runAsync(
-    `INSERT INTO perfiles (id, negocio_id, nombre, rol, permisos, pin_hash, activo, creado_en, actualizado_en, pendiente)
-     VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, 1)`,
+    `INSERT INTO perfiles (id, negocio_id, nombre, rol, permisos, permisos_en, pin_hash, activo, creado_en, actualizado_en, pendiente)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, 1)`,
     id,
     datos.negocioId,
     nombre,
     datos.rol,
     JSON.stringify(permisos),
+    ahora,
     await hashPin(id, datos.pin),
     ahora,
     ahora,
@@ -83,17 +84,23 @@ export async function crearPerfil(
   return { id, negocio_id: datos.negocioId, nombre, rol: datos.rol, permisos, activo: true };
 }
 
-/** Cambia los permisos de una persona. El dueño siempre tiene todos: no se toca. */
+/**
+ * Cambia los permisos de una persona y anota cuándo (permisos_en): en el servidor gana la
+ * lista más reciente. El dueño siempre tiene todos: no se toca.
+ */
 export async function cambiarPermisos(
   db: BaseLocal,
   perfilId: string,
   permisos: readonly Permiso[],
 ): Promise<void> {
+  const ahora = new Date().toISOString();
   await db.runAsync(
-    `UPDATE perfiles SET permisos = ?, actualizado_en = ?, pendiente = pendiente + 1
+    `UPDATE perfiles SET permisos = ?, permisos_en = ?, actualizado_en = ?,
+            pendiente = pendiente + 1
       WHERE id = ? AND rol <> 'dueno'`,
     JSON.stringify(ordenarPermisos(permisos)),
-    new Date().toISOString(),
+    ahora,
+    ahora,
     perfilId,
   );
 }

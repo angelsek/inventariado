@@ -110,6 +110,26 @@ describe('cambiarPermisos', () => {
     expect(await pendiente(beto.id)).toBe(2);
   });
 
+  it('anota cuándo cambiaron los permisos; el PIN no mueve esa fecha', async () => {
+    const beto = await nueva('Beto');
+    const fecha = async () =>
+      (
+        await db.getFirstAsync<{ permisos_en: string }>(
+          'SELECT permisos_en FROM perfiles WHERE id = ?',
+          beto.id,
+        )
+      )?.permisos_en;
+    const alCrear = await fecha();
+    expect(alCrear).toBeTruthy();
+
+    await cambiarPin(db, beto.id, '9999');
+    expect(await fecha()).toBe(alCrear);
+
+    await new Promise((r) => setTimeout(r, 5));
+    await cambiarPermisos(db, beto.id, ['caja']);
+    expect((await fecha())! > alCrear!).toBe(true);
+  });
+
   it('puede dejar a la persona sin ningún permiso', async () => {
     const beto = await nueva('Beto');
     await cambiarPermisos(db, beto.id, []);

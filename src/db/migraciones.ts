@@ -298,9 +298,12 @@ export const migraciones: string[] = [
    ALTER TABLE perfiles ADD COLUMN rol_id TEXT;`,
 
   // 9: permisos por persona. Cada persona hereda los permisos de su rol (o del Cajero);
-  // el dueño no usa la lista. La tabla roles y rol_id quedan sin uso. Se borra el cursor
-  // de perfiles para volver a bajarlos completos con la columna nueva.
+  // el dueño no usa la lista. permisos_en es cuándo se cambiaron: el servidor no deja que
+  // una lista más vieja pise una más nueva. La tabla roles y rol_id quedan sin uso. Se
+  // borra el cursor de perfiles para volver a bajarlos completos con las columnas nuevas.
   `ALTER TABLE perfiles ADD COLUMN permisos TEXT NOT NULL DEFAULT '[]';
+   ALTER TABLE perfiles ADD COLUMN permisos_en TEXT;
+   UPDATE perfiles SET permisos_en = creado_en;
    UPDATE perfiles SET permisos = COALESCE(
        (SELECT r.permisos FROM roles r WHERE r.id = perfiles.rol_id AND r.eliminado = 0),
        (SELECT r.permisos FROM roles r

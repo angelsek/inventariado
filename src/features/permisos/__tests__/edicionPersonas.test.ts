@@ -82,6 +82,21 @@ describe('puedeEditarPersona', () => {
   });
 });
 
+describe('puedeEditarPersona entre quienes administran usuarios', () => {
+  it('quien no es dueño no cambia a otra persona que también administra usuarios', () => {
+    const edicion = puedeEditarPersona(
+      persona('beto', ['vender', 'usuarios']),
+      gerente(['vender', 'usuarios']),
+    );
+    expect(edicion).toMatchObject({ nombre: false, pin: false, activo: false, permisos: false });
+    expect(edicion.motivo).toBe('Solo el dueño puede cambiar a quien administra usuarios.');
+  });
+
+  it('el dueño sí la cambia', () => {
+    expect(puedeEditarPersona(persona('beto', ['usuarios']), dueno).permisos).toBe(true);
+  });
+});
+
 describe('permisoEditable', () => {
   it('el dueño puede activar cualquiera', () => {
     for (const p of PERMISOS) expect(permisoEditable(p, dueno)).toBe(true);

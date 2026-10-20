@@ -52,6 +52,10 @@ export function puedeEditarPersona(objetivo: Objetivo, editor: Editor): Edicion 
   if (!editor.esDueno && objetivo.permisos.some((p) => !editor.permisos.includes(p))) {
     return nada('Esta persona tiene permisos que tú no tienes.');
   }
+  // Entre dos personas que administran usuarios, una no puede quitarle el acceso a la otra.
+  if (!editor.esDueno && objetivo.permisos.includes('usuarios')) {
+    return nada('Solo el dueño puede cambiar a quien administra usuarios.');
+  }
   return { nombre: true, pin: true, activo: true, permisos: true };
 }
 

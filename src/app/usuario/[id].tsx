@@ -34,7 +34,11 @@ import { useSesion } from '@/sesion/store';
 import { sincronizarAhora } from '@/sync/ejecutar';
 import { colores } from '@/theme/colores';
 
-type Borrador = { nombre: string; pin: string; activo: boolean; permisos: Permiso[] };
+type Datos = { nombre: string; activo: boolean; permisos: Permiso[] };
+/** Lo que se edita, y con qué valores se abrió: al guardar solo se manda lo que cambió. */
+type Borrador = Datos & { pin: string; inicial: Datos };
+
+const borradorDe = (datos: Datos): Borrador => ({ ...datos, pin: '', inicial: datos });
 
 const soloNumeros = (v: string) => v.replace(/\D/g, '').slice(0, LARGO_PIN);
 
@@ -58,7 +62,7 @@ export default function UsuarioScreen() {
   // Una persona nueva parte con los permisos iniciales que quien la agrega puede dar.
   const [borrador, setBorrador] = useState<Borrador | null>(() =>
     nuevo && editor
-      ? { nombre: '', pin: '', activo: true, permisos: permisosInicialesPara(editor) }
+      ? borradorDe({ nombre: '', activo: true, permisos: permisosInicialesPara(editor) })
       : null,
   );
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +74,7 @@ export default function UsuarioScreen() {
       setPersona(p);
       // El borrador se arma una vez: una sincronización no borra lo que se está editando.
       setBorrador(
-        (b) => b ?? (p && { nombre: p.nombre, pin: '', activo: p.activo, permisos: p.permisos }),
+        (b) => b ?? (p && borradorDe({ nombre: p.nombre, activo: p.activo, permisos: p.permisos })),
       );
     });
   }, [db, id, nuevo]);
@@ -122,6 +126,28 @@ export default function UsuarioScreen() {
 
     setGuardando(true);
     try {
+      // Con los datos de ahora (otro equipo pudo cambiarlos mientras se editaba).
+      const fresca = nuevo ? null : await obtenerPerfil(db, persona!.id);
+      if (!nuevo && !fresca) return setError('Esta persona ya no existe.');
+      const permitido = fresca ? puedeEditarPersona(fresca, editor) : edicion;
+      const { inicial } = borrador;
+      const nombreNuevo = normalizarNombre(borrador.nombre);
+      const cambia = {
+        nombre: permitido.nombre && nombreNuevo !== normalizarNombre(inicial.nombre),
+        pin: permitido.pin && !!borrador.pin,
+        activo: permitido.activo && borrador.activo !== inicial.activo,
+        permisos:
+          permitido.permisos && permisos.join() !== ordenarPermisos(inicial.permisos).join(),
+      };
+      const tocados =
+        borrador.pin !== '' ||
+        nombreNuevo !== normalizarNombre(inicial.nombre) ||
+        borrador.activo !== inicial.activo ||
+        permisos.join() !== ordenarPermisos(inicial.permisos).join();
+      if (!nuevo && tocados && !Object.values(cambia).some(Boolean)) {
+        return setError(permitido.motivo ?? 'Ya no puedes cambiar a esta persona.');
+      }
+
       if (nuevo) {
         await crearPerfil(db, {
           negocioId: negocioId!,
@@ -131,17 +157,14 @@ export default function UsuarioScreen() {
           permisos,
         });
       } else {
-        const p = persona!;
-        if (edicion.nombre && normalizarNombre(borrador.nombre) !== p.nombre) {
-          await cambiarNombre(db, p.id, borrador.nombre);
-        }
-        if (edicion.pin && borrador.pin) await cambiarPin(db, p.id, borrador.pin);
-        if (edicion.activo && borrador.activo !== p.activo) {
-          await cambiarActivo(db, p.id, borrador.activo);
-        }
-        if (edicion.permisos && permisos.join() !== p.permisos.join()) {
-          await cambiarPermisos(db, p.id, permisos);
-        }
+        // Solo lo que se tocó: así no se deshace lo que otro equipo cambió mientras tanto.
+        const id = fresca!.id;
+        await db.withTransactionAsync(async () => {
+          if (cambia.nombre) await cambiarNombre(db, id, nombreNuevo);
+          if (cambia.pin) await cambiarPin(db, id, borrador.pin);
+          if (cambia.activo) await cambiarActivo(db, id, borrador.activo);
+          if (cambia.permisos) await cambiarPermisos(db, id, permisos);
+        });
       }
       datosCambiaron();
       sincronizarAhora(db);
@@ -149,7 +172,17 @@ export default function UsuarioScreen() {
         router.back();
       } else {
         setError(null);
-        setBorrador({ ...borrador, pin: '' });
+        const guardado = await obtenerPerfil(db, fresca!.id);
+        if (guardado) {
+          setPersona(guardado);
+          setBorrador(
+            borradorDe({
+              nombre: guardado.nombre,
+              activo: guardado.activo,
+              permisos: guardado.permisos,
+            }),
+          );
+        }
         avisar('Cambios guardados', 'Llegan a los demás equipos al sincronizar.');
       }
     } catch {
@@ -163,8 +196,9 @@ export default function UsuarioScreen() {
     <Formulario
       titulo={nuevo ? 'Nueva persona' : persona!.nombre}
       subtitulo={esDueno ? 'Dueño: tiene todos los permisos.' : undefined}
-      error={error ?? edicion.motivo ?? null}
+      error={error}
     >
+      {edicion.motivo ? <Text style={estilos.nota}>{edicion.motivo}</Text> : null}
       <Campo
         etiqueta="Nombre"
         value={borrador.nombre}

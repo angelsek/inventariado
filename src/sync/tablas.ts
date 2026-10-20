@@ -28,7 +28,17 @@ export const TABLAS_SYNC: readonly TablaSync[] = [
   {
     nombre: 'perfiles',
     // La tabla roles y rol_id ya no se usan (permisos por persona desde la migración 9).
-    columnas: ['id', 'negocio_id', 'nombre', 'rol', 'permisos', 'pin_hash', 'activo', ...control],
+    columnas: [
+      'id',
+      'negocio_id',
+      'nombre',
+      'rol',
+      'permisos',
+      'permisos_en',
+      'pin_hash',
+      'activo',
+      ...control,
+    ],
     booleanas: ['activo', 'eliminado'],
     json: ['permisos'],
   },

@@ -450,4 +450,76 @@ begin
 end;
 $$;
 
+-- ---------------------------------------------------------------------------
+-- permisos_en: una subida con permisos más viejos no pisa los nuevos
+-- ---------------------------------------------------------------------------
+
+select pg_temp.como('00000000-0000-0000-0000-0000000000f4');
+insert into inventariado.perfiles (id, negocio_id, nombre, rol, pin_hash, permisos, permisos_en)
+values ('94000000-0000-0000-0000-0000000000e1', :'negocio_x', 'Pedro', 'cajero', 'h',
+        '["vender", "stock"]', '2026-10-21 10:00:00+00');
+-- El dueño le quita "stock" desde un equipo (a las 11:00).
+insert into inventariado.perfiles (id, negocio_id, nombre, rol, pin_hash, permisos, permisos_en)
+values ('94000000-0000-0000-0000-0000000000e1', :'negocio_x', 'Pedro', 'cajero', 'h',
+        '["vender"]', '2026-10-21 11:00:00+00')
+on conflict (id) do update
+  set permisos = excluded.permisos, permisos_en = excluded.permisos_en;
+-- Otro equipo, sin internet desde las 10:00, le cambia el PIN y sube la fila completa.
+insert into inventariado.perfiles (id, negocio_id, nombre, rol, pin_hash, permisos, permisos_en)
+values ('94000000-0000-0000-0000-0000000000e1', :'negocio_x', 'Pedro', 'cajero', 'h-nuevo',
+        '["vender", "stock"]', '2026-10-21 10:00:00+00')
+on conflict (id) do update
+  set pin_hash = excluded.pin_hash, permisos = excluded.permisos,
+      permisos_en = excluded.permisos_en;
+reset role;
+do $$
+declare
+  v_permisos jsonb;
+  v_pin text;
+begin
+  select permisos, pin_hash into v_permisos, v_pin
+    from inventariado.perfiles where id = '94000000-0000-0000-0000-0000000000e1';
+  if v_permisos <> '["vender"]'::jsonb then
+    raise exception 'FALLA: una subida vieja devolvió un permiso quitado: %', v_permisos;
+  end if;
+  if v_pin <> 'h-nuevo' then
+    raise exception 'FALLA: el cambio de PIN de la subida vieja se perdió';
+  end if;
+end;
+$$;
+
+-- Una subida más nueva sí cambia los permisos.
+select pg_temp.como('00000000-0000-0000-0000-0000000000f4');
+update inventariado.perfiles set permisos = '["vender", "caja"]', permisos_en = '2026-10-21 12:00:00+00'
+ where id = '94000000-0000-0000-0000-0000000000e1';
+reset role;
+do $$
+begin
+  if pg_temp.permisos_de('94000000-0000-0000-0000-0000000000e1') <> '["vender", "caja"]'::jsonb then
+    raise exception 'FALLA: un cambio de permisos más nuevo no se guardó';
+  end if;
+end;
+$$;
+
+-- Una APK sin estas columnas (solo cambia el PIN) no toca los permisos.
+select pg_temp.como('00000000-0000-0000-0000-0000000000f4');
+update inventariado.perfiles set pin_hash = 'h-apk' where id = '94000000-0000-0000-0000-0000000000e1';
+reset role;
+do $$
+begin
+  if pg_temp.permisos_de('94000000-0000-0000-0000-0000000000e1') <> '["vender", "caja"]'::jsonb then
+    raise exception 'FALLA: un cambio de PIN de APK vieja tocó los permisos';
+  end if;
+end;
+$$;
+
+-- Claves de más de 40 letras se rechazan.
+select pg_temp.como('00000000-0000-0000-0000-0000000000f4');
+select pg_temp.debe_fallar(
+  format($q$update inventariado.perfiles set permisos = %L, permisos_en = '2026-10-22 00:00:00+00'
+             where id = '94000000-0000-0000-0000-0000000000e1'$q$,
+         jsonb_build_array(repeat('x', 41))),
+  '23514');
+reset role;
+
 select 'Todas las pruebas SQL de permisos por persona pasaron';

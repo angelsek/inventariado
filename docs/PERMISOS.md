@@ -11,8 +11,8 @@ El dueño siempre tiene todos los permisos y no se puede degradar, desactivar ni
 
 ## Roles y permisos
 
-Cada negocio parte con tres roles predefinidos, que crea el servidor. Hoy no se pueden eliminar
-(el editor de roles propios es el PR 2, ver Pendiente). Una persona sin rol queda como Cajero.
+Cada negocio parte con tres roles predefinidos, que crea el servidor. No se pueden eliminar ni
+renombrar, pero sí editar sus permisos (ver Editor de roles). Una persona sin rol queda como Cajero.
 
 | Permiso            | Qué permite                                         | Administrador | Cajero | Bodeguero |
 | ------------------ | --------------------------------------------------- | :-----------: | :----: | :-------: |
@@ -35,6 +35,34 @@ Cada negocio parte con tres roles predefinidos, que crea el servidor. Hoy no se 
 Ver productos y stock, Inicio y "Cambiar de usuario" no necesitan permiso. Las claves se guardan
 en la tabla `roles` y nunca se renombran una vez publicadas: solo se agregan nuevas.
 
+## Editor de roles
+
+Se abre en **Más → Usuarios y permisos → Editar roles y permisos** (en la web, **Roles** en el
+menú lateral). Muestra la lista de roles con las personas de cada uno y el botón **Nuevo rol**.
+Cada rol tiene un interruptor por permiso.
+
+- **Predefinidos:** no se renombran ni se eliminan. **Restablecer** los devuelve a sus permisos
+  originales. El dueño puede quitarle permisos al Administrador; Restablecer se los devuelve.
+- **Roles propios:** se crean, se renombran y se eliminan. **Eliminar** solo está disponible si el
+  rol no tiene personas.
+
+### Reglas contra la escalada de permisos
+
+- Solo se pueden dar permisos que quien edita ya tiene.
+- Nadie, salvo el dueño, edita su propio rol ni un rol con permisos que no tiene.
+- Solo se asignan roles que no dan más permisos que los propios.
+- Quien no es dueño no cambia el PIN, el rol ni el estado de alguien con más permisos que él.
+
+### Choques sin internet
+
+Si dos equipos editan roles sin conexión, el servidor resuelve los choques al sincronizar
+(`supabase/migrations/20261020000100_editor_roles.sql`), sin avisar en la app:
+
+- **Nombre repetido:** el segundo queda como "Nombre (2)".
+- **Eliminar un rol que tiene personas:** se ignora y el rol reaparece.
+- **Asignar un rol que otro equipo eliminó:** la persona conserva su rol anterior o queda como
+  Cajero.
+
 ## Cómo se aplica
 
 - **Rutas:** cada ruta exige un permiso (`PERMISO_POR_RUTA`). Si alguien escribe la URL a mano,
@@ -49,6 +77,10 @@ en la tabla `roles` y nunca se renombran una vez publicadas: solo se agregan nue
   (triggers), porque hay una única cuenta de Supabase por negocio.
 - Quien tenga acceso técnico a un equipo podría saltarse los permisos o deducir un PIN de 4
   dígitos desde los datos locales. El PIN es un control de uso, no de seguridad fuerte.
+- Las reglas contra la escalada también se aplican en la app: como la cuenta es compartida, quien
+  manipule la base local o use un equipo desbloqueado puede saltárselas.
+- Entre pares con permisos iguales, uno puede quitarle permisos al rol del otro o desactivarlo; el
+  dueño lo corrige.
 
 ## Sin internet
 
@@ -67,7 +99,9 @@ Las personas creadas desde una APK vieja quedan como Cajero.
 Antes de publicar el APK o la web con este cambio, ejecutar
 `supabase/migrations/20261019000100_roles_permisos.sql` en el SQL Editor de Supabase
 (`docs/SUPABASE.md`). Si falta, la sincronización falla porque no conoce la tabla `roles` ni la
-columna `rol_id`.
+columna `rol_id`. Después, ejecutar `supabase/migrations/20261020000100_editor_roles.sql` (editor
+de roles). Si se vuelve a ejecutar la de `20261019000100`, hay que reejecutar también la de
+`20261020000100`.
 
 ## Archivos clave
 
@@ -76,11 +110,8 @@ columna `rol_id`.
 - `src/sesion/intentosPin.ts`: bloqueo por intentos fallidos del PIN.
 - `src/db/migraciones.ts`: migración local 8 (tabla `roles`, `perfiles.rol_id`).
 - `supabase/migrations/20261019000100_roles_permisos.sql`: roles en el servidor.
+- `supabase/migrations/20261020000100_editor_roles.sql`: choques del editor de roles.
 - `supabase/tests/90_pruebas_roles_permisos.sql`: pruebas SQL. `scripts/probar-sql.sh` no corre
   en Windows (usa un socket unix); allí se puede replicar levantando Postgres con `pg_ctl` en TCP
   `localhost`.
-
-## Pendiente (PR 2)
-
-Editor de roles: crear roles propios, renombrarlos, activar o desactivar permisos con
-interruptores y eliminar los roles propios.
+- `supabase/tests/92_pruebas_editor_roles.sql`: pruebas SQL del editor de roles.

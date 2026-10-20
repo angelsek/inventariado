@@ -40,6 +40,10 @@ ya instaladas: el tipo por defecto es `telefono`, así que siguen registrándose
 `perfiles.rol_id`, con los roles predefinidos de cada negocio. Es **obligatoria antes de publicar
 el APK o la web** con ese cambio: si falta, la sincronización falla. Ver `docs/PERMISOS.md`.
 
+`20261020000100_editor_roles.sql` (editor de roles) resuelve en el servidor los choques de roles
+hechos sin internet. Se ejecuta **después** de la de roles y es obligatoria antes de publicar el
+editor. Si vuelves a ejecutar `20261019000100_roles_permisos.sql`, vuelve a ejecutar también esta.
+
 ## 3. Exponer el esquema
 
 En **Project Settings → Data API → Exposed schemas**, agregar `inventariado` a la lista

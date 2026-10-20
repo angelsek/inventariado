@@ -140,6 +140,8 @@ function Navegacion() {
         */}
           <Stack.Protected guard={puede('/usuarios')}>
             <Stack.Screen name="usuarios" options={conEncabezado('Usuarios y permisos')} />
+            <Stack.Screen name="roles" options={conEncabezado('Roles')} />
+            <Stack.Screen name="rol/[id]" options={conEncabezado('Rol')} />
           </Stack.Protected>
           <Stack.Protected guard={puede('/categorias')}>
             <Stack.Screen name="categorias" options={conEncabezado('Categorías')} />

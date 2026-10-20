@@ -66,6 +66,10 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
   Cajero, Bodeguero) que el dueño asigna en Más → Usuarios y permisos, con 15 permisos aplicados en
   rutas, menús y botones; bloqueo del PIN tras intentos fallidos. Detalle y límites de seguridad
   en `docs/PERMISOS.md`.
+- Perfiles y permisos, PR 2 (rama `feat/editor-roles`): editor de roles en Más → Usuarios y
+  permisos (crear roles propios, interruptores por permiso, restablecer predefinidos, eliminar
+  roles propios sin personas) con reglas contra la escalada de permisos. Detalle en
+  `docs/PERMISOS.md`.
 - Dependencias revisadas: el workflow **Dependencias** corre `npm audit` contra las excepciones
   registradas (estricto en PR que tocan dependencias y los lunes; no obligatorio). Las
   vulnerabilidades actuales están analizadas en `docs/SEGURIDAD_DEPENDENCIAS.md`.
@@ -75,7 +79,8 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
 1. **Antes de publicar el APK o la web con perfiles y permisos:** ejecutar
    `supabase/migrations/20261019000100_roles_permisos.sql` en el SQL Editor de Supabase
    (`docs/SUPABASE.md`); si no, la sincronización falla (tabla `roles` y columna `rol_id`
-   desconocidas). Detalle en `docs/PERMISOS.md`.
+   desconocidas). Después, ejecutar también `supabase/migrations/20261020000100_editor_roles.sql`
+   (editor de roles). Detalle en `docs/PERMISOS.md`.
 2. **Antes de la primera publicación con la verificación:** ejecutar
    `supabase/migrations/20261003000100_versiones_app_sha256.sql` en el SQL Editor de Supabase
    (`docs/SUPABASE.md`) y publicar solo después de fusionar `feat/integridad-apk` a `main`.
@@ -106,11 +111,8 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
    costo. Se están cotizando OpenFactura (Haulmer) y SimpleAPI; el piloto será certificar el RUT
    de Grimorio Labs. Ojo: los clientes que cobran con la POS de Mercado Pago ya reciben boleta de
    la máquina, así que hay que evitar emitir una segunda boleta por la misma venta.
-9. **Perfiles y permisos, PR 2:** editor de roles (crear roles propios, renombrar, activar o
-   desactivar permisos con interruptores y eliminar los roles propios). Hoy los predefinidos no se
-   pueden eliminar.
-10. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**
-    (ver abajo).
+9. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**
+   (ver abajo).
 
 ## Idea a futuro: cobrar con la máquina POS desde Stockeao
 

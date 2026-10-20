@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useBase } from '@/db/proveedor';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -55,7 +55,11 @@ export default function PinScreen() {
         : null,
     );
 
-  const comprobar = useCallback(
+  // Los intentos se comprueban de a uno: si dos se cruzaran, la lectura de lo guardado
+  // del segundo pisaría el fallo recién anotado por el primero y contaría de menos.
+  const cola = useRef<Promise<void>>(Promise.resolve());
+
+  const comprobarAhora = useCallback(
     async (perfil: Perfil, valor: string) => {
       // Lo guardado se lee en cada intento: así lo restaura también tras recargar la página.
       importarIntentos(await leerAjuste(db, AJUSTE_INTENTOS_PIN));
@@ -81,6 +85,18 @@ export default function PinScreen() {
       }
     },
     [db, entrar],
+  );
+
+  const comprobar = useCallback(
+    (perfil: Perfil, valor: string) => {
+      cola.current = cola.current
+        .then(() => comprobarAhora(perfil, valor))
+        .catch(() => {
+          setError('No se pudo comprobar el PIN. Intenta de nuevo.');
+          setPin('');
+        });
+    },
+    [comprobarAhora],
   );
 
   const cambiarValor = (valor: string) => {

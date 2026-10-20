@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { Alert } from 'react-native';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
 import { AJUSTE_NEGOCIO, guardarAjuste } from '@/db/ajustes';
@@ -163,7 +164,10 @@ const entrar = async (nombre: string, pin: string) => {
   await waitFor(() => expect(useSesion.getState().perfil?.nombre).toBe(nombre));
 };
 
-const irA = async (ruta: '/estadisticas' | '/negocio' | '/exportar' | '/compra' | '/usuarios') => {
+const irA = async (
+  ruta:
+    '/estadisticas' | '/negocio' | '/exportar' | '/compra' | '/usuarios' | '/roles' | '/rol/nuevo',
+) => {
   await act(async () => {
     router.push(ruta);
   });
@@ -405,5 +409,164 @@ describe('permisos en la navegación', () => {
     marcarPin('5678');
     await waitFor(() => expect(screen.getByText(/Demasiados intentos/)).toBeTruthy());
     expect(useSesion.getState().perfil).toBeNull();
+  });
+});
+
+describe('editor de roles', () => {
+  const abrirRoles = async () => {
+    fireEvent.press(await screen.findByText('Más'));
+    fireEvent.press(await screen.findByText('Usuarios y permisos'));
+    fireEvent.press(await screen.findByText('Editar roles y permisos'));
+  };
+
+  const insertarRolPropio = async (id: string, nombre: string, permisos: string[]) => {
+    const ahora = new Date().toISOString();
+    await mockDb.runAsync(
+      `INSERT INTO roles (id, negocio_id, nombre, permisos, predefinido, creado_en, actualizado_en)
+       VALUES (?, ?, ?, ?, NULL, ?, ?)`,
+      id,
+      NEGOCIO,
+      nombre,
+      JSON.stringify(permisos),
+      ahora,
+      ahora,
+    );
+  };
+
+  it('un Bodeguero no llega a /roles ni a /rol/nuevo escribiendo la ruta', async () => {
+    await prepararBase(true);
+    await agregarPersona('Beto', 'rol-bodeguero', '1111');
+    montar();
+    await entrar('Beto', '1111');
+    await screen.findByText('Productos');
+
+    await irA('/roles');
+    expect(pathname()).not.toBe('/roles');
+    expect(screen.queryByText('Nuevo rol')).toBeNull();
+
+    await irA('/rol/nuevo');
+    expect(pathname()).not.toBe('/rol/nuevo');
+    expect(screen.queryByText('Crear rol')).toBeNull();
+  });
+
+  it('el dueño crea un rol desde Usuarios y permisos y queda pendiente en la base', async () => {
+    await prepararBase(true);
+    montar();
+    await entrar('Ana', '1234');
+    await abrirRoles();
+
+    fireEvent.press(await screen.findByText('Nuevo rol'));
+    fireEvent.changeText(await screen.findByLabelText('Nombre'), '  Jefe de turno ');
+    fireEvent(screen.getByLabelText('Vender y cobrar'), 'valueChange', true);
+    fireEvent.press(screen.getByText('Crear rol'));
+
+    await waitFor(async () => {
+      const fila = await mockDb.getFirstAsync<{
+        nombre: string;
+        permisos: string;
+        predefinido: string | null;
+        pendiente: number;
+      }>(
+        "SELECT nombre, permisos, predefinido, pendiente FROM roles WHERE nombre = 'Jefe de turno'",
+      );
+      expect(fila).toEqual({
+        nombre: 'Jefe de turno',
+        permisos: '["vender"]',
+        predefinido: null,
+        pendiente: 1,
+      });
+    });
+  });
+
+  it('crear un rol con el nombre de otro muestra el error y no guarda nada', async () => {
+    await prepararBase(true);
+    montar();
+    await entrar('Ana', '1234');
+    await abrirRoles();
+
+    fireEvent.press(await screen.findByText('Nuevo rol'));
+    fireEvent.changeText(await screen.findByLabelText('Nombre'), 'cajero');
+    fireEvent.press(screen.getByText('Crear rol'));
+
+    expect(await screen.findByText(/Ya existe un rol llamado "Cajero"/)).toBeTruthy();
+    const n = await mockDb.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM roles');
+    expect(n?.n).toBe(ROLES.length);
+  });
+
+  it('un Administrador que no es dueño ve su propio rol sin botón Guardar', async () => {
+    await prepararBase(true);
+    await agregarPersona('Uma', 'rol-admin', '3333');
+    montar();
+    await entrar('Uma', '3333');
+    await abrirRoles();
+
+    fireEvent.press(await screen.findByLabelText('Rol Administrador'));
+
+    expect(await screen.findByText(/No puedes cambiar tu propio rol/)).toBeTruthy();
+    expect(screen.queryByText('Guardar')).toBeNull();
+    expect(screen.queryByText('Restablecer')).toBeNull();
+  });
+
+  it('un rol con reportes y usuarios no ve Administrador ni "Cambiar PIN" de Uma', async () => {
+    await prepararBase(true);
+    await insertarRolPropio('rol-gerente', 'Gerente', ['reportes', 'usuarios']);
+    await agregarPersona('Gus', 'rol-gerente', '4444');
+    await agregarPersona('Uma', 'rol-admin', '3333');
+    montar();
+    await entrar('Gus', '4444');
+    fireEvent.press(await screen.findByText('Más'));
+    fireEvent.press(await screen.findByText('Usuarios y permisos'));
+
+    await screen.findByText('Uma');
+    // Solo la etiqueta del rol de Uma: Administrador no es una opción para nadie.
+    expect(screen.getAllByText('Administrador')).toHaveLength(1);
+    expect(screen.queryByLabelText('Activo: Uma')).toBeNull();
+    // Gus solo puede cambiarse el PIN a sí mismo: Uma (Administrador) y Carla (Cajero) tienen más.
+    expect(screen.getAllByText('Cambiar PIN')).toHaveLength(1);
+    expect(screen.queryByLabelText('Activo: Carla')).toBeNull();
+    // Sí puede dar los roles que no superan al suyo.
+    expect(screen.getAllByText('Analista').length).toBeGreaterThan(0);
+  });
+
+  it('el dueño elimina un rol propio sin personas', async () => {
+    await prepararBase(true);
+    await insertarRolPropio('rol-temporal', 'Temporal', ['stock']);
+    const alerta = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    montar();
+    await entrar('Ana', '1234');
+    await abrirRoles();
+
+    fireEvent.press(await screen.findByLabelText('Rol Temporal'));
+    fireEvent.press(await screen.findByText('Eliminar rol'));
+    expect(alerta).toHaveBeenCalledWith('Eliminar rol', expect.stringContaining('Temporal'), [
+      expect.objectContaining({ text: 'Cancelar' }),
+      expect.objectContaining({ text: 'Eliminar' }),
+    ]);
+    const botones = alerta.mock.calls[0][2]!;
+    await act(async () => {
+      botones.find((b) => b.text === 'Eliminar')!.onPress!();
+    });
+
+    await waitFor(async () => {
+      const fila = await mockDb.getFirstAsync<{ eliminado: number; pendiente: number }>(
+        "SELECT eliminado, pendiente FROM roles WHERE id = 'rol-temporal'",
+      );
+      expect(fila?.eliminado).toBe(1);
+      expect(fila?.pendiente).toBeGreaterThan(0);
+    });
+    alerta.mockRestore();
+  });
+
+  it('un rol con personas no ofrece "Eliminar rol"', async () => {
+    await prepararBase(true);
+    await insertarRolPropio('rol-temporal', 'Temporal', ['stock']);
+    await agregarPersona('Tina', 'rol-temporal', '5555');
+    montar();
+    await entrar('Ana', '1234');
+    await abrirRoles();
+
+    fireEvent.press(await screen.findByLabelText('Rol Temporal'));
+    expect(await screen.findByText(/primero cambia de rol a sus personas/)).toBeTruthy();
+    expect(screen.queryByText('Eliminar rol')).toBeNull();
   });
 });

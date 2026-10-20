@@ -121,6 +121,17 @@ describe('puedeAbrir', () => {
     expect(puedeAbrir('/venta/1?a=/usuarios', [])).toBe(false);
   });
 
+  it('/roles y /rol/x piden "usuarios"', () => {
+    for (const ruta of ['/roles', '/rol/nuevo', '/rol/abc']) {
+      expect(puedeAbrir(ruta, [])).toBe(false);
+      expect(puedeAbrir(ruta, CAJERO)).toBe(false);
+      expect(puedeAbrir(ruta, ['reportes'])).toBe(false);
+      expect(puedeAbrir(ruta, ['usuarios'])).toBe(true);
+    }
+    expect(PERMISO_POR_RUTA['/roles']).toEqual(['usuarios']);
+    expect(PERMISO_POR_RUTA['/rol']).toEqual(['usuarios']);
+  });
+
   it('con varias opciones basta una', () => {
     expect(puedeAbrir('/clientes', ['fiado'])).toBe(true);
     expect(puedeAbrir('/clientes', ['clientes_editar'])).toBe(true);

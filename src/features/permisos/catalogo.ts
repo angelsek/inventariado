@@ -1,7 +1,7 @@
 /**
  * Permisos que el dueño puede dar a cada persona. Las claves se guardan en
- * `perfiles.permisos`: nunca se renombra una clave publicada, solo se agregan nuevas. Ver productos y stock, Inicio y "Cambiar de usuario" no
- * necesitan permiso.
+ * `perfiles.permisos`: nunca se renombra una clave publicada, solo se agregan nuevas.
+ * Ver productos y stock, Inicio y "Cambiar de usuario" no necesitan permiso.
  */
 export const PERMISOS = [
   'vender',

@@ -85,22 +85,20 @@ export async function crearPerfil(
 }
 
 /**
- * Cambia los permisos de una persona y anota cuándo (permisos_en): en el servidor gana la
- * lista más reciente. El dueño siempre tiene todos: no se toca.
+ * Cambia los permisos de una persona. permisos_en no se toca: es la versión que se bajó
+ * del servidor, y el servidor rechaza la lista si mientras tanto otro equipo la cambió.
+ * El dueño siempre tiene todos: no se toca.
  */
 export async function cambiarPermisos(
   db: BaseLocal,
   perfilId: string,
   permisos: readonly Permiso[],
 ): Promise<void> {
-  const ahora = new Date().toISOString();
   await db.runAsync(
-    `UPDATE perfiles SET permisos = ?, permisos_en = ?, actualizado_en = ?,
-            pendiente = pendiente + 1
+    `UPDATE perfiles SET permisos = ?, actualizado_en = ?, pendiente = pendiente + 1
       WHERE id = ? AND rol <> 'dueno'`,
     JSON.stringify(ordenarPermisos(permisos)),
-    ahora,
-    ahora,
+    new Date().toISOString(),
     perfilId,
   );
 }

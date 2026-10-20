@@ -65,9 +65,12 @@ Los cambios se aplican de inmediato en el equipo donde se hacen y en los demás 
 Después de sincronizar se refrescan los permisos de la persona que está usando la app, sin cerrar
 su sesión.
 
-Si dos equipos cambian los permisos de la misma persona, gana el cambio más reciente de permisos
-(`perfiles.permisos_en`). Un cambio de PIN o de nombre hecho con datos viejos no devuelve un
-permiso que ya se quitó. En los demás campos gana la última escritura.
+Los permisos de cada persona tienen una versión (`perfiles.permisos_en`) que pone el servidor, así
+que no depende del reloj de cada equipo. Un equipo que sube la fila con una versión más vieja
+(por ejemplo, cambió un PIN sin internet con la lista de permisos anterior) no cambia los
+permisos: no devuelve uno que ya se quitó. Si dos equipos sin internet cambian los permisos de la
+misma persona, se queda el que sincroniza primero; el otro ve la lista del servidor al
+sincronizar. En los demás campos gana la última escritura.
 
 ## APK antiguas y personas existentes
 

@@ -451,23 +451,58 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
--- permisos_en: una subida con permisos más viejos no pisa los nuevos
+-- permisos_en: versión de la lista, la pone el servidor. Una subida con una versión
+-- vieja no pisa los permisos (sí el resto de la fila); no depende del reloj del equipo.
 -- ---------------------------------------------------------------------------
 
 select pg_temp.como('00000000-0000-0000-0000-0000000000f4');
+-- Persona nueva: el equipo manda una fecha cualquiera (reloj atrasado); el servidor pone la suya.
 insert into inventariado.perfiles (id, negocio_id, nombre, rol, pin_hash, permisos, permisos_en)
 values ('94000000-0000-0000-0000-0000000000e1', :'negocio_x', 'Pedro', 'cajero', 'h',
-        '["vender", "stock"]', '2026-10-21 10:00:00+00');
--- El dueño le quita "stock" desde un equipo (a las 11:00).
+        '["vender", "stock"]', '2000-01-01 00:00:00+00');
+reset role;
+select permisos_en as v0 from inventariado.perfiles
+ where id = '94000000-0000-0000-0000-0000000000e1' \gset
+do $$
+begin
+  if (select permisos_en from inventariado.perfiles
+       where id = '94000000-0000-0000-0000-0000000000e1') < now() - interval '1 hour' then
+    raise exception 'FALLA: la versión de una persona nueva no la puso el servidor';
+  end if;
+end;
+$$;
+
+-- Equipo A (al día, con la versión v0) le quita "stock": se acepta y la versión avanza.
+select pg_temp.como('00000000-0000-0000-0000-0000000000f4');
 insert into inventariado.perfiles (id, negocio_id, nombre, rol, pin_hash, permisos, permisos_en)
 values ('94000000-0000-0000-0000-0000000000e1', :'negocio_x', 'Pedro', 'cajero', 'h',
-        '["vender"]', '2026-10-21 11:00:00+00')
+        '["vender"]', :'v0')
 on conflict (id) do update
   set permisos = excluded.permisos, permisos_en = excluded.permisos_en;
--- Otro equipo, sin internet desde las 10:00, le cambia el PIN y sube la fila completa.
+reset role;
+select permisos_en as v1 from inventariado.perfiles
+ where id = '94000000-0000-0000-0000-0000000000e1' \gset
+select set_config('pruebas.v0', :'v0', false), set_config('pruebas.v1', :'v1', false);
+do $$
+begin
+  if pg_temp.permisos_de('94000000-0000-0000-0000-0000000000e1') <> '["vender"]'::jsonb then
+    raise exception 'FALLA: un cambio de permisos al día no se guardó';
+  end if;
+end;
+$$;
+do $$
+begin
+  if current_setting('pruebas.v1')::timestamptz <= current_setting('pruebas.v0')::timestamptz then
+    raise exception 'FALLA: la versión no avanzó al cambiar los permisos';
+  end if;
+end;
+$$;
+
+-- Equipo B, sin internet con la versión v0, cambia el PIN y sube la fila con la lista vieja.
+select pg_temp.como('00000000-0000-0000-0000-0000000000f4');
 insert into inventariado.perfiles (id, negocio_id, nombre, rol, pin_hash, permisos, permisos_en)
 values ('94000000-0000-0000-0000-0000000000e1', :'negocio_x', 'Pedro', 'cajero', 'h-nuevo',
-        '["vender", "stock"]', '2026-10-21 10:00:00+00')
+        '["vender", "stock"]', :'v0')
 on conflict (id) do update
   set pin_hash = excluded.pin_hash, permisos = excluded.permisos,
       permisos_en = excluded.permisos_en;
@@ -488,15 +523,25 @@ begin
 end;
 $$;
 
--- Una subida más nueva sí cambia los permisos.
+-- Un equipo con el reloj adelantado no congela los permisos: su fecha se ignora.
 select pg_temp.como('00000000-0000-0000-0000-0000000000f4');
-update inventariado.perfiles set permisos = '["vender", "caja"]', permisos_en = '2026-10-21 12:00:00+00'
+update inventariado.perfiles set permisos = '["vender", "caja"]', permisos_en = '2099-01-01 00:00:00+00'
+ where id = '94000000-0000-0000-0000-0000000000e1';
+reset role;
+select permisos_en as v2 from inventariado.perfiles
+ where id = '94000000-0000-0000-0000-0000000000e1' \gset
+select pg_temp.como('00000000-0000-0000-0000-0000000000f4');
+update inventariado.perfiles set permisos = '["caja"]', permisos_en = :'v2'
  where id = '94000000-0000-0000-0000-0000000000e1';
 reset role;
 do $$
 begin
-  if pg_temp.permisos_de('94000000-0000-0000-0000-0000000000e1') <> '["vender", "caja"]'::jsonb then
-    raise exception 'FALLA: un cambio de permisos más nuevo no se guardó';
+  if pg_temp.permisos_de('94000000-0000-0000-0000-0000000000e1') <> '["caja"]'::jsonb then
+    raise exception 'FALLA: una fecha del futuro dejó los permisos congelados';
+  end if;
+  if (select permisos_en from inventariado.perfiles
+       where id = '94000000-0000-0000-0000-0000000000e1') > now() + interval '1 minute' then
+    raise exception 'FALLA: el servidor guardó la fecha del equipo';
   end if;
 end;
 $$;
@@ -507,7 +552,7 @@ update inventariado.perfiles set pin_hash = 'h-apk' where id = '94000000-0000-00
 reset role;
 do $$
 begin
-  if pg_temp.permisos_de('94000000-0000-0000-0000-0000000000e1') <> '["vender", "caja"]'::jsonb then
+  if pg_temp.permisos_de('94000000-0000-0000-0000-0000000000e1') <> '["caja"]'::jsonb then
     raise exception 'FALLA: un cambio de PIN de APK vieja tocó los permisos';
   end if;
 end;
@@ -516,7 +561,7 @@ $$;
 -- Claves de más de 40 letras se rechazan.
 select pg_temp.como('00000000-0000-0000-0000-0000000000f4');
 select pg_temp.debe_fallar(
-  format($q$update inventariado.perfiles set permisos = %L, permisos_en = '2026-10-22 00:00:00+00'
+  format($q$update inventariado.perfiles set permisos = %L, permisos_en = '2099-01-01 00:00:00+00'
              where id = '94000000-0000-0000-0000-0000000000e1'$q$,
          jsonb_build_array(repeat('x', 41))),
   '23514');

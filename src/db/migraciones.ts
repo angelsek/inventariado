@@ -298,8 +298,8 @@ export const migraciones: string[] = [
    ALTER TABLE perfiles ADD COLUMN rol_id TEXT;`,
 
   // 9: permisos por persona. Cada persona hereda los permisos de su rol (o del Cajero);
-  // el dueño no usa la lista. permisos_en es cuándo se cambiaron: el servidor no deja que
-  // una lista más vieja pise una más nueva. La tabla roles y rol_id quedan sin uso. Se
+  // el dueño no usa la lista. permisos_en es la versión de la lista que puso el servidor:
+  // si un equipo sube una más vieja, el servidor conserva sus permisos. La tabla roles y rol_id quedan sin uso. Se
   // borra el cursor de perfiles para volver a bajarlos completos con las columnas nuevas.
   `ALTER TABLE perfiles ADD COLUMN permisos TEXT NOT NULL DEFAULT '[]';
    ALTER TABLE perfiles ADD COLUMN permisos_en TEXT;

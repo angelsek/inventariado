@@ -200,7 +200,8 @@ describe('permisos en la navegación', () => {
 
   it('un cajero que también hace inventario ve Vender y las acciones de Productos', async () => {
     await prepararBase(true);
-    // Sin lista de permisos: parte con los iniciales (vender, caja, productos, mercadería, stock).
+    // Sin lista de permisos: parte con los 7 iniciales (vender, ver ventas, caja, fiado,
+    // editar productos, mercadería y conteo de stock).
     await agregarPersona('Cira', '3333');
     montar();
 

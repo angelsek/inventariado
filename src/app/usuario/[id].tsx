@@ -158,12 +158,12 @@ export default function UsuarioScreen() {
         });
       } else {
         // Solo lo que se tocó: así no se deshace lo que otro equipo cambió mientras tanto.
-        const id = fresca!.id;
+        const personaId = fresca!.id;
         await db.withTransactionAsync(async () => {
-          if (cambia.nombre) await cambiarNombre(db, id, nombreNuevo);
-          if (cambia.pin) await cambiarPin(db, id, borrador.pin);
-          if (cambia.activo) await cambiarActivo(db, id, borrador.activo);
-          if (cambia.permisos) await cambiarPermisos(db, id, permisos);
+          if (cambia.nombre) await cambiarNombre(db, personaId, nombreNuevo);
+          if (cambia.pin) await cambiarPin(db, personaId, borrador.pin);
+          if (cambia.activo) await cambiarActivo(db, personaId, borrador.activo);
+          if (cambia.permisos) await cambiarPermisos(db, personaId, permisos);
         });
       }
       datosCambiaron();

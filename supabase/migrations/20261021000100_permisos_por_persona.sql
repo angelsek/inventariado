@@ -10,9 +10,10 @@
 -- solo completa las personas que aún no tienen permisos.
 
 alter table inventariado.perfiles add column if not exists permisos jsonb;
--- Cuándo se cambiaron los permisos por última vez (reloj del equipo que los cambió). Una
--- subida con permisos más antiguos (por ejemplo, un cambio de PIN hecho sin internet con
--- la lista vieja) no los pisa: ver proteger_permisos().
+-- Versión de los permisos: cuándo los cambió el servidor por última vez (reloj del
+-- servidor). Cada equipo devuelve la versión que descargó; si es más vieja que la del
+-- servidor (por ejemplo, un cambio de PIN hecho sin internet con la lista vieja), sus
+-- permisos no se aplican: ver proteger_permisos().
 alter table inventariado.perfiles add column if not exists permisos_en timestamptz;
 
 -- Cada persona hereda los permisos de su rol; sin rol, o con uno eliminado, los del Cajero
@@ -75,29 +76,44 @@ end;
 $$;
 
 -- El dueño siempre tiene todo: su lista se guarda vacía para que no se lea como un límite.
--- Para los demás, en un UPDATE gana la lista con el permisos_en más reciente: una fila
--- subida con permisos viejos (equipo sin internet que cambió el PIN o el nombre) conserva
--- los que ya tiene el servidor. Las APK sin estas columnas no las mandan y no las tocan.
+-- Para los demás, permisos_en es la versión de la lista y la pone el servidor (now()), así
+-- que no depende del reloj de cada equipo:
+--   * Persona nueva: versión = ahora.
+--   * Subida con una versión más vieja que la del servidor: la lista del equipo estaba
+--     desactualizada y se conservan los permisos del servidor (el resto de la fila sí se
+--     guarda, por ejemplo un PIN nuevo).
+--   * Subida al día que cambia la lista: se guarda y la versión pasa a ser ahora.
+-- Un upsert de una persona que ya existe pasa primero por el BEFORE INSERT: ahí no se toca
+-- la versión, para que el UPDATE compare la que mandó el equipo. Las APK sin estas
+-- columnas no las mandan y no las tocan.
 create or replace function inventariado.proteger_permisos()
 returns trigger
 language plpgsql
+security definer
 set search_path = ''
 as $$
 begin
   if new.rol = 'dueno' then
     new.permisos := '[]'::jsonb;
-  elsif tg_op = 'UPDATE'
-        and (new.permisos_en is null or new.permisos_en < old.permisos_en) then
+    new.permisos_en := coalesce(new.permisos_en, now());
+  elsif tg_op = 'INSERT' then
+    if not exists (select 1 from inventariado.perfiles where id = new.id) then
+      new.permisos_en := now();
+    end if;
+  elsif new.permisos_en is null or new.permisos_en < old.permisos_en then
     new.permisos := old.permisos;
     new.permisos_en := old.permisos_en;
+  elsif new.permisos is distinct from old.permisos then
+    new.permisos_en := now();
+  else
+    new.permisos_en := old.permisos_en;
   end if;
-  new.permisos_en := coalesce(new.permisos_en, now());
   return new;
 end;
 $$;
 
-drop function if exists inventariado.permisos_del_dueno() cascade;
 drop trigger if exists perfiles_permisos on inventariado.perfiles;
+drop function if exists inventariado.permisos_del_dueno();
 create trigger perfiles_permisos before insert or update on inventariado.perfiles
   for each row execute function inventariado.proteger_permisos();
 

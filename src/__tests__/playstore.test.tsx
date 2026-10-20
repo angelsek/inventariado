@@ -6,6 +6,7 @@ import { crearPerfil } from '@/db/perfiles';
 import type { BaseLocal } from '@/db/tipos';
 import { useSesion } from '@/sesion/store';
 import { crearBaseEnMemoria } from '@/test/baseEnMemoria';
+import { PERMISOS_CAJERO } from '@/test/personas';
 import * as iap from '@/test/mockExpoIap';
 import { respuestasRpc, respuestasTabla, supabase } from '@/test/mockSupabase';
 
@@ -69,7 +70,13 @@ beforeEach(async () => {
     ahora,
   );
   await crearPerfil(mockDb, { negocioId: NEGOCIO, nombre: 'Ana', rol: 'dueno', pin: '1234' });
-  await crearPerfil(mockDb, { negocioId: NEGOCIO, nombre: 'Carla', rol: 'cajero', pin: '5678' });
+  await crearPerfil(mockDb, {
+    negocioId: NEGOCIO,
+    nombre: 'Carla',
+    rol: 'cajero',
+    pin: '5678',
+    permisos: PERMISOS_CAJERO,
+  });
   await guardarAjuste(mockDb, AJUSTE_NEGOCIO, NEGOCIO);
   respuestasTabla.planes = {
     data: [

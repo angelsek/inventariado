@@ -1,6 +1,5 @@
 import { migrarBaseDeDatos } from '@/db/migraciones';
-import { asignarRol, cambiarActivo, crearPerfil, listarPerfiles } from '@/db/perfiles';
-import { listarRoles, obtenerRol } from '@/db/roles';
+import { cambiarActivo, cambiarPermisos, crearPerfil, listarPerfiles } from '@/db/perfiles';
 import { crearProducto, listarProductos, registrarMovimiento } from '@/db/productos';
 import { anularVenta, obtenerVenta, registrarVenta } from '@/db/ventas';
 import type { BaseLocal } from '@/db/tipos';
@@ -201,50 +200,54 @@ describe('sincronizar', () => {
   });
 });
 
-describe('sincronizar roles y permisos', () => {
+describe('sincronizar permisos por persona', () => {
   const AHORA = '2026-10-19T10:00:00.000Z';
-  const insertarRol = (db: BaseLocal, id: string, permisos: string, pendiente = 1) =>
-    db.runAsync(
-      `INSERT INTO roles (id, negocio_id, nombre, permisos, predefinido, creado_en, actualizado_en, pendiente)
-       VALUES (?, ?, 'Auxiliar', ?, NULL, ?, ?, ?)`,
-      id,
-      NEGOCIO,
-      permisos,
-      AHORA,
-      AHORA,
-      pendiente,
-    );
   const leerPermisos = (db: BaseLocal, id: string) =>
-    db.getFirstAsync<{ permisos: string }>('SELECT permisos FROM roles WHERE id = ?', id);
+    db.getFirstAsync<{ permisos: string }>('SELECT permisos FROM perfiles WHERE id = ?', id);
 
-  it('sube los permisos como arreglo (jsonb) y los baja guardados como texto JSON', async () => {
+  it('sube los permisos como arreglo (jsonb), sin rol_id, y los baja como texto JSON', async () => {
     const remoto = crearRemotoFalso();
     const a = await nuevoTelefono();
     const b = await nuevoTelefono();
 
-    await insertarRol(a, 'rol-1', '["stock","vender"]');
+    const beto = await crearPerfil(a, {
+      negocioId: NEGOCIO,
+      nombre: 'Beto',
+      rol: 'cajero',
+      pin: '1234',
+      permisos: ['stock', 'vender'],
+    });
+    await crearPerfil(a, { negocioId: NEGOCIO, nombre: 'Ana', rol: 'dueno', pin: '4321' });
     await sincronizar(a, remoto, NEGOCIO);
 
-    const [subida] = remoto.filas('roles');
-    expect(Array.isArray(subida.permisos)).toBe(true);
-    expect(subida.permisos).toEqual(['stock', 'vender']);
-    expect(subida).toMatchObject({ nombre: 'Auxiliar', eliminado: false });
+    const subidos = remoto.filas('perfiles');
+    const subidoBeto = subidos.find((p) => p.nombre === 'Beto')!;
+    expect(Array.isArray(subidoBeto.permisos)).toBe(true);
+    expect(subidoBeto.permisos).toEqual(['vender', 'stock']); // en el orden del catálogo
+    expect(subidoBeto).not.toHaveProperty('rol_id');
+    expect(subidos.find((p) => p.nombre === 'Ana')?.permisos).toEqual([]);
 
     await sincronizar(b, remoto, NEGOCIO);
-    const bajada = await leerPermisos(b, 'rol-1');
+    const bajada = await leerPermisos(b, beto.id);
     expect(typeof bajada?.permisos).toBe('string');
-    expect(JSON.parse(bajada!.permisos)).toEqual(['stock', 'vender']);
+    expect(JSON.parse(bajada!.permisos)).toEqual(['vender', 'stock']);
+    expect((await listarPerfiles(b, NEGOCIO)).find((p) => p.nombre === 'Beto')?.permisos).toEqual([
+      'vender',
+      'stock',
+    ]);
   });
 
   it('el servidor entrega permisos como arreglo y quedan legibles en la base local', async () => {
     const remoto = crearRemotoFalso();
     const a = await nuevoTelefono();
-    remoto.escribir('roles', {
-      id: 'rol-9',
+    remoto.escribir('perfiles', {
+      id: 'perfil-9',
       negocio_id: NEGOCIO,
-      nombre: 'Cajero',
+      nombre: 'Rosa',
+      rol: 'cajero',
       permisos: ['vender', 'caja'],
-      predefinido: 'cajero',
+      pin_hash: 'h',
+      activo: true,
       creado_en: AHORA,
       actualizado_en: AHORA,
       eliminado: false,
@@ -252,96 +255,82 @@ describe('sincronizar roles y permisos', () => {
 
     await sincronizar(a, remoto, NEGOCIO);
 
-    expect(await listarRoles(a, NEGOCIO)).toMatchObject([
-      { id: 'rol-9', predefinido: 'cajero', permisos: ['vender', 'caja'], eliminado: false },
+    expect(await listarPerfiles(a, NEGOCIO)).toMatchObject([
+      { id: 'perfil-9', permisos: ['vender', 'caja'], activo: true },
     ]);
   });
 
-  it('un rol eliminado en otro equipo llega marcado como eliminado', async () => {
+  it('cambiarPermisos en un equipo cambia los permisos en el otro', async () => {
     const remoto = crearRemotoFalso();
     const a = await nuevoTelefono();
     const b = await nuevoTelefono();
-    await insertarRol(a, 'rol-1', '[]');
-    await sincronizar(a, remoto, NEGOCIO);
-    await sincronizar(b, remoto, NEGOCIO);
-
-    remoto.escribir('roles', { ...remoto.filas('roles')[0], eliminado: true });
-    await sincronizar(b, remoto, NEGOCIO);
-
-    expect(await listarRoles(b, NEGOCIO)).toEqual([]);
-    expect(await obtenerRol(b, 'rol-1')).toMatchObject({ eliminado: true });
-  });
-
-  it('un cambio de permisos del servidor no pisa un cambio local pendiente', async () => {
-    const remoto = crearRemotoFalso();
-    const a = await nuevoTelefono();
-    await insertarRol(a, 'rol-1', '["vender"]');
-    await sincronizar(a, remoto, NEGOCIO);
-
-    remoto.escribir('roles', { ...remoto.filas('roles')[0], permisos: ['caja'] });
-    await a.runAsync(
-      `UPDATE roles SET permisos = '["stock"]', pendiente = pendiente + 1 WHERE id = 'rol-1'`,
-    );
-    remoto.fallar = true;
-    await expect(sincronizar(a, remoto, NEGOCIO)).rejects.toThrow('sin conexión');
-    expect(JSON.parse((await leerPermisos(a, 'rol-1'))!.permisos)).toEqual(['stock']);
-  });
-
-  it('roles se sube antes que perfiles y rol_id viaja al servidor y de vuelta', async () => {
-    const remoto = crearRemotoFalso();
-    const a = await nuevoTelefono();
-    const b = await nuevoTelefono();
-    const orden: string[] = [];
-    const subirOriginal = remoto.subir;
-    remoto.subir = async (tabla, filas) => {
-      orden.push(tabla);
-      return subirOriginal(tabla, filas);
-    };
-
-    await insertarRol(a, 'rol-1', '["stock"]');
-    await crearPerfil(a, {
-      negocioId: NEGOCIO,
-      nombre: 'Beto',
-      rol: 'cajero',
-      pin: '1234',
-      rolId: 'rol-1',
-    });
-    await crearPerfil(a, { negocioId: NEGOCIO, nombre: 'Ana', rol: 'dueno', pin: '4321' });
-    await sincronizar(a, remoto, NEGOCIO);
-
-    expect(orden.indexOf('roles')).toBeGreaterThanOrEqual(0);
-    expect(orden.indexOf('roles')).toBeLessThan(orden.indexOf('perfiles'));
-    const subidos = remoto.filas('perfiles');
-    expect(subidos.find((p) => p.nombre === 'Beto')).toMatchObject({ rol_id: 'rol-1' });
-    expect(subidos.find((p) => p.nombre === 'Ana')).toMatchObject({ rol_id: null });
-
-    await sincronizar(b, remoto, NEGOCIO);
-    const perfiles = await listarPerfiles(b, NEGOCIO);
-    expect(perfiles.find((p) => p.nombre === 'Beto')?.rol_id).toBe('rol-1');
-    expect(perfiles.find((p) => p.nombre === 'Ana')?.rol_id).toBeNull();
-  });
-
-  it('asignarRol en un equipo cambia el rol en el otro', async () => {
-    const remoto = crearRemotoFalso();
-    const a = await nuevoTelefono();
-    const b = await nuevoTelefono();
-    await insertarRol(a, 'rol-1', '["vender"]');
-    await insertarRol(a, 'rol-2', '["stock"]');
     const beto = await crearPerfil(a, {
       negocioId: NEGOCIO,
       nombre: 'Beto',
       rol: 'cajero',
       pin: '1234',
-      rolId: 'rol-1',
+      permisos: ['vender'],
     });
     await sincronizar(a, remoto, NEGOCIO);
     await sincronizar(b, remoto, NEGOCIO);
 
-    await asignarRol(a, beto.id, 'rol-2');
+    await cambiarPermisos(a, beto.id, ['stock', 'reportes']);
     expect(await contarPendientes(a)).toBe(1);
     await sincronizar(a, remoto, NEGOCIO);
     await sincronizar(b, remoto, NEGOCIO);
 
-    expect((await listarPerfiles(b, NEGOCIO))[0].rol_id).toBe('rol-2');
+    expect((await listarPerfiles(b, NEGOCIO))[0].permisos).toEqual(['stock', 'reportes']);
+  });
+
+  it('un cambio de permisos del servidor no pisa un cambio local pendiente', async () => {
+    const remoto = crearRemotoFalso();
+    const a = await nuevoTelefono();
+    const beto = await crearPerfil(a, {
+      negocioId: NEGOCIO,
+      nombre: 'Beto',
+      rol: 'cajero',
+      pin: '1234',
+      permisos: ['vender'],
+    });
+    await sincronizar(a, remoto, NEGOCIO);
+
+    remoto.escribir('perfiles', { ...remoto.filas('perfiles')[0], permisos: ['caja'] });
+    await cambiarPermisos(a, beto.id, ['stock']);
+    remoto.fallar = true;
+    await expect(sincronizar(a, remoto, NEGOCIO)).rejects.toThrow('sin conexión');
+    expect(JSON.parse((await leerPermisos(a, beto.id))!.permisos)).toEqual(['stock']);
+  });
+
+  it('la tabla roles ya no se sincroniza: ni se sube ni se baja', async () => {
+    const remoto = crearRemotoFalso();
+    const a = await nuevoTelefono();
+    const tablas: string[] = [];
+    const subirOriginal = remoto.subir;
+    remoto.subir = async (tabla, filas) => {
+      tablas.push(tabla);
+      return subirOriginal(tabla, filas);
+    };
+    const descargarOriginal = remoto.descargar;
+    remoto.descargar = async (tabla, negocioId, cursor) => {
+      tablas.push(tabla);
+      return descargarOriginal(tabla, negocioId, cursor);
+    };
+    // Un rol que siga en el servidor no llega a la app.
+    remoto.escribir('roles', {
+      id: 'rol-1',
+      negocio_id: NEGOCIO,
+      nombre: 'Cajero',
+      permisos: ['vender'],
+      predefinido: 'cajero',
+      creado_en: AHORA,
+      actualizado_en: AHORA,
+      eliminado: false,
+    });
+    await crearPerfil(a, { negocioId: NEGOCIO, nombre: 'Beto', rol: 'cajero', pin: '1234' });
+
+    await sincronizar(a, remoto, NEGOCIO);
+
+    expect(tablas).toContain('perfiles');
+    expect(tablas).not.toContain('roles');
   });
 });

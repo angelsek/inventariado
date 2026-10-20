@@ -1,9 +1,9 @@
-import { type Permiso, PERMISOS, ROLES_PREDEFINIDOS } from '@/features/permisos/catalogo';
+import { type Permiso, PERMISOS, PERMISOS_INICIALES } from '@/features/permisos/catalogo';
 
 import { entradaActiva, MENU, menuParaPermisos } from '../menu';
 
-const CAJERO = ROLES_PREDEFINIDOS.cajero.permisos;
-const BODEGUERO = ROLES_PREDEFINIDOS.bodeguero.permisos;
+const CAJERO = PERMISOS_INICIALES;
+const BODEGUERO: Permiso[] = ['productos_editar', 'mercaderia', 'stock'];
 
 const textos = (permisos: readonly Permiso[]) =>
   menuParaPermisos(permisos).flatMap((g) => g.entradas.map((e) => e.texto));
@@ -19,12 +19,14 @@ it('el dueño ve todo el menú, agrupado', () => {
   expect(textos(PERMISOS)).toHaveLength(MENU.flatMap((g) => g.entradas).length);
 });
 
-it('el cajero ve la caja y la consulta, sin entradas del dueño ni grupos vacíos', () => {
+it('quien parte con los permisos iniciales ve caja, consulta e inventario, sin entradas del dueño', () => {
   expect(textos(CAJERO)).toEqual([
     'Vender',
     'Caja del día',
     'Ventas',
     'Productos',
+    'Ingresos de mercadería',
+    'Conteo de stock',
     'Clientes y fiado',
     'Suscripción',
     'Cuenta y equipo',
@@ -32,7 +34,7 @@ it('el cajero ve la caja y la consulta, sin entradas del dueño ni grupos vacío
   expect(menuParaPermisos(CAJERO).map((g) => g.titulo)).not.toContain('Reportes');
 });
 
-it('el bodeguero ve el inventario, sin caja, ventas ni clientes', () => {
+it('una persona solo con inventario ve el inventario, sin caja, ventas ni clientes', () => {
   expect(textos(BODEGUERO)).toEqual([
     'Productos',
     'Ingresos de mercadería',
@@ -42,18 +44,34 @@ it('el bodeguero ve el inventario, sin caja, ventas ni clientes', () => {
   ]);
 });
 
-it('"Roles" aparece con "usuarios" y no sin él', () => {
-  expect(textos(['usuarios'])).toContain('Roles');
-  expect(textos(PERMISOS)).toContain('Roles');
-  expect(textos(CAJERO)).not.toContain('Roles');
-  expect(textos(BODEGUERO)).not.toContain('Roles');
-  expect(textos(['reportes'])).not.toContain('Roles');
+it('sin ningún permiso solo se ven las entradas libres', () => {
+  expect(textos([])).not.toContain('Vender');
+  expect(textos([])).toContain('Productos');
+  expect(textos([])).toContain('Cuenta y equipo');
 });
 
-it('/roles y /rol/x marcan la entrada "Roles"', () => {
-  expect(entradaActiva('/roles')?.texto).toBe('Roles');
-  expect(entradaActiva('/rol/abc')?.texto).toBe('Roles');
+it('quien no tiene "vender" no ve "Vender"', () => {
+  expect(textos(CAJERO.filter((p) => p !== 'vender'))).not.toContain('Vender');
+  expect(textos(CAJERO)).toContain('Vender');
+});
+
+it('"Usuarios y permisos" aparece con "usuarios" y no sin él', () => {
+  expect(textos(['usuarios'])).toContain('Usuarios y permisos');
+  expect(textos(PERMISOS)).toContain('Usuarios y permisos');
+  expect(textos(CAJERO)).not.toContain('Usuarios y permisos');
+  expect(textos(BODEGUERO)).not.toContain('Usuarios y permisos');
+  expect(textos(['reportes'])).not.toContain('Usuarios y permisos');
+});
+
+it('ya no existe la entrada "Roles"', () => {
+  expect(textos(PERMISOS)).not.toContain('Roles');
+  expect(entradaActiva('/roles')?.texto).not.toBe('Roles');
+});
+
+it('/usuarios y /usuario/x marcan la entrada "Usuarios y permisos"', () => {
   expect(entradaActiva('/usuarios')?.texto).toBe('Usuarios y permisos');
+  expect(entradaActiva('/usuario/abc')?.texto).toBe('Usuarios y permisos');
+  expect(entradaActiva('/usuario/nuevo')?.texto).toBe('Usuarios y permisos');
 });
 
 it('no repite destinos: cada ruta aparece una sola vez en el menú', () => {
@@ -82,7 +100,7 @@ it.each([
   expect(entradaActiva(ruta)?.texto).toBe(texto);
 });
 
-it('una ruta de una entrada que el cajero no ve no marca nada para él', () => {
-  expect(entradaActiva('/conteo', CAJERO)).toBeNull();
-  expect(entradaActiva('/conteo', PERMISOS)?.texto).toBe('Conteo de stock');
+it('una ruta de una entrada que la persona no ve no marca nada para ella', () => {
+  expect(entradaActiva('/estadisticas', CAJERO)).toBeNull();
+  expect(entradaActiva('/estadisticas', PERMISOS)?.texto).toBe('Reportes');
 });

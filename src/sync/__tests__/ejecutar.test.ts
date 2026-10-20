@@ -3,7 +3,6 @@ import { registrarDispositivo } from '@/db/dispositivos';
 import { migrarBaseDeDatos } from '@/db/migraciones';
 import { obtenerPerfil } from '@/db/perfiles';
 import type { BaseLocal } from '@/db/tipos';
-import { cargarRolSesion } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
 import { crearBaseEnMemoria } from '@/test/baseEnMemoria';
 import { crearRemotoFalso } from '@/test/remotoFalso';
@@ -41,7 +40,6 @@ beforeEach(async () => {
   useSesion.setState({
     negocioId: NEGOCIO,
     perfil: null,
-    rol: null,
     suscripcion: null,
     avisoSalida: null,
   });
@@ -82,24 +80,14 @@ it('si otro teléfono lo desvinculó, cierra la sesión y lo avisa', async () =>
   expect(await leerAjuste(db, AJUSTE_NEGOCIO)).toBeNull();
 });
 
-describe('perfil y rol de la sesión tras sincronizar', () => {
+describe('perfil de la sesión tras sincronizar', () => {
   const AHORA = '2026-10-19T10:00:00.000Z';
-  const rolRemoto = (id: string, nombre: string, permisos: string[], eliminado = false) => ({
-    id,
-    negocio_id: NEGOCIO,
-    nombre,
-    permisos,
-    predefinido: null,
-    creado_en: AHORA,
-    actualizado_en: AHORA,
-    eliminado,
-  });
-  const perfilRemoto = (rolId: string | null, extra: Record<string, unknown> = {}) => ({
+  const perfilRemoto = (permisos: string[], extra: Record<string, unknown> = {}) => ({
     id: 'perfil-beto',
     negocio_id: NEGOCIO,
     nombre: 'Beto',
     rol: 'cajero',
-    rol_id: rolId,
+    permisos,
     pin_hash: 'h',
     activo: true,
     creado_en: AHORA,
@@ -108,64 +96,71 @@ describe('perfil y rol de la sesión tras sincronizar', () => {
     ...extra,
   });
 
-  /** Beto ya sincronizó y está usando la app con su rol. */
-  async function betoEnSesion(rolId: string | null) {
-    mockRemoto.escribir('perfiles', perfilRemoto(rolId));
+  /** Beto ya sincronizó y está usando la app con sus permisos. */
+  async function betoEnSesion(permisos: string[]) {
+    mockRemoto.escribir('perfiles', perfilRemoto(permisos));
     await sincronizarAhora(db);
     const beto = (await obtenerPerfil(db, 'perfil-beto'))!;
-    useSesion.getState().entrar(beto, await cargarRolSesion(db, beto));
+    useSesion.getState().entrar(beto);
   }
 
-  it('si el dueño le cambió el rol, la sesión queda con el rol nuevo', async () => {
-    mockRemoto.escribir('roles', rolRemoto('rol-a', 'Bodeguero', ['stock']));
-    mockRemoto.escribir('roles', rolRemoto('rol-b', 'Supervisor', ['reportes', 'stock']));
-    await betoEnSesion('rol-a');
-    expect(useSesion.getState().rol).toMatchObject({ nombre: 'Bodeguero', permisos: ['stock'] });
+  it('si el dueño le cambió los permisos, la sesión los aplica sin cerrarse', async () => {
+    await betoEnSesion(['stock']);
+    expect(useSesion.getState().perfil?.permisos).toEqual(['stock']);
 
-    mockRemoto.escribir('perfiles', perfilRemoto('rol-b'));
-    await sincronizarAhora(db);
-
-    expect(useSesion.getState().perfil?.rol_id).toBe('rol-b');
-    expect(useSesion.getState().rol).toEqual({
-      nombre: 'Supervisor',
-      permisos: ['stock', 'reportes'], // en el orden del catálogo
-      eliminado: false,
-    });
-  });
-
-  it('si cambian los permisos de su rol, la sesión los aplica sin cerrarse', async () => {
-    mockRemoto.escribir('roles', rolRemoto('rol-a', 'Bodeguero', ['stock']));
-    await betoEnSesion('rol-a');
-
-    mockRemoto.escribir('roles', rolRemoto('rol-a', 'Bodeguero', ['stock', 'reportes']));
+    mockRemoto.escribir('perfiles', perfilRemoto(['reportes', 'stock']));
     await sincronizarAhora(db);
 
     expect(useSesion.getState().perfil?.nombre).toBe('Beto');
-    expect(useSesion.getState().rol?.permisos).toEqual(['stock', 'reportes']);
+    expect(useSesion.getState().perfil?.permisos).toEqual(['stock', 'reportes']); // orden del catálogo
   });
 
-  it('si su rol fue eliminado, la sesión lo marca eliminado (queda como Cajero)', async () => {
-    mockRemoto.escribir('roles', rolRemoto('rol-a', 'Bodeguero', ['stock']));
-    await betoEnSesion('rol-a');
+  it('si le cambiaron el nombre, la sesión lo muestra', async () => {
+    await betoEnSesion(['stock']);
 
-    mockRemoto.escribir('roles', rolRemoto('rol-a', 'Bodeguero', ['stock'], true));
+    mockRemoto.escribir('perfiles', perfilRemoto(['stock'], { nombre: 'Alberto' }));
     await sincronizarAhora(db);
 
-    expect(useSesion.getState().rol?.eliminado).toBe(true);
+    expect(useSesion.getState().perfil?.nombre).toBe('Alberto');
+  });
+
+  it('si no cambia nada, no vuelve a dibujar la app (el perfil conserva su identidad)', async () => {
+    await betoEnSesion(['stock']);
+    const antes = useSesion.getState().perfil;
+    const original = useSesion.getState().refrescarPerfil;
+    const refrescar = jest.fn();
+    useSesion.setState({ refrescarPerfil: refrescar });
+
+    await sincronizarAhora(db);
+    // Otra sincronización con la misma fila en el servidor.
+    mockRemoto.escribir('perfiles', perfilRemoto(['stock']));
+    await sincronizarAhora(db);
+
+    useSesion.setState({ refrescarPerfil: original });
+    expect(refrescar).not.toHaveBeenCalled();
+    expect(useSesion.getState().perfil).toBe(antes);
   });
 
   it('si desactivaron a la persona, la sesión se cierra', async () => {
-    await betoEnSesion(null);
+    await betoEnSesion(['stock']);
 
-    mockRemoto.escribir('perfiles', perfilRemoto(null, { activo: false }));
+    mockRemoto.escribir('perfiles', perfilRemoto(['stock'], { activo: false }));
     await sincronizarAhora(db);
 
     expect(useSesion.getState().perfil).toBeNull();
-    expect(useSesion.getState().rol).toBeNull();
+  });
+
+  it('si la persona ya no existe en la base, la sesión se cierra', async () => {
+    await betoEnSesion(['stock']);
+    mockRemoto.escribir('perfiles', perfilRemoto(['stock'], { eliminado: true }));
+
+    await sincronizarAhora(db);
+
+    expect(useSesion.getState().perfil).toBeNull();
   });
 
   it('sin nadie en sesión no inventa un perfil', async () => {
-    mockRemoto.escribir('perfiles', perfilRemoto(null));
+    mockRemoto.escribir('perfiles', perfilRemoto([]));
     await sincronizarAhora(db);
     expect(useSesion.getState().perfil).toBeNull();
   });

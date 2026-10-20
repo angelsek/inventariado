@@ -79,7 +79,7 @@ debe ser **multi-negocio** (cada negocio ve solo sus datos).
   **perfil** que entra con su PIN de 4 dígitos. Los cajeros no necesitan correo.
 - Roles: **dueño** y **cajero**. Solo el dueño administra usuarios y cierra la sesión del
   teléfono. (Costos, anulaciones y ajustes se restringirán en las fases 2–4.) Después se
-  agregaron roles con permisos (Administrador, Cajero, Bodeguero): ver `docs/PERMISOS.md`.
+  agregaron permisos por persona, que el dueño elige con interruptores: ver `docs/PERMISOS.md`.
 - El dueño puede recuperar su PIN confirmando la contraseña de la cuenta.
 - Motor de sincronización: guardar local → subir cambios → bajar cambios de otros teléfonos.
   Sincroniza al abrir, al volver a la app y cada minuto.

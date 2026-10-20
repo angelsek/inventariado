@@ -1,6 +1,6 @@
 # Estado actual del proyecto (para retomar)
 
-Última actualización: 19 de octubre de 2026.
+Última actualización: 21 de octubre de 2026.
 
 ## Qué es
 
@@ -62,25 +62,21 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
   teléfono. Detalle en `docs/WEB.md`.
 - Logo nuevo "cajas en S" (rama `feat/logo-cajas`): fuentes SVG y reglas en `assets/marca/LEEME.md`;
   los PNG se regeneran con `npm run iconos:generar`. Ya está dentro de la app y la web.
-- Perfiles y permisos, PR 1 (rama `feat/perfiles-permisos`): roles por negocio (Administrador,
-  Cajero, Bodeguero) que el dueño asigna en Más → Usuarios y permisos, con 15 permisos aplicados en
-  rutas, menús y botones; bloqueo del PIN tras intentos fallidos. Detalle y límites de seguridad
-  en `docs/PERMISOS.md`.
-- Perfiles y permisos, PR 2 (rama `feat/editor-roles`): editor de roles en Más → Usuarios y
-  permisos (crear roles propios, interruptores por permiso, restablecer predefinidos, eliminar
-  roles propios sin personas) con reglas contra la escalada de permisos. Detalle en
-  `docs/PERMISOS.md`.
+- Permisos por persona (rama `feat/permisos-por-persona`): el dueño elige con interruptores qué
+  puede hacer cada persona en Más → Usuarios y permisos (15 permisos aplicados en rutas, menús y
+  botones, reglas contra la escalada de permisos, bloqueo del PIN tras intentos fallidos). Reemplaza
+  a los roles. Detalle y límites de seguridad en `docs/PERMISOS.md`.
 - Dependencias revisadas: el workflow **Dependencias** corre `npm audit` contra las excepciones
   registradas (estricto en PR que tocan dependencias y los lunes; no obligatorio). Las
   vulnerabilidades actuales están analizadas en `docs/SEGURIDAD_DEPENDENCIAS.md`.
 
 ## Pendiente (en orden)
 
-1. **Antes de publicar el APK o la web con perfiles y permisos:** ejecutar
-   `supabase/migrations/20261019000100_roles_permisos.sql` en el SQL Editor de Supabase
-   (`docs/SUPABASE.md`); si no, la sincronización falla (tabla `roles` y columna `rol_id`
-   desconocidas). Después, ejecutar también `supabase/migrations/20261020000100_editor_roles.sql`
-   (editor de roles). Detalle en `docs/PERMISOS.md`.
+1. **Antes de fusionar el PR de permisos por persona y de publicar el APK o la web:** ejecutar
+   `supabase/migrations/20261021000100_permisos_por_persona.sql` en el SQL Editor de Supabase
+   (`docs/SUPABASE.md`); la web se publica sola desde `main`, y si falta la migración la
+   sincronización falla (columna `permisos` desconocida). Las migraciones de roles ya se
+   ejecutaron. Detalle en `docs/PERMISOS.md`.
 2. **Antes de la primera publicación con la verificación:** ejecutar
    `supabase/migrations/20261003000100_versiones_app_sha256.sql` en el SQL Editor de Supabase
    (`docs/SUPABASE.md`) y publicar solo después de fusionar `feat/integridad-apk` a `main`.
@@ -113,6 +109,8 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
    la máquina, así que hay que evitar emitir una segunda boleta por la misma venta.
 9. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**
    (ver abajo).
+10. Limpieza menor: borrar en Supabase la tabla `roles`, `perfiles.rol_id` y sus triggers
+    (migraciones `20261019000100` y `20261020000100`), que quedaron sin uso (`docs/PERMISOS.md`).
 
 ## Idea a futuro: cobrar con la máquina POS desde Stockeao
 

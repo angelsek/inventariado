@@ -481,7 +481,12 @@ const estilos = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colores.borde,
   },
-  notaCandado: { fontSize: 15, fontWeight: '600', color: colores.textoSecundario },
+  notaCandado: {
+    flexShrink: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colores.textoSecundario,
+  },
   filaLista: {
     flexDirection: 'row',
     alignItems: 'center',

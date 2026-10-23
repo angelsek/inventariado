@@ -206,10 +206,11 @@ function Opcion({
   /** Con candado: se abre igual, pero adentro se explica que es del plan pagado. */
   bloqueada?: boolean;
 }) {
-  const color = peligro ? colores.error : bloqueada ? colores.textoSecundario : colores.texto;
+  const color = peligro ? colores.error : colores.texto;
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityHint={bloqueada ? 'Requiere plan pagado' : undefined}
       onPress={onPress}
       style={({ pressed }) => [estilos.opcion, pressed && estilos.presionada]}
     >

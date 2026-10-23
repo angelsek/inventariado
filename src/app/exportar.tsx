@@ -84,8 +84,9 @@ export default function ExportarScreen() {
             <Text style={estilos.titulo}>Exportar a Excel es del plan pagado</Text>
           </View>
           <Text style={estilos.texto}>
-            Con la prueba gratis no puedes pasar tus productos ni tus ventas a Excel. El respaldo
-            completo de tu negocio sí: está más abajo y lo puedes descargar siempre.
+            Mientras no tengas un plan pagado al día no puedes pasar tus productos ni tus ventas a
+            Excel. El respaldo completo de tu negocio sí: está más abajo y lo puedes descargar
+            siempre.
           </Text>
           <Boton titulo="Ver planes" onPress={() => router.push('/suscripcion')} />
         </View>

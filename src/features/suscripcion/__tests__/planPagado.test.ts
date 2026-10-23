@@ -8,7 +8,6 @@ import {
   MENSAJE_PLAN_PAGADO,
   requierePlanPagado,
 } from '../planPagado';
-import { MENSAJE_SOLO_LECTURA } from '../useSoloLectura';
 
 jest.mock('@/lib/dialogo', () => ({ avisar: jest.fn() }));
 
@@ -111,11 +110,11 @@ describe('bloqueadoSinPlanPagado', () => {
     expect(avisar).toHaveBeenCalledWith('Solo con plan pagado', MENSAJE_PLAN_PAGADO);
   });
 
-  it('suspendida: bloquea con el aviso de solo lectura', () => {
+  it('suspendida: bloquea con el mismo aviso del plan pagado', () => {
     useSesion.setState({ suscripcion: suspendida() });
     expect(bloqueadoSinPlanPagado()).toBe(true);
     expect(avisar).toHaveBeenCalledTimes(1);
-    expect(avisar).toHaveBeenCalledWith('Solo lectura', MENSAJE_SOLO_LECTURA);
+    expect(avisar).toHaveBeenCalledWith('Solo con plan pagado', MENSAJE_PLAN_PAGADO);
   });
 
   it('sin datos de suscripción: bloquea con el aviso del plan pagado', () => {

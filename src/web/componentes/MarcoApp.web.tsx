@@ -116,6 +116,7 @@ function MenuLateral() {
                   key={entrada.ruta}
                   accessibilityRole="link"
                   accessibilityState={{ selected: seleccionada }}
+                  accessibilityHint={bloqueada ? 'Requiere plan pagado' : undefined}
                   onPress={() => router.navigate(entrada.ruta as Href)}
                   // react-native-web agrega `hovered` al estado del Pressable (no está en los tipos).
                   style={(estado) => [

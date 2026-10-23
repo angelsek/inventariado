@@ -70,7 +70,7 @@
     "testTimeout": 30000,
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "/.claude/"
+      "<rootDir>/.claude/"
     ],
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1",

@@ -163,8 +163,9 @@ compartido) y negocio creado desde el teléfono.
 **Meta:** poder cobrar a los negocios clientes.
 
 - Planes en la base de datos (se cambian con SQL): **Básico** $9.990/mes, 2 teléfonos; **Pro**
-  $19.990/mes, 5 teléfonos + reportes avanzados (fase 7).
-- **Prueba gratis de 7 días** (con plan Pro; hasta octubre de 2026 eran 14) creada automáticamente al registrar un negocio.
+  $14.990/mes, 5 teléfonos + reportes avanzados (fase 7).
+- **Prueba gratis de 7 días** (con plan Pro; hasta octubre de 2026 eran 14) creada
+  automáticamente al registrar un negocio.
 - Estados: prueba → activa → vencida (7 días de gracia, la app avisa) → suspendida (solo
   lectura: se ven los datos pero no se vende ni se modifica nada). Nunca se borran datos.
 - **Sin pasarela de pago** por ahora: el cliente paga (ej. transferencia) y el administrador

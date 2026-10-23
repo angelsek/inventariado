@@ -278,13 +278,29 @@ function HojaNegocio({
       ) : null}
       <View style={estilos.acciones}>
         {/* Solo liberar borra el registro de la prueba usada; extender no lo toca. */}
+        {/* Pide confirmación: reescribe la prueba del negocio y las fechas de sus llaves. */}
         <Text
           accessibilityRole="button"
           style={estilos.enlace}
           onPress={() =>
-            ejecutar(
-              () => supabase.rpc('admin_liberar_prueba', { p_negocio_id: negocio.id, p_dias: 7 }),
-              `${negocio.nombre} recibió 7 días de prueba nuevos.`,
+            avisar(
+              'Liberar prueba',
+              `${negocio.nombre} olvidará que su equipo, su correo y su RUT ya usaron la prueba, y recibirá 7 días nuevos desde hoy.`,
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Liberar',
+                  onPress: () =>
+                    ejecutar(
+                      () =>
+                        supabase.rpc('admin_liberar_prueba', {
+                          p_negocio_id: negocio.id,
+                          p_dias: 7,
+                        }),
+                      `${negocio.nombre} recibió 7 días de prueba nuevos.`,
+                    ),
+                },
+              ],
             )
           }
         >

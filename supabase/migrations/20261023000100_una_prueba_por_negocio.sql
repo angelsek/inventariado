@@ -393,12 +393,9 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
--- Los negocios que ya existen también gastan su prueba
+-- Arreglos sobre los datos
 -- ---------------------------------------------------------------------------
 
--- Sin esto, cualquier negocio de hoy podría borrarse y empezar una prueba más. Se anota con la
--- fecha de su prueba actual; los que nunca tuvieron prueba (por ejemplo los de Google Play, donde
--- la prueba la da Google) no se anotan. Se puede repetir: no pisa lo ya registrado.
 -- Arreglos que corren una sola vez, aunque el archivo se vuelva a ejecutar. Las migraciones de
 -- este proyecto se ejecutan a mano y se repiten a menudo, y un arreglo sobre los datos no siempre
 -- se puede repetir sin hacer daño.
@@ -435,6 +432,13 @@ begin
 end;
 $$;
 
+-- ---------------------------------------------------------------------------
+-- Los negocios que ya existen también gastan su prueba
+-- ---------------------------------------------------------------------------
+
+-- Sin esto, cualquier negocio de hoy podría borrarse y empezar una prueba más. Se anota con la
+-- fecha de su prueba actual; los que nunca tuvieron prueba (por ejemplo los de Google Play, donde
+-- la prueba la da Google) no se anotan. Se puede repetir: no pisa lo ya registrado.
 -- llaves_del_negocio() ya deja fuera los equipos vinculados después del primero.
 -- El group by junta la misma llave en dos negocios (por ejemplo el mismo RUT) y se queda con la
 -- prueba más temprana. El tipo queda determinado por la llave, así que min() da siempre el mismo.

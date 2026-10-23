@@ -1193,11 +1193,41 @@ begin
     raise exception 'FALLA: se borró la llave de un equipo sin negocio (cierra el ciclo)';
   end if;
 
+  -- llaves_del_negocio solo cuenta el primer equipo, así que liberar o marcar el negocio del
+  -- jefe nunca vuelve a tocar el teléfono del empleado.
+  if exists (select 1 from inventariado.llaves_del_negocio(v_negocio) k
+              where k.llave_hash = inventariado.huella_prueba('equipo', pg_temp.u('f41')::text)) then
+    raise exception 'FALLA: llaves_del_negocio incluye un equipo vinculado después del primero';
+  end if;
+  if not exists (select 1 from inventariado.llaves_del_negocio(v_negocio) k
+                  where k.llave_hash = inventariado.huella_prueba('equipo', pg_temp.u('f40')::text)) then
+    raise exception 'FALLA: llaves_del_negocio no incluye el equipo que creó el negocio';
+  end if;
+
   -- Y el empleado puede abrir su propio negocio con su teléfono, con sus 7 días.
   v_nuevo := pg_temp.nuevo(pg_temp.u('e11'), 'Almacén del empleado', null, pg_temp.u('f41'));
   if pg_temp.hasta(v_nuevo) is null
      or pg_temp.hasta(v_nuevo) < now() + interval '6 days 23 hours' then
     raise exception 'FALLA: el empleado debería recibir sus 7 días: %', pg_temp.hasta(v_nuevo);
+  end if;
+end;
+$$;
+
+-- Liberar la prueba del negocio del jefe tampoco anota el teléfono del empleado.
+select pg_temp.como(pg_temp.u('c9'));
+select inventariado.admin_liberar_prueba(current_setting('pruebas.jefa')::uuid, 7) as liberada_jefa \gset
+select set_config('pruebas.liberada_jefa', :'liberada_jefa', false);
+reset role;
+
+do $$
+begin
+  if pg_temp.fecha_llave('equipo', pg_temp.u('f40')::text) is null then
+    raise exception 'FALLA: liberar no volvió a anotar el equipo que creó el negocio';
+  end if;
+  -- La llave del empleado es la de su propio negocio y conserva su fecha, no la del jefe.
+  if pg_temp.fecha_llave('equipo', pg_temp.u('f41')::text)
+     = current_setting('pruebas.liberada_jefa')::timestamptz then
+    raise exception 'FALLA: liberar el negocio del jefe pisó la llave del empleado';
   end if;
 end;
 $$;

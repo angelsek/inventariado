@@ -269,8 +269,10 @@ $$;
 -- Administración
 -- ---------------------------------------------------------------------------
 
--- Las llaves de un negocio que ya existe, sacadas del servidor (no de lo que mande la app):
--- el correo de sus cuentas, su RUT y los equipos que vinculó, incluso los desvinculados.
+-- Las llaves de un negocio que ya existe, sacadas del servidor (no de lo que mande la app): el
+-- correo de sus cuentas, su RUT y su primer equipo, el que lo creó. Los equipos vinculados
+-- después no van: el teléfono de un empleado no gastó ninguna prueba y no debe quedar anotado
+-- al liberar, ni contar para decidir si el negocio está bloqueado.
 create or replace function inventariado.llaves_del_negocio(p_negocio_id uuid)
 returns table (tipo text, llave_hash text)
 language sql
@@ -286,9 +288,10 @@ as $$
    where n.id = p_negocio_id
   union
   select k.tipo, k.llave_hash
-    from inventariado.dispositivos d
-    cross join lateral inventariado.llaves_de_prueba(null, null, d.id) k
-   where d.negocio_id = p_negocio_id;
+    from inventariado.llaves_de_prueba(null, null, (
+      select d.id from inventariado.dispositivos d
+       where d.negocio_id = p_negocio_id
+       order by d.creado_en limit 1)) k;
 $$;
 
 -- ¿Este negocio nació sin prueba porque alguna de sus llaves ya la había usado?
@@ -432,23 +435,13 @@ begin
 end;
 $$;
 
--- Del negocio se toma su primer equipo, no todos: el que lo creó. Anotar los demás dejaría sin
--- prueba al empleado que alguna vez vinculó su teléfono al negocio de su jefe.
+-- llaves_del_negocio() ya deja fuera los equipos vinculados después del primero.
 -- El group by junta la misma llave en dos negocios (por ejemplo el mismo RUT) y se queda con la
 -- prueba más temprana. El tipo queda determinado por la llave, así que min() da siempre el mismo.
 insert into inventariado.pruebas_usadas (llave_hash, tipo, prueba_hasta)
 select k.llave_hash, min(k.tipo), min(s.prueba_hasta)
   from inventariado.suscripciones s
-  cross join lateral inventariado.llaves_de_prueba(
-    (select u.email from inventariado.negocio_usuarios nu
-       join auth.users u on u.id = nu.usuario_id
-      where nu.negocio_id = s.negocio_id
-      order by nu.creado_en limit 1),
-    (select n.rut from inventariado.negocios n where n.id = s.negocio_id),
-    (select d.id from inventariado.dispositivos d
-      where d.negocio_id = s.negocio_id
-      order by d.creado_en limit 1)
-  ) k
+  cross join lateral inventariado.llaves_del_negocio(s.negocio_id) k
  where s.prueba_hasta is not null
  group by k.llave_hash
 on conflict (llave_hash) do nothing;

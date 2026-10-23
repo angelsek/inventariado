@@ -80,8 +80,11 @@ hay dos acciones distintas:
 - **Extender prueba 7 días** (la de siempre): alarga la prueba de un interesado, pero **no**
   toca el registro, así que no sirve para desbloquear.
 
-Límite conocido: `admin_liberar_prueba` recalcula las llaves desde el servidor (correo, RUT y
-equipos vinculados). Si el equipo quedó vinculado con un id al azar (camino
+`admin_liberar_prueba` recalcula las llaves desde el servidor: el correo de las cuentas del
+negocio, su RUT y **su primer equipo**, el que lo creó. Los equipos vinculados después quedan
+fuera a propósito, igual que en el respaldo: el teléfono de un empleado no gastó ninguna prueba.
+
+Límite conocido: Si el equipo quedó vinculado con un id al azar (camino
 `DISPOSITIVO_DE_OTRO_NEGOCIO` de `cuenta.ts`), esa llave no se puede recalcular; igual se liberan
 correo y RUT y la prueba se extiende, que es lo que importa.
 

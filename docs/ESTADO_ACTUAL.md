@@ -76,6 +76,13 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
 - Prueba gratis de 7 días (antes 14), igual que en grimoriolabs.com: migración ejecutada en
   Supabase y páginas legales publicadas. Los APK ya instalados dicen 14 días hasta la próxima
   versión publicada.
+- Una sola prueba gratis por negocio (rama `feat/una-prueba-por-negocio`): el servidor anota la
+  prueba con tres llaves del mismo peso (equipo, correo y RUT), guardadas como huella SHA-256 en
+  `inventariado.pruebas_usadas`, que sobrevive a eliminar la cuenta. Quien vuelve dentro de su
+  prueba recibe los días que le quedaban; después, el negocio nace sin prueba y la app lo explica
+  y lleva a contratar. En Administración se ve marcado y hay «Liberar prueba y dar 7 días» para
+  los casos legítimos. Es una barrera de producto, no de seguridad: un teléfono nuevo, la versión
+  web o un APK modificado se siguen escapando. Detalle en `docs/PRUEBA_GRATIS.md`.
 
 ## Pendiente (en orden)
 
@@ -84,25 +91,31 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
    (`docs/SUPABASE.md`); la web se publica sola desde `main`, y si falta la migración la
    sincronización falla (columna `permisos` desconocida). Las migraciones de roles ya se
    ejecutaron. Detalle en `docs/PERMISOS.md`.
-2. **Antes de la primera publicación con la verificación:** ejecutar
+2. **Antes de fusionar el PR de una prueba por negocio y de publicar el APK o la web:** ejecutar
+   `supabase/migrations/20261023000100_una_prueba_por_negocio.sql` en el SQL Editor de Supabase
+   (`docs/SUPABASE.md`), **el archivo completo**: borra la firma vieja de `crear_negocio` antes de
+   crear la nueva, así que una ejecución a medias deja la app sin poder registrar negocios. Al
+   ejecutarla quedan anotados también los negocios que ya existen, con la fecha de su prueba
+   actual. Detalle en `docs/PRUEBA_GRATIS.md`.
+3. **Antes de la primera publicación con la verificación:** ejecutar
    `supabase/migrations/20261003000100_versiones_app_sha256.sql` en el SQL Editor de Supabase
    (`docs/SUPABASE.md`) y publicar solo después de fusionar `feat/integridad-apk` a `main`.
-3. **Antes de publicar la web** (`docs/WEB.md`): ejecutar
+4. **Antes de publicar la web** (`docs/WEB.md`): ejecutar
    `supabase/migrations/20261018000100_dispositivos_tipo.sql` en Supabase; en Cloudflare
    (proyecto `stockeao-web`, Workers con integración de Git) configurar el build, las variables y
    el dominio `stockeao.grimoriolabs.com` (tablas en `docs/WEB.md`); si se usan enlaces de correo
    de Supabase Auth, agregar el dominio a las URL permitidas.
    Verificar en Chrome/Edge reales que F11 y F12 las capture la caja.
-4. **Logo nuevo, pasos manuales** (el ícono ya está en grimoriolabs.com): subir
+5. **Logo nuevo, pasos manuales** (el ícono ya está en grimoriolabs.com): subir
    `docs/play-store/icono-512.png` y el gráfico destacado en Play Console; publicar una versión
    APK para que los clientes vean el ícono nuevo (los íconos no cambian por OTA); revisar en el
    emulador el ícono adaptable (máscaras circular y squircle), el ícono temático y el splash de
    Android 12+; actualizar el flyer (`docs/flyer`, fuera de git) con el ícono nuevo.
-5. Versión web, fases 2 a 5: caja y ventas; catálogo; inventario y clientes; gestión, respaldo y
+6. Versión web, fases 2 a 5: caja y ventas; catálogo; inventario y clientes; gestión, respaldo y
    documentación (hoy esas pantallas se ven con el diseño del teléfono).
-6. Revisar los textos legales: la política de privacidad debe decir que los datos se guardan en
+7. Revisar los textos legales: la política de privacidad debe decir que los datos se guardan en
    el navegador del PC, y los textos que hablan de "teléfonos" deben hablar de "equipos".
-7. Cobro con Google Play (en pausa): Google paga a Chile por transferencia internacional y exige
+8. Cobro con Google Play (en pausa): Google paga a Chile por transferencia internacional y exige
    código SWIFT/BIC. Mercado Pago no tiene, y los bancos que sí tienen piden historial de
    facturación a la SpA. Con la cuenta abierta: agregarla al perfil de pagos y seguir desde el
    paso 2 de `docs/COBRO_GOOGLE_PLAY.md` (subir el `.aab`, suscripciones, cuenta de servicio,
@@ -110,14 +123,14 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
    `prueba-7-dias` (7 días). El `.aab` 1015 ya compilado tiene los textos de 14 días: hay que
    compilar uno nuevo antes de subirlo. Después: ficha de Play Store, cuenta demo y,
    si la cuenta de desarrollador es personal, prueba cerrada de 12 probadores por 14 días.
-8. **Boletas y facturas electrónicas (DTE)** (plan aún sin aprobar): servicio extra que se cobra
+9. **Boletas y facturas electrónicas (DTE)** (plan aún sin aprobar): servicio extra que se cobra
    aparte del plan. Grimorio Labs paga el certificado y le cobra al negocio un delta sobre su
    costo. Se están cotizando OpenFactura (Haulmer) y SimpleAPI; el piloto será certificar el RUT
    de Grimorio Labs. Ojo: los clientes que cobran con la POS de Mercado Pago ya reciben boleta de
    la máquina, así que hay que evitar emitir una segunda boleta por la misma venta.
-9. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**
-   (ver abajo).
-10. Limpieza menor: borrar en Supabase la tabla `roles`, `perfiles.rol_id` y sus triggers
+10. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**
+    (ver abajo).
+11. Limpieza menor: borrar en Supabase la tabla `roles`, `perfiles.rol_id` y sus triggers
     (migraciones `20261019000100` y `20261020000100`), que quedaron sin uso (`docs/PERMISOS.md`).
 
 ## Idea a futuro: cobrar con la máquina POS desde Stockeao

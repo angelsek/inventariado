@@ -172,6 +172,13 @@ _Funcionalidad de la app_ y _Administración de la cuenta_):
   app informa, con modelo de teléfono). Finalidad: _Análisis_.
 - **Dispositivo u otros identificadores** (identificador del teléfono generado por la app para
   el límite de teléfonos del plan).
+- **Retención tras eliminar la cuenta:** queda guardado un código SHA-256 calculado desde el
+  correo, el RUT y el identificador del teléfono, con la fecha en que terminaba la prueba, para
+  que la prueba gratis sea una por negocio. No lleva `negocio_id` y no se puede leer desde la app.
+  Es un dato seudonimizado, no anónimo (`docs/PRUEBA_GRATIS.md`, sección Privacidad). Al
+  responder el formulario, declara que parte de esos datos se conserva después de la eliminación
+  y que la finalidad es _Prevención de fraude, seguridad y cumplimiento_. Debe coincidir con la
+  Política de privacidad (§5) y con `eliminar-cuenta.html`.
 - **Información financiera → Historial de compras** (plan contratado e identificador de la
   compra en Google Play). Finalidad: _Funcionalidad de la app_.
 - **Información personal → Nombre** y **Teléfono** también incluyen a los clientes con fiado

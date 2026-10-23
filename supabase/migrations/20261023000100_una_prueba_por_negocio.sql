@@ -201,6 +201,9 @@ begin
   -- crear_negocio() deja aquí el id del equipo (ajuste de transacción, como el que usa
   -- proteger_dispositivos()). Si la app es vieja y no lo manda, se limita por correo y RUT.
   v_equipo := nullif(current_setting('inventariado.equipo_prueba', true), '')::uuid;
+  -- Se limpia al leerlo: si en la misma transacción se insertara otro negocio sin pasar por
+  -- crear_negocio() (por ejemplo desde service_role), no heredaría este equipo.
+  perform set_config('inventariado.equipo_prueba', '', true);
 
   -- Durante la prueba se usa el plan Pro, para que se pueda probar todo.
   insert into inventariado.suscripciones (id, negocio_id, plan_id, prueba_hasta)
@@ -393,12 +396,23 @@ $$;
 -- Sin esto, cualquier negocio de hoy podría borrarse y empezar una prueba más. Se anota con la
 -- fecha de su prueba actual; los que nunca tuvieron prueba (por ejemplo los de Google Play, donde
 -- la prueba la da Google) no se anotan. Se puede repetir: no pisa lo ya registrado.
+-- Del negocio se toma su primer equipo, no todos: el que lo creó. Anotar los demás dejaría sin
+-- prueba al empleado que alguna vez vinculó su teléfono al negocio de su jefe.
 -- El group by junta la misma llave en dos negocios (por ejemplo el mismo RUT) y se queda con la
 -- prueba más temprana. El tipo queda determinado por la llave, así que min() da siempre el mismo.
 insert into inventariado.pruebas_usadas (llave_hash, tipo, prueba_hasta)
 select k.llave_hash, min(k.tipo), min(s.prueba_hasta)
   from inventariado.suscripciones s
-  cross join lateral inventariado.llaves_del_negocio(s.negocio_id) k
+  cross join lateral inventariado.llaves_de_prueba(
+    (select u.email from inventariado.negocio_usuarios nu
+       join auth.users u on u.id = nu.usuario_id
+      where nu.negocio_id = s.negocio_id
+      order by nu.creado_en limit 1),
+    (select n.rut from inventariado.negocios n where n.id = s.negocio_id),
+    (select d.id from inventariado.dispositivos d
+      where d.negocio_id = s.negocio_id
+      order by d.creado_en limit 1)
+  ) k
  where s.prueba_hasta is not null
  group by k.llave_hash
 on conflict (llave_hash) do nothing;

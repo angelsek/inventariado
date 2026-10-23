@@ -59,6 +59,11 @@ solo lectura. Como nunca hubo una suscripción que suspender, los textos son otr
 La cuenta **sí se crea**: quien quiere pagar tiene que poder entrar y pagar, y el administrador
 necesita un negocio sobre el que actuar.
 
+En la versión de Google Play la prueba la da Google (una vez por cuenta de Google), no este
+registro. El servidor igual crea el negocio con su prueba o sin ella, pero la app de Play muestra
+«Elige tu plan» en los dos casos (`src/app/(tabs)/_layout.tsx`), así que nadie queda sin forma de
+contratar. Ver `docs/COBRO_GOOGLE_PLAY.md`.
+
 ## La salida para los casos legítimos
 
 Un dueño que cambia de teléfono no pasa por esta regla (no crea otro negocio). Los que sí:

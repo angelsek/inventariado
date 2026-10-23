@@ -172,7 +172,8 @@ Además, cada dueño puede descargar sus datos desde **Más → Exportar datos**
 ## 4. Incorporar un local al piloto
 
 1. Instala la app desde el enlace fijo del APK (paso 2) o pásale el archivo.
-2. El dueño crea su cuenta y negocio en el teléfono principal (7 días de prueba).
+2. El dueño crea su cuenta y negocio en el teléfono principal (7 días de prueba, una por negocio: si ese teléfono, correo o RUT ya la
+   usaron, la cuenta nace sin prueba; ver `docs/PRUEBA_GRATIS.md`).
 3. Carga del catálogo: importar desde Excel (Inventario → Importar) o escaneando productos.
 4. Agrega a los cajeros (Más → Usuarios y permisos) con su PIN y los permisos que necesite cada uno (`docs/PERMISOS.md`).
 5. Instala la app en los otros teléfonos e inicia sesión con la misma cuenta.
@@ -185,3 +186,6 @@ Además, cada dueño puede descargar sus datos desde **Más → Exportar datos**
 - **Administración → Comentarios y errores:** lo que envían los clientes y los errores que
   la app informa sola (con versión y modelo de teléfono).
 - Al terminar la prueba: registra el pago en Administración o extiende la prueba.
+- Un cliente marcado «Sin prueba (ya la usó este cliente)» es de los que ya gastaron su prueba
+  (por ejemplo un teléfono de segunda mano). Si es un caso legítimo, usa **Liberar prueba y dar 7
+  días**; «Extender prueba» no lo desbloquea.

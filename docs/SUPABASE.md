@@ -73,7 +73,8 @@ En la misma página, si aparecen **Exposed tables** y **Exposed functions**, act
 - Tablas de la fase 5: `planes`, `suscripciones`, `pagos_suscripcion`.
 - Tablas de la fase 8: `clientes`, `movimientos_cliente`.
 - Funciones de la fase 5: `registrar_dispositivo`, `mis_dispositivos`, `desvincular_dispositivo`,
-  `es_admin`, `admin_listar_negocios`, `admin_registrar_pago`, `admin_actualizar_suscripcion`.
+  `es_admin`, `admin_listar_negocios`, `admin_registrar_pago`, `admin_actualizar_suscripcion`,
+  `admin_liberar_prueba`.
 - Funciones de la fase 6: `ultima_version`, `registrar_error`, `enviar_comentario`,
   `admin_listar_reportes`, `admin_marcar_comentario`.
 - Función para Play Store: `eliminar_mi_negocio`.

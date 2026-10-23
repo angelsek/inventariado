@@ -70,27 +70,32 @@ servicio con texto mal codificado.
   forzarla rompería la app (y Jest).
 - **Decisión:** aceptar. Revisar cuando `expo-router` actualice `query-string`.
 
-### braces
+### zod
 
-[GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm), alta. Denegación de
-servicio con patrones glob muy anidados.
+[GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5), alta (CVSS 7.5).
+Agotamiento de memoria al validar colecciones grandes con límites.
 
-- **Sin versión corregida:** afecta a todas las versiones hasta la 3.0.3, que es la última.
-- **Llega por:** `micromatch`, que solo usan las herramientas de compilación y pruebas (Metro, Jest, Babel)
-  con patrones de la configuración del proyecto, nunca con datos de usuarios.
-- **No va dentro del APK.**
-- **Decisión:** aceptar. Revisar cuando haya versión corregida.
+- **Versión instalada:** 3.25.76. **Afectadas:** todas las anteriores a la 4.6.6.
+- **Por qué no se actualiza:** zod 4 es un cambio mayor de API, y quienes la traen piden `^3`.
+  Un `overrides` a la 4 rompería a `@expo/cli` y al plugin de ESLint.
+- **Llega por:** `expo` → `@expo/cli`, y `eslint-config-expo` → `eslint-plugin-react-hooks`
+  (con su `zod-validation-error`). Las dos son herramientas de desarrollo.
+- **Para qué se usa:** validar la configuración y los argumentos del propio proyecto. El ataque
+  necesita que quien ataca elija los datos que se validan, y aquí los pone el proyecto.
+- **No va dentro del APK ni de la versión web:** la app no importa `zod`.
+- **Decisión:** aceptar. Revisar cuando `@expo/cli` suba a zod 4.
 
-### sprintf-js
+### braces (resuelta)
 
-[GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c), moderada. Denegación de
-servicio con especificadores de precisión muy grandes.
+[GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm), alta. Llegaba por
+`micromatch`, que solo usan las herramientas de compilación y pruebas. Dejó de aparecer en
+`npm audit` (octubre de 2026) y se quitó la excepción.
 
-- **Sin versión corregida:** afecta a todas las versiones hasta la 1.1.3, que es la última.
-- **Llega por:** `argparse` → `js-yaml` → `babel-plugin-istanbul` (Jest), que solo formatea textos de
-  la configuración de cobertura del proyecto, nunca datos de usuarios.
-- **No va dentro del APK ni de la versión web.**
-- **Decisión:** aceptar. Revisar cuando haya versión corregida.
+### sprintf-js (resuelta)
+
+[GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c), moderada. Llegaba por
+`argparse` → `js-yaml` → `babel-plugin-istanbul` (Jest). Dejó de aparecer en `npm audit`
+(octubre de 2026) y se quitó la excepción.
 
 ### source-map-js (resuelta)
 

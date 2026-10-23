@@ -4,8 +4,11 @@ import { Alert } from 'react-native';
 import { AJUSTE_DISPOSITIVO, AJUSTE_NEGOCIO, guardarAjuste } from '@/db/ajustes';
 import { migrarBaseDeDatos } from '@/db/migraciones';
 import { crearPerfil } from '@/db/perfiles';
-import { crearProducto } from '@/db/productos';
+import { crearProducto, listarProductos } from '@/db/productos';
 import type { BaseLocal } from '@/db/tipos';
+import { registrarVenta } from '@/db/ventas';
+import { compartirArchivo } from '@/features/exportar/compartir';
+import { MENSAJE_PLAN_PAGADO } from '@/features/suscripcion/planPagado';
 import { useCarrito } from '@/features/ventas/carrito';
 import { useSesion } from '@/sesion/store';
 import { crearBaseEnMemoria } from '@/test/baseEnMemoria';
@@ -35,6 +38,9 @@ jest.mock('expo-sqlite', () => {
 });
 jest.mock('@/lib/supabase', () => require('@/test/mockSupabase'));
 jest.mock('@/sync/useSincronizacionAutomatica', () => ({ useSincronizacionAutomatica: () => {} }));
+jest.mock('@/features/exportar/compartir', () => ({
+  compartirArchivo: jest.fn(() => Promise.resolve()),
+}));
 jest.mock('@/sync/ejecutar', () => ({ sincronizarAhora: jest.fn(() => Promise.resolve()) }));
 
 const NEGOCIO = 'negocio-1';
@@ -254,4 +260,166 @@ it('sin permisos de administrador no aparece el panel', async () => {
   expect(await screen.findByText('Suscripción')).toBeTruthy();
   await waitFor(() => expect(supabase.rpc).toHaveBeenCalledWith('es_admin'));
   expect(screen.queryByText('Administración')).toBeNull();
+});
+
+describe('exportar a Excel es del plan pagado', () => {
+  async function abrirExportar() {
+    fireEvent.press(screen.getByText('Más'));
+    fireEvent.press(await screen.findByText('Exportar datos'));
+    // El respaldo completo está siempre: sirve para saber que la pantalla ya cargó.
+    await screen.findByText('Descargar respaldo');
+  }
+
+  function esperarBloqueo() {
+    expect(screen.queryByText('Exportar productos')).toBeNull();
+    expect(screen.queryByText('Ventas de este mes')).toBeNull();
+    expect(screen.queryByText('Ventas del mes anterior')).toBeNull();
+    expect(screen.getByText('Exportar a Excel es del plan pagado')).toBeTruthy();
+    expect(screen.getByText('Ver planes')).toBeTruthy();
+    expect(screen.getByText('Descargar respaldo')).toBeTruthy();
+  }
+
+  it('en prueba: se abre, pero sin los botones de Excel y con el respaldo disponible', async () => {
+    await prepararBase({ pruebaDias: 5 });
+    await entrar();
+    await abrirExportar();
+    esperarBloqueo();
+  });
+
+  it('en prueba: "Ver planes" lleva a la pantalla de suscripción', async () => {
+    respuestasTabla.planes = { data: [], error: null };
+    respuestasRpc.mis_dispositivos = { data: { limite: 2, dispositivos: [] }, error: null };
+    await prepararBase({ pruebaDias: 5 });
+    await entrar();
+    await abrirExportar();
+    fireEvent.press(screen.getByText('Ver planes'));
+    expect(await screen.findByText('Prueba gratis')).toBeTruthy();
+  });
+
+  it('pagado: están los botones de Excel y no el candado', async () => {
+    await prepararBase({ pagadoDias: 20 });
+    await entrar();
+    await abrirExportar();
+    expect(screen.getByText('Exportar productos')).toBeTruthy();
+    expect(screen.getByText('Ventas de este mes')).toBeTruthy();
+    expect(screen.getByText('Ventas del mes anterior')).toBeTruthy();
+    expect(screen.queryByText('Exportar a Excel es del plan pagado')).toBeNull();
+    expect(screen.queryByText('Ver planes')).toBeNull();
+  });
+
+  it('pagado: tocar "Exportar productos" comparte de verdad un CSV de productos', async () => {
+    (compartirArchivo as jest.Mock).mockClear();
+    await prepararBase({ pagadoDias: 20 });
+    await entrar();
+    await abrirExportar();
+    fireEvent.press(screen.getByText('Exportar productos'));
+    await waitFor(() => expect(compartirArchivo).toHaveBeenCalledTimes(1));
+    const [nombre, tipo, contenido] = (compartirArchivo as jest.Mock).mock.calls[0];
+    expect(nombre).toMatch(/^productos-.+\.csv$/);
+    expect(tipo).toBe('text/csv');
+    expect(contenido).toContain('Cerveza lata');
+  });
+
+  it('en prueba: no hay botones que tocar y no se comparte nada', async () => {
+    (compartirArchivo as jest.Mock).mockClear();
+    await prepararBase({ pruebaDias: 5 });
+    await entrar();
+    await abrirExportar();
+    expect(screen.queryByText('Exportar productos')).toBeNull();
+    expect(screen.queryByText('Ventas de este mes')).toBeNull();
+    expect(screen.queryByText('Ventas del mes anterior')).toBeNull();
+    expect(compartirArchivo).not.toHaveBeenCalled();
+  });
+
+  it('vencida en gracia: queda bloqueado igual que en la prueba', async () => {
+    await prepararBase({ pagadoDias: -2 });
+    await entrar();
+    await abrirExportar();
+    esperarBloqueo();
+  });
+
+  it('suspendida: queda bloqueado, pero el respaldo se puede descargar', async () => {
+    await prepararBase({ pagadoDias: -30 });
+    await entrar();
+    await abrirExportar();
+    esperarBloqueo();
+  });
+});
+
+describe('reportes: exportar a Excel es del plan pagado', () => {
+  async function conUnaVenta() {
+    const [cerveza] = await listarProductos(mockDb, NEGOCIO);
+    await registrarVenta(mockDb, {
+      negocioId: NEGOCIO,
+      items: [
+        {
+          clave: cerveza.id,
+          productoId: cerveza.id,
+          nombre: cerveza.nombre,
+          unidad: cerveza.unidad,
+          cantidad: 1,
+          precioUnitario: cerveza.precioVenta,
+          costoUnitario: cerveza.costo,
+          descuento: 0,
+          stock: cerveza.stock,
+        },
+      ],
+      descuentoGeneral: 0,
+      pagos: [{ medio: 'debito', monto: 1290 }],
+      efectivoRecibido: null,
+      vuelto: null,
+      autor: { perfilId: null, dispositivoId: null },
+    });
+  }
+
+  async function abrirReportes() {
+    fireEvent.press(screen.getByText('Más'));
+    fireEvent.press(await screen.findByText('Reportes del negocio'));
+    await screen.findByText('Hoy');
+  }
+
+  it('en prueba: la fila con candado avisa que es del plan pagado', async () => {
+    const alerta = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await prepararBase({ pruebaDias: 5 });
+    await conUnaVenta();
+    await entrar();
+    await abrirReportes();
+
+    expect(await screen.findByText('Exportar a Excel es del plan pagado')).toBeTruthy();
+    expect(screen.queryByText('Exportar a Excel')).toBeNull();
+
+    fireEvent.press(screen.getByText('Exportar a Excel es del plan pagado'));
+    expect(alerta).toHaveBeenCalledWith('Solo con plan pagado', MENSAJE_PLAN_PAGADO);
+  });
+
+  it.each([
+    ['vencida en gracia', -2],
+    ['suspendida', -30],
+  ])('%s: la fila con candado reemplaza al botón "Exportar a Excel"', async (_caso, pagadoDias) => {
+    await prepararBase({ pagadoDias });
+    await conUnaVenta();
+    await entrar();
+    await abrirReportes();
+
+    expect(await screen.findByText('Exportar a Excel es del plan pagado')).toBeTruthy();
+    expect(screen.queryByText('Exportar a Excel')).toBeNull();
+  });
+
+  it('pagado: aparece el botón "Exportar a Excel", sin candado', async () => {
+    await prepararBase({ pagadoDias: 20 });
+    await conUnaVenta();
+    await entrar();
+    await abrirReportes();
+
+    expect(await screen.findByText('Exportar a Excel')).toBeTruthy();
+    expect(screen.queryByText('Exportar a Excel es del plan pagado')).toBeNull();
+  });
+});
+
+it('importar productos sigue disponible durante la prueba', async () => {
+  await prepararBase({ pruebaDias: 5 });
+  await entrar();
+  fireEvent.press(screen.getByText('Productos'));
+  fireEvent.press(await screen.findByText('Importar'));
+  expect(await screen.findByText('Elegir archivo CSV')).toBeTruthy();
 });

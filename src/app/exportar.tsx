@@ -1,3 +1,5 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
 import { useBase } from '@/db/proveedor';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -6,6 +8,7 @@ import { Boton } from '@/components/Boton';
 import { Formulario } from '@/components/Formulario';
 import { compartirArchivo } from '@/features/exportar/compartir';
 import { csvProductos, csvVentas, respaldoJson } from '@/features/exportar/exportar';
+import { bloqueadoSinPlanPagado, usePlanPagado } from '@/features/suscripcion/planPagado';
 import { informarError } from '@/lib/errores';
 import { useSesion } from '@/sesion/store';
 import { colores } from '@/theme/colores';
@@ -19,6 +22,8 @@ const hoy = () => {
 export default function ExportarScreen() {
   const db = useBase();
   const negocioId = useSesion((s) => s.negocioId);
+  // Los CSV para Excel son del plan pagado; el respaldo completo, siempre.
+  const pagado = usePlanPagado();
   const [trabajando, setTrabajando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,6 +43,17 @@ export default function ExportarScreen() {
     } finally {
       setTrabajando(null);
     }
+  };
+
+  /** Igual que `compartir`, pero solo con el plan pagado. */
+  const compartirPagado = (
+    clave: string,
+    nombre: string,
+    tipo: string,
+    generar: () => Promise<string>,
+  ) => {
+    if (bloqueadoSinPlanPagado()) return;
+    compartir(clave, nombre, tipo, generar);
   };
 
   const mesActual = () => {
@@ -61,15 +77,31 @@ export default function ExportarScreen() {
       subtitulo="Los archivos se pueden abrir en Excel o guardar en Drive, correo o WhatsApp."
       error={error}
     >
+      {pagado ? null : (
+        <View style={estilos.tarjetaCandado}>
+          <View style={estilos.encabezado}>
+            <Ionicons name="lock-closed" size={20} color={colores.aviso} />
+            <Text style={estilos.titulo}>Exportar a Excel es del plan pagado</Text>
+          </View>
+          <Text style={estilos.texto}>
+            Mientras no tengas un plan pagado al día no puedes pasar tus productos ni tus ventas a
+            Excel. El respaldo completo de tu negocio sí: está más abajo y lo puedes descargar
+            siempre.
+          </Text>
+          <Boton titulo="Ver planes" onPress={() => router.push('/suscripcion')} />
+        </View>
+      )}
+
       <Seccion
         titulo="Productos (CSV)"
         texto="Catálogo con precios, costos y stock. Se puede editar en Excel y volver a importar."
+        bloqueada={!pagado}
       >
         <Boton
           titulo="Exportar productos"
           cargando={trabajando === 'productos'}
           onPress={() =>
-            compartir('productos', `productos-${hoy()}.csv`, 'text/csv', () =>
+            compartirPagado('productos', `productos-${hoy()}.csv`, 'text/csv', () =>
               csvProductos(db, negocioId!),
             )
           }
@@ -79,13 +111,14 @@ export default function ExportarScreen() {
       <Seccion
         titulo="Ventas (CSV)"
         texto="Una fila por producto vendido, con precio, costo y vendedor."
+        bloqueada={!pagado}
       >
         <View style={estilos.botones}>
           <Boton
             titulo="Ventas de este mes"
             cargando={trabajando === 'mes'}
             onPress={() =>
-              compartir('mes', `ventas-${hoy()}.csv`, 'text/csv', () => {
+              compartirPagado('mes', `ventas-${hoy()}.csv`, 'text/csv', () => {
                 const { desde, hasta } = mesActual();
                 return csvVentas(db, negocioId!, desde, hasta);
               })
@@ -96,7 +129,7 @@ export default function ExportarScreen() {
             variante="secundario"
             cargando={trabajando === 'anterior'}
             onPress={() =>
-              compartir('anterior', `ventas-mes-anterior-${hoy()}.csv`, 'text/csv', () => {
+              compartirPagado('anterior', `ventas-mes-anterior-${hoy()}.csv`, 'text/csv', () => {
                 const { desde, hasta } = mesAnterior();
                 return csvVentas(db, negocioId!, desde, hasta);
               })
@@ -107,7 +140,7 @@ export default function ExportarScreen() {
 
       <Seccion
         titulo="Respaldo completo (JSON)"
-        texto="Todos los datos del negocio guardados en este equipo. Guárdalo en un lugar seguro."
+        texto="Todos los datos del negocio guardados en este equipo. Siempre lo puedes descargar, también con la prueba gratis. Guárdalo en un lugar seguro."
       >
         <Boton
           titulo="Descargar respaldo"
@@ -127,17 +160,23 @@ export default function ExportarScreen() {
 function Seccion({
   titulo,
   texto,
+  bloqueada,
   children,
 }: {
   titulo: string;
   texto: string;
+  /** Con candado: se ve de qué se trata, pero sin los botones. */
+  bloqueada?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <View style={estilos.tarjeta}>
-      <Text style={estilos.titulo}>{titulo}</Text>
+      <View style={estilos.encabezado}>
+        {bloqueada ? <Ionicons name="lock-closed" size={18} color={colores.inactivo} /> : null}
+        <Text style={[estilos.titulo, bloqueada && estilos.tituloBloqueado]}>{titulo}</Text>
+      </View>
       <Text style={estilos.texto}>{texto}</Text>
-      {children}
+      {bloqueada ? null : children}
     </View>
   );
 }
@@ -152,7 +191,18 @@ const estilos = StyleSheet.create({
     borderColor: colores.borde,
     backgroundColor: colores.superficie,
   },
-  titulo: { fontSize: 17, fontWeight: '700', color: colores.texto },
+  tarjetaCandado: {
+    padding: 16,
+    marginBottom: 12,
+    gap: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colores.aviso,
+    backgroundColor: colores.superficie,
+  },
+  encabezado: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  titulo: { flex: 1, fontSize: 17, fontWeight: '700', color: colores.texto },
+  tituloBloqueado: { color: colores.textoSecundario },
   texto: { fontSize: 14, color: colores.textoSecundario },
   botones: { gap: 10 },
 });

@@ -110,7 +110,8 @@ escribir(
 </ol>
 <p>Se eliminan de forma definitiva: el negocio, sus usuarios y teléfonos, productos, stock, ventas, cajas, proveedores, ingresos de mercadería, la suscripción y su historial de pagos. Solo se conservan registros técnicos anónimos de errores y lo que la ley obligue a conservar.</p>
 <p>Si ya no tienes acceso a la app, escríbenos a <a href="mailto:${escapar(correo)}">${escapar(correo)}</a> desde el correo de la cuenta, indicando el nombre del negocio. Eliminaremos los datos en un plazo máximo de 30 días y te confirmaremos por correo.</p>
-<p>Antes de eliminar, puedes descargar una copia de tus datos en Más → Exportar datos.</p>`,
+<p>Antes de eliminar, puedes descargar una copia de tus datos en Más → Exportar datos →
+Respaldo completo, que está disponible siempre, también sin un plan pagado.</p>`,
   ),
 );
 

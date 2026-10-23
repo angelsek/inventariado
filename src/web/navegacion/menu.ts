@@ -97,6 +97,9 @@ export const MENU: GrupoMenu[] = [
       },
       { texto: 'Suscripción', icono: 'card-outline', ruta: '/suscripcion', activaEn: [] },
       {
+        // Exportar es del plan pagado, pero la entrada NO se filtra aquí: el candado lo
+        // dibuja MarcoApp.web.tsx (features/suscripcion/planPagado.ts) y la pantalla
+        // explica adentro cómo contratar. Filtrarla rompería el resaltado del menú.
         texto: 'Exportar datos',
         icono: 'share-outline',
         ruta: '/exportar',

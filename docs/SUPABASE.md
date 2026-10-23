@@ -47,7 +47,10 @@ también los negocios que ya existen, con la fecha de su prueba actual. Es **obl
 fusionar el PR y de publicar el APK o la web** con ese cambio. Hay que ejecutar el archivo
 **completo**: borra la firma vieja de `crear_negocio` antes de crear la nueva, así que una
 ejecución a medias deja la app sin poder registrar negocios. `pruebas_usadas` **no** se agrega a
-«Exposed tables»: nadie la lee desde la API. Ver `docs/PRUEBA_GRATIS.md`.
+«Exposed tables»: nadie la lee desde la API. Después de ejecutarla, **no vuelvas a ejecutar las
+migraciones anteriores** (`20260929000500_fase5_suscripciones.sql` y
+`20261022000100_prueba_7_dias.sql`): devolverían el trigger viejo, que da 7 días sin ningún tope
+y sin avisar. Si llegaras a ejecutarlas, vuelve a ejecutar esta. Ver `docs/PRUEBA_GRATIS.md`.
 
 `20261021000100_permisos_por_persona.sql` (permisos por persona) agrega `perfiles.permisos` y
 `perfiles.permisos_en`, migra los datos desde los roles, deja 7 permisos por defecto para las

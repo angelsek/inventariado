@@ -21,6 +21,13 @@ prueba, no hay prueba nueva.**
 | **Correo** | `auth.users.email`, en minúsculas, sin la etiqueta `+algo` y, en Gmail, sin los puntos        | Borrar la cuenta y volver a crearla con el mismo correo |
 | **RUT**    | `negocios.rut`, dejando solo dígitos y K (es opcional: si no se escribe, no se usa)           | Al cliente que escribe su RUT real las dos veces        |
 
+El RUT tiene una regla aparte: **solo se anota cuando el alta es una prueba nueva de verdad**
+(ninguna llave conocida). Es el único dato que el cliente escribe libre y que identifica a un
+tercero, así que si cada alta lo anotara, una sola cuenta podría borrarse y recrearse en bucle
+dejando sin prueba a todos los RUT que quisiera, antes de que esos negocios se registren. Con la
+regla, quemar un RUT ajeno cuesta una cuenta nueva por cada uno, y el negocio afectado se
+arregla con «Liberar prueba y dar 7 días».
+
 De cada llave se guarda **solo una huella SHA-256** con prefijo de dominio
 (`stockeao-prueba:<tipo>:<valor>`), nunca el dato. Viven en `inventariado.pruebas_usadas`, que
 **no tiene `negocio_id`** a propósito: así sobrevive a `eliminar_mi_negocio()` sin dejar rastro
@@ -63,7 +70,8 @@ hay dos acciones distintas:
 
 - **Liberar prueba y dar 7 días** (`admin_liberar_prueba`): olvida lo anotado para las llaves de
   ese negocio y le da 7 días. Las llaves quedan anotadas con la fecha nueva, así que sigue
-  siendo una sola prueba. **Esta es la salida para un negocio bloqueado.**
+  siendo una sola prueba. **Esta es la salida para un negocio bloqueado.** No levanta una
+  suspensión puesta a mano: para eso está «Quitar suspensión», que es una decisión aparte.
 - **Extender prueba 7 días** (la de siempre): alarga la prueba de un interesado, pero **no**
   toca el registro, así que no sirve para desbloquear.
 
@@ -87,6 +95,15 @@ plan pagado). El cierre duro sigue siendo el pago.
   el equipo y el correo.
 - Los **negocios sin `prueba_hasta`** que ya existían (por ejemplo los de Google Play, donde la
   prueba la da Google) no quedaron anotados: pueden borrarse y recibir una prueba una vez más.
+- Los **APK anteriores a esta versión** no mandan el id del equipo, así que esos negocios se
+  limitan solo por correo y RUT hasta que el cliente actualice. No se anotan los equipos al
+  borrar la cuenta a propósito: un negocio con tres teléfonos dejaría sin prueba a los tres, y
+  el segundo teléfono suele ser de un empleado que no tiene nada que ver.
+
+Riesgo de soporte, no de evasión: el RUT es un dato casi público, así que un negocio legítimo
+puede nacer sin prueba porque alguien lo escribió antes (el contador, un familiar, un segundo
+local con el mismo RUT, o alguien de mala fe). Por eso el panel lo muestra marcado y la salida
+del administrador es parte del diseño, no un parche.
 
 Lo que **no** es un hueco: dos cuentas creadas en el mismo instante con la misma llave. Antes
 las dos habrían recibido 7 días, porque cada una leía antes de que la otra escribiera;
@@ -100,9 +117,15 @@ o el mismo RUT.
 
 La huella sobrevive a eliminar la cuenta, así que está declarada en los textos legales
 (`src/legal/textos.ts`, regenerados en `docs/legal-web/`): Términos §3 (la prueba es una por
-negocio), Privacidad §1 (qué se guarda) y Privacidad §5 (qué queda después de eliminar). Es un
-dato **seudonimizado**, no anónimo: quien tenga acceso a la base puede comprobar si un correo
-concreto ya probó, pero no puede sacar el correo de la huella.
+negocio), Privacidad §1 (qué se guarda), Privacidad §5 y la página de eliminar cuenta (qué queda
+después de eliminar).
+
+Es un dato **seudonimizado, no anónimo**, y el texto público lo dice así. No hay sal secreta y
+el prefijo está en este repositorio, así que quien lea la tabla puede probar RUT uno por uno
+(son unos 25 millones) o correos de una lista y averiguar cuáles ya usaron la prueba. La huella
+del equipo sí resiste, porque sale de un SHA-256. Si algún día hace falta subir el listón, lo
+que corresponde es un HMAC con un secreto fuera de la tabla (Supabase Vault), asumiendo que
+rotarlo invalida todo lo anotado.
 
 ## Paso manual
 

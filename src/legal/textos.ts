@@ -5,7 +5,7 @@
  * Al cambiarlos, actualizar la fecha.
  */
 
-export const FECHA_LEGAL = '20 de octubre de 2026';
+export const FECHA_LEGAL = '23 de octubre de 2026';
 
 export const TERMINOS = `Términos y condiciones de uso de Stockeao
 
@@ -53,7 +53,7 @@ export const PRIVACIDAD = `Política de privacidad de Stockeao
 - Datos técnicos: modelo del teléfono, fecha de la última sincronización y un código que identifica al teléfono (se calcula a partir del identificador de Android, sin guardarlo), para reconocerlo aunque se reinstale la app.
 - Clientes con fiado: si el negocio usa el fiado, el nombre y teléfono de esos clientes y lo que deben, datos que ingresa el propio negocio.
 - Suscripción: el plan contratado y el identificador de la compra en Google Play. Los datos de la tarjeta los maneja Google; la app nunca los ve ni los guarda.
-- Prueba gratis: una huella irreversible (hash) del correo, del RUT y del código del equipo con que se creó el negocio, junto con la fecha en que termina su prueba, para que la prueba gratis sea una sola por negocio. La huella no permite recuperar el correo, el RUT ni el código del equipo, y no se usa para ninguna otra cosa.
+- Prueba gratis: un código calculado con una función hash a partir del correo, del RUT y del código del equipo con que se creó el negocio, junto con la fecha en que termina su prueba, para que la prueba gratis sea una sola por negocio. El código no contiene esos datos y no se usa para ninguna otra cosa, pero no es anónimo: quien tenga acceso a la base de datos puede comprobar con él si un correo o un RUT determinado ya usó la prueba. Se conserva mientras sea necesario para ese fin.
 
 2. Para qué se usan
 Para prestar el servicio (guardar y sincronizar la información entre los teléfonos del negocio), administrar la suscripción y dar soporte. No se venden ni se ceden los datos a terceros.
@@ -65,7 +65,7 @@ En el teléfono (para funcionar sin internet) y en servidores de Supabase, prove
 La cámara se usa solo para leer códigos de barras. No se guardan fotos ni videos.
 
 5. Cuánto tiempo se guardan y cómo eliminarlos
-Mientras la cuenta exista. El dueño del negocio puede eliminar el negocio y todos sus datos en cualquier momento desde la app, en Más → Eliminar cuenta y datos, o solicitarlo escribiendo al contacto indicado. La eliminación es definitiva e incluye productos, ventas, cajas, usuarios, teléfonos y suscripción; solo se conservan registros técnicos anónimos de errores, la huella irreversible de la prueba gratis descrita en el punto 1 (que no se puede asociar a un negocio eliminado, y sin la cual bastaría con borrar la cuenta para empezar otra prueba) y lo que la ley obligue a conservar.
+Mientras la cuenta exista. El dueño del negocio puede eliminar el negocio y todos sus datos en cualquier momento desde la app, en Más → Eliminar cuenta y datos, o solicitarlo escribiendo al contacto indicado. La eliminación es definitiva e incluye productos, ventas, cajas, usuarios, teléfonos y suscripción; solo se conservan registros técnicos anónimos de errores, el código de la prueba gratis descrito en el punto 1 (que no se puede asociar a un negocio eliminado, y sin el cual bastaría con borrar la cuenta para empezar otra prueba) y lo que la ley obligue a conservar.
 
 6. Derechos
 El titular puede solicitar acceso, rectificación, eliminación u oposición al tratamiento de sus datos, y una copia de ellos, escribiendo al contacto indicado en la app.

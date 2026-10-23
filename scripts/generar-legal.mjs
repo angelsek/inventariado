@@ -108,7 +108,7 @@ escribir(
   <li>Ve a la pestaña <strong>Más</strong> → <strong>Eliminar cuenta y datos</strong>.</li>
   <li>Escribe ELIMINAR, ingresa la contraseña de la cuenta y confirma.</li>
 </ol>
-<p>Se eliminan de forma definitiva: el negocio, sus usuarios y teléfonos, productos, stock, ventas, cajas, proveedores, ingresos de mercadería, la suscripción y su historial de pagos. Solo se conservan registros técnicos anónimos de errores y lo que la ley obligue a conservar.</p>
+<p>Se eliminan de forma definitiva: el negocio, sus usuarios y teléfonos, productos, stock, ventas, cajas, proveedores, ingresos de mercadería, la suscripción y su historial de pagos. Solo se conservan registros técnicos anónimos de errores, el código de la prueba gratis descrito en el punto 1 de la Política de privacidad y lo que la ley obligue a conservar.</p>
 <p>Si ya no tienes acceso a la app, escríbenos a <a href="mailto:${escapar(correo)}">${escapar(correo)}</a> desde el correo de la cuenta, indicando el nombre del negocio. Eliminaremos los datos en un plazo máximo de 30 días y te confirmaremos por correo.</p>
 <p>Antes de eliminar, puedes descargar una copia de tus datos en Más → Exportar datos.</p>`,
   ),

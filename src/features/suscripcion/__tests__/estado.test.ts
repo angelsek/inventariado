@@ -72,7 +72,7 @@ describe('negocio que nació sin prueba gratis (una prueba por negocio)', () => 
 
   it('el aviso explica que la prueba ya se usó, no que la suscripción se suspendió', () => {
     expect(avisoSuscripcion(sinPrueba)).toEqual({
-      texto: 'Este negocio ya usó su prueba gratis. Toca para ver los planes.',
+      texto: 'La prueba gratis ya se usó con este equipo, correo o RUT. Toca para ver los planes.',
       grave: true,
     });
   });

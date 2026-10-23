@@ -83,7 +83,7 @@ export function avisoSuscripcion(e: EstadoSuscripcion): { texto: string; grave: 
     case 'suspendida':
       return {
         texto: e.sinPrueba
-          ? 'Este negocio ya usó su prueba gratis. Toca para ver los planes.'
+          ? 'La prueba gratis ya se usó con este equipo, correo o RUT. Toca para ver los planes.'
           : 'Suscripción suspendida: la app quedó en solo lectura. Toca para ver el detalle.',
         grave: true,
       };

@@ -53,6 +53,10 @@ export default function EliminarCuentaScreen() {
         <Text style={estilos.textoAviso}>
           Si quieres conservar tu información, antes descárgala en Más → Exportar datos.
         </Text>
+        <Text style={estilos.item}>
+          Queda guardado solo un código de la prueba gratis (no contiene tu correo, tu RUT ni el
+          código del equipo), para que la prueba siga siendo una por negocio.
+        </Text>
       </View>
       <Campo
         etiqueta={`Escribe ${CONFIRMACION} para confirmar`}

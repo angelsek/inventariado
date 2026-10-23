@@ -146,27 +146,39 @@ security definer
 set search_path = ''
 as $$
 declare
+  -- Fecha ya anotada para alguna de las llaves, o null si ninguna había usado su prueba.
+  v_conocida timestamptz;
   v_hasta timestamptz;
+  v_llave text;
 begin
   -- Dos cuentas creadas al mismo tiempo con la misma llave no se ven entre sí (cada una lee
   -- antes de que la otra escriba) y las dos recibirían 7 días. El cerrojo de transacción las
-  -- pone en fila; ordenado por llave para que dos transacciones con llaves en común no se
-  -- traben entre ellas. Se suelta solo al terminar la transacción.
-  perform pg_advisory_xact_lock(hashtextextended(k.llave_hash, 0))
-     from inventariado.llaves_de_prueba(p_correo, p_rut, p_equipo_id) k
-    order by k.llave_hash;
+  -- pone en fila. Se toman uno por uno y en orden de llave: si se pidieran dentro de un select,
+  -- el planificador podría evaluarlos antes de ordenar, y dos transacciones con llaves en común
+  -- se trabarían entre ellas. Se sueltan solos al terminar la transacción.
+  for v_llave in
+    select k.llave_hash from inventariado.llaves_de_prueba(p_correo, p_rut, p_equipo_id) k
+     order by 1
+  loop
+    perform pg_advisory_xact_lock(hashtextextended(v_llave, 0));
+  end loop;
 
-  select min(u.prueba_hasta) into v_hasta
+  select min(u.prueba_hasta) into v_conocida
     from inventariado.llaves_de_prueba(p_correo, p_rut, p_equipo_id) k
     join inventariado.pruebas_usadas u on u.llave_hash = k.llave_hash;
 
-  if v_hasta is null then
-    v_hasta := now() + interval '7 days';
-  end if;
+  v_hasta := coalesce(v_conocida, now() + interval '7 days');
 
+  -- El RUT es el único dato que el cliente escribe libremente y que identifica a un tercero:
+  -- quien quisiera hacer daño podría crear negocios con el RUT de otro para dejarlo sin prueba
+  -- antes de que se registre. Por eso la llave del RUT solo se anota cuando esta es una prueba
+  -- nueva de verdad (ninguna llave conocida); el correo y el equipo, que son de la cuenta que
+  -- está creando el negocio, se anotan siempre. Así quemar un RUT ajeno cuesta una cuenta nueva
+  -- por cada uno, y el negocio afectado se arregla con admin_liberar_prueba().
   insert into inventariado.pruebas_usadas (llave_hash, tipo, prueba_hasta)
   select k.llave_hash, k.tipo, v_hasta
     from inventariado.llaves_de_prueba(p_correo, p_rut, p_equipo_id) k
+   where k.tipo <> 'rut' or v_conocida is null
   on conflict (llave_hash) do nothing;
 
   return case when v_hasta > now() then v_hasta else null end;
@@ -320,8 +332,10 @@ begin
     from inventariado.llaves_del_negocio(p_negocio_id) k
   on conflict (llave_hash) do update set prueba_hasta = excluded.prueba_hasta;
 
+  -- No toca "suspendida": si el administrador suspendió el negocio a propósito, devolverle la
+  -- prueba no debería reactivarlo en silencio (para eso está «Quitar suspensión»).
   update inventariado.suscripciones
-     set prueba_hasta = v_hasta, suspendida = false
+     set prueba_hasta = v_hasta
    where negocio_id = p_negocio_id;
   if not found then
     raise exception 'Negocio sin suscripción' using errcode = 'P0002';

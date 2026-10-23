@@ -484,12 +484,14 @@ begin
     raise exception 'FALLA: con dos llaves conocidas debe ganar la fecha más temprana (% vs %)',
       pg_temp.hasta(v_negocio), v_uno;
   end if;
-  -- La llave nueva (el RUT) se anota con la fecha heredada, y las que ya existían no se pisan.
-  if pg_temp.fecha_llave('rut', '155555555') is distinct from v_uno then
-    raise exception 'FALLA: el RUT nuevo no quedó anotado con la fecha heredada';
-  end if;
+  -- Las llaves que ya existían no se pisan.
   if pg_temp.fecha_llave('equipo', pg_temp.u('f01')::text) <> v_cinco then
     raise exception 'FALLA: se pisó la fecha de una llave que ya estaba anotada';
+  end if;
+  -- El RUT NO se anota: esta no era una prueba nueva, y el RUT puede ser el de un tercero
+  -- (ver la sección 18).
+  if pg_temp.fecha_llave('rut', '155555555') is not null then
+    raise exception 'FALLA: se anotó el RUT en un alta que no era prueba nueva';
   end if;
 
   -- Solo el equipo (correo y RUT nuevos): hereda los 5 días de esa llave.
@@ -497,8 +499,13 @@ begin
   if pg_temp.hasta(v_negocio) <> v_cinco then
     raise exception 'FALLA: el equipo solo debería heredar sus 5 días: %', pg_temp.hasta(v_negocio);
   end if;
+  -- El correo, que sí es de la cuenta que crea el negocio, queda anotado con la fecha heredada.
+  if pg_temp.fecha_llave('correo', 'm2@ejemplo.cl') is distinct from v_cinco then
+    raise exception 'FALLA: el correo nuevo no quedó anotado con la fecha heredada';
+  end if;
 
-  -- Solo el RUT (equipo nulo): la llave anotada por el negocio anterior vale igual.
+  -- Solo el RUT (equipo nulo): una llave de RUT ya anotada vale igual.
+  perform pg_temp.anotar('rut', '155555555', v_uno);
   v_negocio := pg_temp.nuevo(pg_temp.u('d03'), 'Múltiple 3', '15555555-5', null);
   if pg_temp.hasta(v_negocio) <> v_uno then
     raise exception 'FALLA: el RUT anotado por otro negocio debería heredar su fecha: %',
@@ -738,7 +745,7 @@ begin
   if pg_temp.hasta(v_otro) is not null then
     raise exception 'FALLA: el equipo con la prueba vencida no debería dar días nuevos';
   end if;
-  -- Se marca también una suspensión manual, para ver que liberar la levanta.
+  -- Se marca también una suspensión manual, para ver que liberar NO la levanta sola.
   update inventariado.suscripciones set suspendida = true where negocio_id = v_bloqueado;
   -- Se pierde el registro (como si alguien lo hubiera borrado a mano): liberar debe volver a anotarlo.
   delete from inventariado.pruebas_usadas
@@ -766,13 +773,16 @@ begin
   if v_hasta < now() + interval '2 days 23 hours' or v_hasta > now() + interval '3 days 1 minute' then
     raise exception 'FALLA: liberar con 3 días dejó la prueba en %', v_hasta;
   end if;
+  -- Una suspensión puesta a mano no se levanta sola: para eso está «Quitar suspensión».
+  if not (select suspendida from inventariado.suscripciones where negocio_id = v_negocio) then
+    raise exception 'FALLA: liberar la prueba levantó una suspensión manual';
+  end if;
+  update inventariado.suscripciones set suspendida = false where negocio_id = v_negocio;
+
   select inventariado.estado_suscripcion(s) into v_estado from inventariado.suscripciones s
    where s.negocio_id = v_negocio;
   if v_estado <> 'prueba' then
     raise exception 'FALLA: el negocio liberado no quedó en prueba: %', v_estado;
-  end if;
-  if (select suspendida from inventariado.suscripciones where negocio_id = v_negocio) then
-    raise exception 'FALLA: liberar no levantó la suspensión';
   end if;
   if inventariado.prueba_bloqueada(v_negocio) then
     raise exception 'FALLA: el negocio liberado sigue marcado como bloqueado';
@@ -1070,6 +1080,61 @@ begin
      or has_function_privilege('anon',
           'inventariado.crear_negocio(text, text, text, uuid, text, text, uuid)', 'execute') then
     raise exception 'FALLA: repetir la migración dejó mal los permisos';
+  end if;
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- 18. El RUT de un tercero no se puede quemar en serie
+-- ---------------------------------------------------------------------------
+
+-- El RUT es el único dato que el cliente escribe libre y que identifica a otro negocio. Si cada
+-- alta lo anotara, una sola cuenta podría borrarse y recrearse en bucle dejando sin prueba a
+-- todos los RUT que quisiera, antes de que esos negocios se registren.
+
+select pg_temp.usuario('e01', 'picaro@ejemplo.cl') as picaro \gset
+select pg_temp.usuario('e02', 'victima@ejemplo.cl') as victima \gset
+
+do $$
+declare
+  v_negocio uuid;
+  v_hasta timestamptz;
+begin
+  -- Primera alta del pícaro, con el RUT de la víctima: es una prueba nueva de verdad, así que
+  -- ese RUT sí queda anotado. Quemar uno cuesta una cuenta.
+  v_negocio := pg_temp.nuevo(pg_temp.u('e01'), 'Pícaro 1', '18.888.888-8', pg_temp.u('f30'));
+  v_hasta := pg_temp.hasta(v_negocio);
+  if v_hasta is null then
+    raise exception 'FALLA: la primera alta debería recibir prueba';
+  end if;
+
+  -- Se borra y se recrea con OTRO RUT ajeno. Su correo ya es llave conocida, así que esta no es
+  -- una prueba nueva: el RUT nuevo no se anota y ese tercero conserva su prueba.
+  perform set_config('request.jwt.claim.sub', pg_temp.u('e01')::text, false);
+  perform inventariado.eliminar_mi_negocio(v_negocio);
+  v_negocio := pg_temp.nuevo(pg_temp.u('e01'), 'Pícaro 2', '19.999.999-9', pg_temp.u('f30'));
+
+  if exists (select 1 from inventariado.pruebas_usadas
+              where llave_hash = inventariado.huella_prueba('rut', '199999999')) then
+    raise exception 'FALLA: se anotó el RUT de un tercero en un alta que no era prueba nueva';
+  end if;
+  -- Hereda su propia fecha, no 7 días nuevos.
+  if pg_temp.hasta(v_negocio) is distinct from v_hasta then
+    raise exception 'FALLA: la segunda alta no heredó la fecha: % vs %',
+      pg_temp.hasta(v_negocio), v_hasta;
+  end if;
+
+  -- El dueño del RUT no quemado llega y recibe su prueba completa.
+  v_negocio := pg_temp.nuevo(pg_temp.u('e02'), 'Víctima', '19.999.999-9', pg_temp.u('f31'));
+  if pg_temp.hasta(v_negocio) is null
+     or pg_temp.hasta(v_negocio) < now() + interval '6 days 23 hours' then
+    raise exception 'FALLA: el negocio legítimo debería recibir sus 7 días: %',
+      pg_temp.hasta(v_negocio);
+  end if;
+  -- Y ahora sí, al ser prueba nueva, su RUT queda anotado.
+  if not exists (select 1 from inventariado.pruebas_usadas
+                  where llave_hash = inventariado.huella_prueba('rut', '199999999')) then
+    raise exception 'FALLA: el RUT del negocio legítimo debería quedar anotado';
   end if;
 end;
 $$;

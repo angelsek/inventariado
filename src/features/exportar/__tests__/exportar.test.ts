@@ -26,6 +26,68 @@ it('escapa separadores, comillas y usa coma decimal', () => {
   );
 });
 
+it('antepone un apóstrofo a los valores que empiezan como una fórmula', () => {
+  const filas = [['=1+1'], ['+56912345678'], ['-Agua'], ['@todos'], ['\tmalo'], ['\n=1+1']];
+  expect(armarCsv(['a'], filas).trim().split('\r\n').slice(1)).toEqual([
+    "'=1+1",
+    "'+56912345678",
+    "'-Agua",
+    "'@todos",
+    "'\tmalo",
+    '"\'\n=1+1"',
+  ]);
+});
+
+it('deja los montos y cantidades como números, incluso negativos', () => {
+  expect(armarCsv(['monto', 'cantidad', 'texto'], [[-1500, 2.5, '-1500']])).toBe(
+    '﻿monto;cantidad;texto\r\n-1500;2,5;-1500\r\n',
+  );
+});
+
+it('no toca un nombre que ya empieza con apóstrofo', () => {
+  expect(
+    armarCsv(['a'], [["'Especial'"]])
+      .trim()
+      .split('\r\n')[1],
+  ).toBe("'Especial'");
+});
+
+it('los nombres con fórmula salen como texto y vuelven iguales al importar', async () => {
+  const nombres = ['=HYPERLINK("http://malo.cl";"ver")', '-Agua 500ml', '@oferta', '+Pack 6'];
+  for (const [i, nombre] of nombres.entries()) {
+    await crearProducto(
+      db,
+      NEGOCIO,
+      {
+        nombre,
+        codigoBarras: `78000${i}`,
+        categoriaId: null,
+        precioVenta: 1990,
+        costo: 1500,
+        stockMinimo: 0,
+        unidad: 'unidad',
+      },
+      3,
+      AUTOR,
+    );
+  }
+
+  const csv = await csvProductos(db, NEGOCIO);
+  expect(csv).toContain('"\'=HYPERLINK');
+  expect(csv).toContain("'-Agua 500ml;");
+  expect(csv).toContain("'@oferta;");
+  expect(csv).toContain("'+Pack 6;");
+  // Los precios siguen siendo números para que las sumas del dueño funcionen.
+  expect(csv).toContain(';1990;1500;3;0;unidad;si');
+
+  const { filas, errores } = analizarCsv(csv);
+  expect(errores).toEqual([]);
+  expect(filas.map((f) => f.nombre).sort()).toEqual([...nombres].sort());
+  expect(filas.every((f) => f.precioVenta === 1990 && f.costo === 1500 && f.stock === 3)).toBe(
+    true,
+  );
+});
+
 it('el CSV de productos se puede volver a importar tal cual', async () => {
   await crearProducto(
     db,

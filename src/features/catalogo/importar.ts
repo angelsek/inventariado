@@ -83,7 +83,13 @@ export function analizarCsv(texto: string): Analisis {
     const linea = i + 2;
     const celda = (campo: keyof Omit<FilaImportacion, 'linea'>) => {
       const indice = columnas.indexOf(campo);
-      return indice >= 0 ? (valores[indice] ?? '').trim() : '';
+      if (indice < 0) return '';
+      // La exportación antepone un apóstrofo a los valores que empiezan como una
+      // fórmula para que la planilla no las evalúe (ver celda() en
+      // src/features/exportar/exportar.ts). Acá se lo quitamos para que exportar e
+      // importar sigan siendo ida y vuelta, y solo cuando lo que sigue es uno de esos
+      // caracteres, así un nombre como "'Especial'" queda tal cual.
+      return (valores[indice] ?? '').trim().replace(/^'(?=[=+\-@\t\r\n])/, '');
     };
 
     const nombre = celda('nombre');

@@ -27,6 +27,16 @@ export const MENSAJE_PLAN_PAGADO =
   'no está al día, no está disponible. El respaldo completo de tu negocio sí lo puedes descargar, ' +
   'en Más → Exportar datos. Si ya pagaste, toca Más → Sincronizar ahora.';
 
+/**
+ * El negocio que nació sin prueba gratis (su equipo, su correo o su RUT ya la usaron) tampoco
+ * puede exportar, pero el mensaje de arriba empieza hablando de "la prueba gratis" y a él no le
+ * calza: nunca la tuvo. Ver `sinPrueba` en ./estado.
+ */
+export const MENSAJE_PLAN_PAGADO_SIN_PRUEBA =
+  'Exportar tus datos a Excel es parte del plan pagado, y este negocio no tiene plan: la prueba ' +
+  'gratis ya se usó con este equipo, este correo o este RUT. El respaldo completo de tu negocio sí ' +
+  'lo puedes descargar, en Más → Exportar datos. Revisa Más → Suscripción para contratar.';
+
 /** ¿La suscripción está pagada y al día? Sin datos todavía, se responde que no. */
 export function esPlanPagado(suscripcion: EstadoSuscripcion | null): boolean {
   return suscripcion?.estado === 'activa';
@@ -39,10 +49,13 @@ export function usePlanPagado(): boolean {
 
 /** Para usar antes de exportar: avisa y devuelve true si no se puede exportar. */
 export function bloqueadoSinPlanPagado(): boolean {
-  if (esPlanPagado(useSesion.getState().suscripcion)) return false;
-  // Un solo aviso para los tres casos: el de solo lectura habla de vender y de
-  // hacer cambios, y no explicaría por qué no se puede exportar.
-  avisar('Solo con plan pagado', MENSAJE_PLAN_PAGADO);
+  const suscripcion = useSesion.getState().suscripcion;
+  if (esPlanPagado(suscripcion)) return false;
+  // Un solo aviso para la prueba, la gracia y la suspensión: el de solo lectura habla de vender
+  // y de hacer cambios, y no explicaría por qué no se puede exportar. El que nunca tuvo prueba
+  // recibe el suyo, porque ese mensaje empieza hablando de una prueba que no existió.
+  if (suscripcion?.sinPrueba) avisar('Solo con plan pagado', MENSAJE_PLAN_PAGADO_SIN_PRUEBA);
+  else avisar('Solo con plan pagado', MENSAJE_PLAN_PAGADO);
   return true;
 }
 

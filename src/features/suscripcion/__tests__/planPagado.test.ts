@@ -6,6 +6,7 @@ import {
   bloqueadoSinPlanPagado,
   esPlanPagado,
   MENSAJE_PLAN_PAGADO,
+  MENSAJE_PLAN_PAGADO_SIN_PRUEBA,
   requierePlanPagado,
 } from '../planPagado';
 
@@ -115,6 +116,23 @@ describe('bloqueadoSinPlanPagado', () => {
     expect(bloqueadoSinPlanPagado()).toBe(true);
     expect(avisar).toHaveBeenCalledTimes(1);
     expect(avisar).toHaveBeenCalledWith('Solo con plan pagado', MENSAJE_PLAN_PAGADO);
+  });
+
+  // El negocio que nace sin prueba (su equipo, correo o RUT ya la usaron) también queda sin
+  // exportar, pero el aviso de siempre empieza hablando de una prueba gratis que nunca tuvo.
+  it('sin prueba gratis: bloquea con un aviso que no habla de la prueba', () => {
+    useSesion.setState({
+      suscripcion: calcularEstado({
+        planId: 'pro',
+        pruebaHasta: null,
+        pagadoHasta: null,
+        suspendida: false,
+      }),
+    });
+    expect(bloqueadoSinPlanPagado()).toBe(true);
+    expect(avisar).toHaveBeenCalledWith('Solo con plan pagado', MENSAJE_PLAN_PAGADO_SIN_PRUEBA);
+    expect(MENSAJE_PLAN_PAGADO_SIN_PRUEBA).toContain('ya se usó');
+    expect(MENSAJE_PLAN_PAGADO_SIN_PRUEBA).toContain('respaldo completo');
   });
 
   it('sin datos de suscripción: bloquea con el aviso del plan pagado', () => {

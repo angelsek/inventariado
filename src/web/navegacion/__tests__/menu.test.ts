@@ -1,5 +1,7 @@
 import { type Permiso, PERMISOS, PERMISOS_INICIALES } from '@/features/permisos/catalogo';
 
+import { requierePlanPagado } from '@/features/suscripcion/planPagado';
+
 import { entradaActiva, MENU, menuParaPermisos } from '../menu';
 
 const CAJERO = PERMISOS_INICIALES;
@@ -105,8 +107,13 @@ it('una ruta de una entrada que la persona no ve no marca nada para ella', () =>
   expect(entradaActiva('/estadisticas', PERMISOS)?.texto).toBe('Reportes');
 });
 
-it('"Exportar datos" sigue en el menú del dueño aunque sea del plan pagado: el candado no la oculta', () => {
+it('menuParaPermisos no oculta "Exportar datos" y entradaActiva("/exportar") la devuelve', () => {
   expect(textos(PERMISOS)).toContain('Exportar datos');
   expect(entradaActiva('/exportar', PERMISOS)?.texto).toBe('Exportar datos');
   expect(entradaActiva('/exportar')?.texto).toBe('Exportar datos');
+});
+
+it('la regla del candado: /exportar pide plan pagado y /estadisticas no (el candado lo dibuja MarcoApp.web.tsx)', () => {
+  expect(requierePlanPagado('/exportar')).toBe(true);
+  expect(requierePlanPagado('/estadisticas')).toBe(false);
 });

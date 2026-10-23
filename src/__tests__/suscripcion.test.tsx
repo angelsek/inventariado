@@ -7,6 +7,7 @@ import { crearPerfil } from '@/db/perfiles';
 import { crearProducto, listarProductos } from '@/db/productos';
 import type { BaseLocal } from '@/db/tipos';
 import { registrarVenta } from '@/db/ventas';
+import { compartirArchivo } from '@/features/exportar/compartir';
 import { MENSAJE_PLAN_PAGADO } from '@/features/suscripcion/planPagado';
 import { useCarrito } from '@/features/ventas/carrito';
 import { useSesion } from '@/sesion/store';
@@ -37,6 +38,9 @@ jest.mock('expo-sqlite', () => {
 });
 jest.mock('@/lib/supabase', () => require('@/test/mockSupabase'));
 jest.mock('@/sync/useSincronizacionAutomatica', () => ({ useSincronizacionAutomatica: () => {} }));
+jest.mock('@/features/exportar/compartir', () => ({
+  compartirArchivo: jest.fn(() => Promise.resolve()),
+}));
 jest.mock('@/sync/ejecutar', () => ({ sincronizarAhora: jest.fn(() => Promise.resolve()) }));
 
 const NEGOCIO = 'negocio-1';
@@ -303,6 +307,30 @@ describe('exportar a Excel es del plan pagado', () => {
     expect(screen.queryByText('Ver planes')).toBeNull();
   });
 
+  it('pagado: tocar "Exportar productos" comparte de verdad un CSV de productos', async () => {
+    (compartirArchivo as jest.Mock).mockClear();
+    await prepararBase({ pagadoDias: 20 });
+    await entrar();
+    await abrirExportar();
+    fireEvent.press(screen.getByText('Exportar productos'));
+    await waitFor(() => expect(compartirArchivo).toHaveBeenCalledTimes(1));
+    const [nombre, tipo, contenido] = (compartirArchivo as jest.Mock).mock.calls[0];
+    expect(nombre).toMatch(/^productos-.+\.csv$/);
+    expect(tipo).toBe('text/csv');
+    expect(contenido).toContain('Cerveza lata');
+  });
+
+  it('en prueba: no hay botones que tocar y no se comparte nada', async () => {
+    (compartirArchivo as jest.Mock).mockClear();
+    await prepararBase({ pruebaDias: 5 });
+    await entrar();
+    await abrirExportar();
+    expect(screen.queryByText('Exportar productos')).toBeNull();
+    expect(screen.queryByText('Ventas de este mes')).toBeNull();
+    expect(screen.queryByText('Ventas del mes anterior')).toBeNull();
+    expect(compartirArchivo).not.toHaveBeenCalled();
+  });
+
   it('vencida en gracia: queda bloqueado igual que en la prueba', async () => {
     await prepararBase({ pagadoDias: -2 });
     await entrar();
@@ -362,6 +390,19 @@ describe('reportes: exportar a Excel es del plan pagado', () => {
 
     fireEvent.press(screen.getByText('Exportar a Excel es del plan pagado'));
     expect(alerta).toHaveBeenCalledWith('Solo con plan pagado', MENSAJE_PLAN_PAGADO);
+  });
+
+  it.each([
+    ['vencida en gracia', -2],
+    ['suspendida', -30],
+  ])('%s: la fila con candado reemplaza al botón "Exportar a Excel"', async (_caso, pagadoDias) => {
+    await prepararBase({ pagadoDias });
+    await conUnaVenta();
+    await entrar();
+    await abrirReportes();
+
+    expect(await screen.findByText('Exportar a Excel es del plan pagado')).toBeTruthy();
+    expect(screen.queryByText('Exportar a Excel')).toBeNull();
   });
 
   it('pagado: aparece el botón "Exportar a Excel", sin candado', async () => {

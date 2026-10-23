@@ -7,7 +7,7 @@ import { Formulario } from '@/components/Formulario';
 import { CANAL, CONTACTO } from '@/config';
 import { AJUSTE_DISPOSITIVO, leerAjuste } from '@/db/ajustes';
 import { obtenerNegocio } from '@/db/negocio';
-import { type Estado, NOMBRE_PLAN } from '@/features/suscripcion/estado';
+import { type Estado, MENSAJE_SIN_PRUEBA, NOMBRE_PLAN } from '@/features/suscripcion/estado';
 import { administrarEnPlay } from '@/features/suscripcion/googlePlay';
 import { PlanesPlay } from '@/features/suscripcion/PlanesPlay';
 import { formatearCLP, formatearFecha, formatearFechaHora } from '@/lib/formato';
@@ -35,6 +35,9 @@ type Dispositivo = {
   tipo?: string;
 };
 type Pago = { id: string; plan_id: string; meses: number; monto: number; creado_en: string };
+
+/** El negocio que nació sin prueba gratis: suspendido, pero por otra razón. */
+const ETIQUETA_SIN_PRUEBA = { texto: 'Sin prueba gratis', color: colores.error };
 
 const ETIQUETA_ESTADO: Record<Estado, { texto: string; color: string }> = {
   prueba: { texto: 'Prueba gratis', color: colores.primario },
@@ -135,7 +138,11 @@ export default function SuscripcionScreen() {
     );
   };
 
-  const estado = suscripcion ? ETIQUETA_ESTADO[suscripcion.estado] : null;
+  const estado = suscripcion
+    ? suscripcion.sinPrueba
+      ? ETIQUETA_SIN_PRUEBA
+      : ETIQUETA_ESTADO[suscripcion.estado]
+    : null;
 
   return (
     <Formulario titulo="Suscripción" error={error}>
@@ -159,6 +166,7 @@ export default function SuscripcionScreen() {
               Quedan {suscripcion.diasGracia} día(s) antes de pasar a solo lectura.
             </Text>
           ) : null}
+          {suscripcion.sinPrueba ? <Text style={estilos.aviso}>{MENSAJE_SIN_PRUEBA}</Text> : null}
         </View>
       ) : (
         <Text style={estilos.nota}>Sincroniza para ver el estado de la suscripción.</Text>

@@ -1,6 +1,8 @@
 import { useSesion } from '@/sesion/store';
 import { avisar } from '@/lib/dialogo';
 
+import { MENSAJE_SIN_PRUEBA } from './estado';
+
 export const MENSAJE_SOLO_LECTURA =
   'La suscripción está suspendida: puedes ver tus datos, pero no registrar ventas ni hacer cambios. Revisa Más → Suscripción.';
 
@@ -11,7 +13,10 @@ export function useSoloLectura(): boolean {
 
 /** Para usar antes de guardar: avisa y devuelve true si no se puede modificar nada. */
 export function bloqueadoPorSuscripcion(): boolean {
-  if (!useSesion.getState().suscripcion?.soloLectura) return false;
-  avisar('Solo lectura', MENSAJE_SOLO_LECTURA);
+  const suscripcion = useSesion.getState().suscripcion;
+  if (!suscripcion?.soloLectura) return false;
+  // El negocio que nació sin prueba nunca tuvo una suscripción que suspender: se le explica eso.
+  if (suscripcion.sinPrueba) avisar('Sin prueba gratis', MENSAJE_SIN_PRUEBA);
+  else avisar('Solo lectura', MENSAJE_SOLO_LECTURA);
   return true;
 }

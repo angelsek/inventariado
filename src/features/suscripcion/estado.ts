@@ -29,7 +29,18 @@ export type EstadoSuscripcion = {
   diasGracia: number | null;
   /** Suspendida: se puede ver todo, pero no vender ni modificar datos. */
   soloLectura: boolean;
+  /**
+   * El negocio nunca tuvo prueba ni pago: nació sin prueba gratis porque su equipo, su correo
+   * o su RUT ya la usaron (la prueba es una por negocio, ver la migración
+   * 20261023000100_una_prueba_por_negocio.sql). Funcionalmente es lo mismo que suspendida, pero
+   * los textos son otros: nunca hubo una suscripción que suspender.
+   */
+  sinPrueba: boolean;
 };
+
+export const MENSAJE_SIN_PRUEBA =
+  'La prueba gratis es una por negocio, y este equipo, este correo o este RUT ya la usaron. ' +
+  'Contrata un plan para empezar a vender. Si crees que es un error, escríbenos y lo revisamos.';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 
@@ -53,6 +64,7 @@ export function calcularEstado(s: Suscripcion, ahora = new Date()): EstadoSuscri
     planId: s.planId,
     venceEn,
     diasRestantes,
+    sinPrueba: estado === 'suspendida' && venceEn === null && !s.suspendida,
     diasGracia:
       estado === 'vencida' && venceEn
         ? Math.max(
@@ -70,7 +82,9 @@ export function avisoSuscripcion(e: EstadoSuscripcion): { texto: string; grave: 
   switch (e.estado) {
     case 'suspendida':
       return {
-        texto: 'Suscripción suspendida: la app quedó en solo lectura. Toca para ver el detalle.',
+        texto: e.sinPrueba
+          ? 'Este negocio ya usó su prueba gratis. Toca para ver los planes.'
+          : 'Suscripción suspendida: la app quedó en solo lectura. Toca para ver el detalle.',
         grave: true,
       };
     case 'vencida':

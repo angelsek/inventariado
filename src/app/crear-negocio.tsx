@@ -11,6 +11,7 @@ import {
   formNegocioVacio,
   validarNegocio,
 } from '@/features/cuenta/datosNegocio';
+import { avisarSiNacioSinPrueba } from '@/features/suscripcion/sinPrueba';
 import { mensajeDeError } from '@/lib/supabase';
 import { crearNegocio } from '@/sesion/cuenta';
 
@@ -32,6 +33,7 @@ export default function CrearNegocioScreen() {
     setError(null);
     try {
       await crearNegocio(db, form, opcionesDeEquipo(nombreEquipo));
+      avisarSiNacioSinPrueba();
     } catch (e) {
       setError(mensajeDeError(e));
       setCargando(false);

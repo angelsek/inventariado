@@ -54,3 +54,42 @@ it('la suspensión manual manda aunque esté pagada', () => {
   expect(e).toMatchObject({ estado: 'suspendida', soloLectura: true });
   expect(avisoSuscripcion(e)?.grave).toBe(true);
 });
+
+describe('negocio que nació sin prueba gratis (una prueba por negocio)', () => {
+  const sinPrueba = calcularEstado(
+    { planId: 'pro', pruebaHasta: null, pagadoHasta: null, suspendida: false },
+    AHORA,
+  );
+
+  it('queda en solo lectura, marcado como sin prueba', () => {
+    expect(sinPrueba).toMatchObject({
+      estado: 'suspendida',
+      soloLectura: true,
+      sinPrueba: true,
+      venceEn: null,
+    });
+  });
+
+  it('el aviso explica que la prueba ya se usó, no que la suscripción se suspendió', () => {
+    expect(avisoSuscripcion(sinPrueba)).toEqual({
+      texto: 'Este negocio ya usó su prueba gratis. Toca para ver los planes.',
+      grave: true,
+    });
+  });
+
+  it('una suspensión de verdad no se marca como sin prueba', () => {
+    const suspendida = calcularEstado(
+      { planId: 'pro', pruebaHasta: dias(-30), pagadoHasta: null, suspendida: true },
+      AHORA,
+    );
+    expect(suspendida.sinPrueba).toBe(false);
+    expect(avisoSuscripcion(suspendida)?.texto).toContain('Suscripción suspendida');
+
+    // La prueba que se usó y venció tampoco: ahí sí hubo una suscripción.
+    const vencidaHaceRato = calcularEstado(
+      { planId: 'pro', pruebaHasta: dias(-30), pagadoHasta: null, suspendida: false },
+      AHORA,
+    );
+    expect(vencidaHaceRato.sinPrueba).toBe(false);
+  });
+});

@@ -66,6 +66,10 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
   puede hacer cada persona en Más → Usuarios y permisos (15 permisos aplicados en rutas, menús y
   botones, reglas contra la escalada de permisos, bloqueo del PIN tras intentos fallidos). Reemplaza
   a los roles. Detalle y límites de seguridad en `docs/PERMISOS.md`.
+- Stockeao en grimoriolabs.com (PR #6 de `grimorio-labs-landing`): primera ficha de la portada,
+  con rasgos, planes y precios, 7 días gratis, botón a `stockeao/`, contacto y legales, en español
+  e inglés. La página de descarga ya tiene el ícono nuevo. Los precios están escritos a mano en
+  `public/index.html` y `public/js/landing.js` de ese repo: si cambian, hay que tocarlos ahí.
 - Dependencias revisadas: el workflow **Dependencias** corre `npm audit` contra las excepciones
   registradas (estricto en PR que tocan dependencias y los lunes; no obligatorio). Las
   vulnerabilidades actuales están analizadas en `docs/SEGURIDAD_DEPENDENCIAS.md`.
@@ -93,11 +97,10 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
    el dominio `stockeao.grimoriolabs.com` (tablas en `docs/WEB.md`); si se usan enlaces de correo
    de Supabase Auth, agregar el dominio a las URL permitidas.
    Verificar en Chrome/Edge reales que F11 y F12 las capture la caja.
-5. **Logo nuevo, pasos manuales:** copiar `docs/descargar/icono.png` a la carpeta `stockeao/` del
-   repo `grimorio-labs-landing`; subir `docs/play-store/icono-512.png` y el gráfico destacado en
-   Play Console; publicar una versión APK para que los clientes vean el ícono nuevo (los íconos no
-   cambian por OTA); revisar en el emulador el ícono adaptable (máscaras circular y squircle), el
-   ícono temático y el splash de Android 12+; actualizar el flyer (`docs/flyer`, fuera de git)
+5. **Logo nuevo, pasos manuales** (el ícono ya está en grimoriolabs.com): subir
+   `docs/play-store/icono-512.png` y el gráfico destacado en Play Console; publicar una versión
+   APK para que los clientes vean el ícono nuevo (los íconos no cambian por OTA); revisar en el
+   emulador el ícono adaptable (máscaras circular y squircle), el ícono temático y el splash de Android 12+; actualizar el flyer (`docs/flyer`, fuera de git)
    con el ícono nuevo.
 6. Versión web, fases 2 a 5: caja y ventas; catálogo; inventario y clientes; gestión, respaldo y
    documentación (hoy esas pantallas se ven con el diseño del teléfono).

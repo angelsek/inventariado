@@ -104,3 +104,9 @@ it('una ruta de una entrada que la persona no ve no marca nada para ella', () =>
   expect(entradaActiva('/estadisticas', CAJERO)).toBeNull();
   expect(entradaActiva('/estadisticas', PERMISOS)?.texto).toBe('Reportes');
 });
+
+it('"Exportar datos" sigue en el menú del dueño aunque sea del plan pagado: el candado no la oculta', () => {
+  expect(textos(PERMISOS)).toContain('Exportar datos');
+  expect(entradaActiva('/exportar', PERMISOS)?.texto).toBe('Exportar datos');
+  expect(entradaActiva('/exportar')?.texto).toBe('Exportar datos');
+});

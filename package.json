@@ -68,6 +68,10 @@
   "jest": {
     "preset": "jest-expo",
     "testTimeout": 30000,
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/.claude/"
+    ],
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1",
       "^expo-iap$": "<rootDir>/src/test/mockExpoIap.ts"

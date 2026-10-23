@@ -91,7 +91,8 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
   prueba recibe los días que le quedaban; después, el negocio nace sin prueba y la app lo explica
   y lleva a contratar. En Administración se ve marcado y hay «Liberar prueba y dar 7 días» para
   los casos legítimos. Es una barrera de producto, no de seguridad: un teléfono nuevo, la versión
-  web o un APK modificado se siguen escapando. Detalle en `docs/PRUEBA_GRATIS.md`.
+  web o un APK modificado se siguen escapando. Migración ejecutada en Supabase el 23 de octubre
+  de 2026. Detalle en `docs/PRUEBA_GRATIS.md`.
 
 ## Pendiente (en orden)
 
@@ -100,12 +101,13 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
    (`docs/SUPABASE.md`); la web se publica sola desde `main`, y si falta la migración la
    sincronización falla (columna `permisos` desconocida). Las migraciones de roles ya se
    ejecutaron. Detalle en `docs/PERMISOS.md`.
-2. **Antes de fusionar el PR de una prueba por negocio y de publicar el APK o la web:** ejecutar
-   `supabase/migrations/20261023000100_una_prueba_por_negocio.sql` en el SQL Editor de Supabase
-   (`docs/SUPABASE.md`), **el archivo completo**: borra la firma vieja de `crear_negocio` antes de
-   crear la nueva, así que una ejecución a medias deja la app sin poder registrar negocios. Al
-   ejecutarla quedan anotados también los negocios que ya existen, con la fecha de su prueba
-   actual. Detalle en `docs/PRUEBA_GRATIS.md`.
+2. **Antes de fusionar el PR de una prueba por negocio:** `20261023000100_una_prueba_por_negocio.sql`
+   ya se ejecutó, pero el archivo cambió después durante la revisión del equipo. Volver a
+   ejecutarlo **completo** desde la versión que quede en `main`, para asegurar que el servidor
+   tenga la última (se puede repetir sin problema; a medias no, porque borra la firma vieja de
+   `crear_negocio` antes de crear la nueva y la app quedaría sin poder registrar negocios).
+   Comprobar después que `select count(*) from inventariado.pruebas_usadas;` no dé 0 si ya hay
+   negocios con prueba. Detalle en `docs/PRUEBA_GRATIS.md`.
 3. **Antes de la primera publicación con la verificación:** ejecutar
    `supabase/migrations/20261003000100_versiones_app_sha256.sql` en el SQL Editor de Supabase
    (`docs/SUPABASE.md`) y publicar solo después de fusionar `feat/integridad-apk` a `main`.

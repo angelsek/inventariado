@@ -50,7 +50,7 @@ ejecución a medias deja la app sin poder registrar negocios. `pruebas_usadas` *
 «Exposed tables»: nadie la lee desde la API. Después de ejecutarla, **no vuelvas a ejecutar las
 migraciones anteriores** (`20260929000500_fase5_suscripciones.sql` y
 `20261022000100_prueba_7_dias.sql`): devolverían el trigger viejo, que da 7 días sin ningún tope
-y sin avisar. Si llegaras a ejecutarlas, vuelve a ejecutar esta. Ver `docs/PRUEBA_GRATIS.md`.
+y sin avisar. Si llegaras a ejecutarlas, vuelve a ejecutar esta. Se ejecutó el 23 de octubre de 2026, antes de que la revisión del equipo cambiara el archivo: conviene volver a ejecutar la versión que quede en `main`. Ver `docs/PRUEBA_GRATIS.md`.
 
 `20261021000100_permisos_por_persona.sql` (permisos por persona) agrega `perfiles.permisos` y
 `perfiles.permisos_en`, migra los datos desde los roles, deja 7 permisos por defecto para las

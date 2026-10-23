@@ -17,7 +17,7 @@ Todo lo que pide Play Console, en orden, con los textos listos para copiar.
 3. **El nombre del paquete es para siempre:** `cl.stockeao.app`. El nombre visible de la
    app sí se puede cambiar después.
 4. **Pagos:** la versión de Play cobra la suscripción con **Google Play Billing** (Básico
-   $9.990 y Pro $14.990 al mes, 14 días gratis con tarjeta; Google cobra una comisión de 15 %).
+   $9.990 y Pro $14.990 al mes, 7 días gratis con tarjeta; Google cobra una comisión de 15 %).
    No muestra transferencias ni otras formas de pago externas (política de pagos de Google).
    La versión APK directa sigue con el pago manual. Configuración paso a paso:
    `docs/COBRO_GOOGLE_PLAY.md`.
@@ -104,7 +104,7 @@ TUS DATOS SON TUYOS
 • Exporta productos y ventas a Excel cuando quieras.
 • Elimina tu cuenta y todos tus datos desde la misma app.
 
-Prueba gratis por 14 días. Stockeao no emite boletas electrónicas: los comprobantes son internos.
+Prueba gratis por 7 días. Stockeao no emite boletas electrónicas: los comprobantes son internos.
 ```
 
 **Gráficos**:

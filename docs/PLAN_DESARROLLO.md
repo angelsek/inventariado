@@ -164,7 +164,7 @@ compartido) y negocio creado desde el teléfono.
 
 - Planes en la base de datos (se cambian con SQL): **Básico** $9.990/mes, 2 teléfonos; **Pro**
   $19.990/mes, 5 teléfonos + reportes avanzados (fase 7).
-- **Prueba gratis de 14 días** (con plan Pro) creada automáticamente al registrar un negocio.
+- **Prueba gratis de 7 días** (con plan Pro; hasta octubre de 2026 eran 14) creada automáticamente al registrar un negocio.
 - Estados: prueba → activa → vencida (7 días de gracia, la app avisa) → suspendida (solo
   lectura: se ven los datos pero no se vende ni se modifica nada). Nunca se borran datos.
 - **Sin pasarela de pago** por ahora: el cliente paga (ej. transferencia) y el administrador
@@ -258,7 +258,7 @@ exponer las tablas `clientes` y `movimientos_cliente`).
   permisos mínimos (cámara e internet), ícono e imagen destacada propios, páginas legales
   públicas generadas desde la app, canal "play" que oculta pagos externos (política de pagos)
   y deja las actualizaciones a Play. Guía completa: `docs/PLAY_STORE.md`.
-- **Cobro con Google Play (hecho):** suscripción Básico $9.990 / Pro $14.990 con 14 días
+- **Cobro con Google Play (hecho):** suscripción Básico $9.990 / Pro $14.990 con 7 días
   gratis con tarjeta, verificación de compras en Supabase (funciones `verificar-compra-play`
   y `notificaciones-play`) y pantalla "Elige tu plan". Configuración: `docs/COBRO_GOOGLE_PLAY.md`.
 - Pendiente: verificación de la cuenta de Play, clave de firma, prueba cerrada (12 personas,

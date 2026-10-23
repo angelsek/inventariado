@@ -130,7 +130,7 @@ it('un cajero no ve la opción de eliminar la cuenta', async () => {
   expect(screen.queryByText('Eliminar cuenta y datos')).toBeNull();
 });
 
-// Productos de suscripción como los entrega Google Play (con la oferta de 14 días gratis).
+// Productos de suscripción como los entrega Google Play (con la oferta de 7 días gratis).
 const productoPlay = (id: string, precio: string) => ({
   id,
   displayPrice: precio,
@@ -139,7 +139,7 @@ const productoPlay = (id: string, precio: string) => ({
       offerTokenAndroid: `oferta-${id}`,
       pricingPhasesAndroid: {
         pricingPhaseList: [
-          { priceAmountMicros: '0', formattedPrice: 'Gratis', billingPeriod: 'P14D' },
+          { priceAmountMicros: '0', formattedPrice: 'Gratis', billingPeriod: 'P7D' },
           { priceAmountMicros: '9990000000', formattedPrice: precio, billingPeriod: 'P1M' },
         ],
       },
@@ -170,7 +170,7 @@ afterEach(() => {
   mockCanal = 'apk';
 });
 
-it('Play: un negocio sin plan elige uno y se suscribe con Google (14 días gratis)', async () => {
+it('Play: un negocio sin plan elige uno y se suscribe con Google (7 días gratis)', async () => {
   const enUnMes = new Date(Date.now() + 30 * 86400000).toISOString();
   await prepararPlay(enUnMes, null);
   renderRouter('src/app');
@@ -183,7 +183,7 @@ it('Play: un negocio sin plan elige uno y se suscribe con Google (14 días grati
   // Sin transferencias ni formas de pago externas (política de Play).
   expect(screen.queryByText('¿Cómo pagar?')).toBeNull();
 
-  fireEvent.press(screen.getAllByText('Probar 14 días gratis')[1]);
+  fireEvent.press(screen.getAllByText('Probar 7 días gratis')[1]);
   await waitFor(() =>
     expect(iap.requestPurchase).toHaveBeenCalledWith({
       type: 'subs',
@@ -217,7 +217,7 @@ it('Play: un cajero de un negocio sin plan no puede comprar', async () => {
   fireEvent.press(await screen.findByText('Carla'));
   for (const digito of '5678') fireEvent.press(screen.getByLabelText(digito));
   expect(await screen.findByText(/Pídele al dueño del negocio que active un plan/)).toBeTruthy();
-  expect(screen.queryByText('Probar 14 días gratis')).toBeNull();
+  expect(screen.queryByText('Probar 7 días gratis')).toBeNull();
 });
 
 it('Play: con el plan pagado se usa la app normal y se administra en Google Play', async () => {

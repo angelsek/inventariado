@@ -1,14 +1,14 @@
 # Cobro de la suscripción con Google Play
 
 La versión de Play cobra la suscripción con la tarjeta de la cuenta de Google del cliente,
-como Lightroom o Spotify: **14 días gratis** y después **Básico $9.990** o **Pro $14.990** al
+como Lightroom o Spotify: **7 días gratis** y después **Básico $9.990** o **Pro $14.990** al
 mes, hasta que el cliente cancele desde Play Store. Google se queda con el 15 % y te deposita
 una vez al mes.
 
 ## Cómo funciona
 
 1. Un negocio nuevo (o que nunca ha pagado) entra a la app y ve **"Elige tu plan"**.
-2. El dueño toca **"Probar 14 días gratis"** → ventana de pago de Google → confirma.
+2. El dueño toca **"Probar 7 días gratis"** → ventana de pago de Google → confirma.
 3. La app manda la compra a la función `verificar-compra-play` de Supabase, que la confirma
    con Google y deja el negocio **pagado hasta** la fecha que dice Google (durante la prueba,
    el fin de la prueba). Todos los teléfonos del negocio quedan activos.
@@ -49,9 +49,9 @@ Dentro de cada suscripción:
 1. **Agregar plan básico**: ID `mensual`, tipo **Renovación automática**, período **1 mes**,
    período de gracia 7 días. Precio: **Chile CLP 9.990** (o 14.990). Para los demás países,
    deja que Google convierta. **Activar**.
-2. **Agregar oferta** en ese plan: ID `prueba-14-dias`, elegibilidad **Adquisición de clientes
+2. **Agregar oferta** en ese plan: ID `prueba-7-dias`, elegibilidad **Adquisición de clientes
    nuevos → "Nunca tuvo ninguna suscripción"** (así no pueden encadenar la prueba de Básico y
-   luego la de Pro). Fase: **Prueba gratuita, 14 días**. **Activar**.
+   luego la de Pro). Fase: **Prueba gratuita, 7 días**. **Activar**.
 
 ### 4. Cuenta de servicio (para que Supabase verifique las compras)
 

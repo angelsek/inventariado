@@ -5,7 +5,7 @@
  * Al cambiarlos, actualizar la fecha.
  */
 
-export const FECHA_LEGAL = '1 de octubre de 2026';
+export const FECHA_LEGAL = '20 de octubre de 2026';
 
 export const TERMINOS = `Términos y condiciones de uso de Stockeao
 
@@ -19,7 +19,7 @@ El negocio se registra con un correo y contraseña, que son responsabilidad de q
 
 3. Prueba gratis, planes y pagos
 Los planes difieren, entre otras cosas, en la cantidad de teléfonos que se pueden usar. Los precios vigentes se informan al contratar y pueden cambiar con aviso previo de al menos 30 días.
-En la app descargada desde Google Play, la suscripción se contrata y se paga con Google Play: incluye una prueba gratis de 14 días (una vez por cuenta de Google) y, si no se cancela antes de que termine, Google cobra el plan elegido cada mes con el medio de pago de la cuenta de Google, hasta que se cancele desde Play Store (Suscripciones). Al cancelar, el plan sigue activo hasta el fin del período pagado. Los reembolsos se rigen por las políticas de Google Play.
+En la app descargada desde Google Play, la suscripción se contrata y se paga con Google Play: incluye una prueba gratis de 7 días (una vez por cuenta de Google) y, si no se cancela antes de que termine, Google cobra el plan elegido cada mes con el medio de pago de la cuenta de Google, hasta que se cancele desde Play Store (Suscripciones). Al cancelar, el plan sigue activo hasta el fin del período pagado. Los reembolsos se rigen por las políticas de Google Play.
 En la app instalada por otros medios, cada negocio nuevo tiene un período de prueba gratis y luego contrata el plan directamente con Stockeao.
 
 4. Vencimiento y suspensión
@@ -50,7 +50,7 @@ export const PRIVACIDAD = `Política de privacidad de Stockeao
 1. Qué datos se guardan
 - Datos de la cuenta: correo del dueño y datos del negocio (nombre, RUT y dirección, si se ingresan).
 - Datos de uso del local: usuarios y sus PIN (guardados cifrados con una función hash, nunca en texto), productos, precios, costos, stock, ventas, pagos, cajas, proveedores e ingresos de mercadería.
-- Datos técnicos: modelo del teléfono y fecha de la última sincronización.
+- Datos técnicos: modelo del teléfono, fecha de la última sincronización y un código que identifica al teléfono (se calcula a partir del identificador de Android, sin guardarlo), para reconocerlo aunque se reinstale la app.
 - Clientes con fiado: si el negocio usa el fiado, el nombre y teléfono de esos clientes y lo que deben, datos que ingresa el propio negocio.
 - Suscripción: el plan contratado y el identificador de la compra en Google Play. Los datos de la tarjeta los maneja Google; la app nunca los ve ni los guarda.
 

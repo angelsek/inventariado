@@ -84,7 +84,7 @@ export default function CrearCuentaScreen() {
       />
       <CamposNegocio form={form} errores={errores} onCambio={cambiar} />
       <Text style={estilos.legal}>
-        Tienes 14 días de prueba gratis. Al crear la cuenta aceptas los{' '}
+        Tienes 7 días de prueba gratis. Al crear la cuenta aceptas los{' '}
         <Link href="/legal/terminos" style={estilos.enlace}>
           Términos y condiciones
         </Link>{' '}

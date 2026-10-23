@@ -64,8 +64,11 @@ export default function TabsLayout() {
   const puede = (ruta: string) => puedeAbrir(ruta, permisos);
 
   // Versión de Play: un negocio que nunca ha pagado (solo la prueba sin tarjeta
-  // del servidor) elige plan primero; la prueba de 7 días la da Google.
-  if (CANAL === 'play' && suscripcion?.estado === 'prueba') return <ElegirPlan />;
+  // del servidor) elige plan primero; la prueba de 7 días la da Google. El que nació sin prueba
+  // (su equipo, correo o RUT ya la usaron) también: si no, quedaría en solo lectura y en Play no
+  // hay otra forma de contratar.
+  if (CANAL === 'play' && (suscripcion?.estado === 'prueba' || suscripcion?.sinPrueba))
+    return <ElegirPlan />;
   return (
     <View style={{ flex: 1 }}>
       {hayAviso ? (

@@ -21,6 +21,12 @@ una vez al mes.
 La versión APK directa (fuera de Play) no puede usar el cobro de Google: sigue el pago manual
 con el panel de administración.
 
+La prueba de 7 días de Play la da Google, una vez por cuenta de Google (oferta `prueba-7-dias`,
+paso 3). No pasa por la prueba de una por negocio que aplica el servidor
+(`docs/PRUEBA_GRATIS.md`). En Play la app muestra "Elige tu plan" tanto al negocio con la prueba
+sin tarjeta del servidor como al que nació sin ella, así que ninguno queda en solo lectura sin
+forma de contratar.
+
 ## Lo que hay que configurar (una sola vez)
 
 ### 1. Perfil de pagos (Play Console)

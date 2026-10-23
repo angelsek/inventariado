@@ -14,6 +14,7 @@ import {
   formNegocioVacio,
   validarNegocio,
 } from '@/features/cuenta/datosNegocio';
+import { avisarSiNacioSinPrueba } from '@/features/suscripcion/sinPrueba';
 import { mensajeDeError } from '@/lib/supabase';
 import { esCorreoValido } from '@/lib/validacion';
 import { crearCuentaYNegocio } from '@/sesion/cuenta';
@@ -53,6 +54,7 @@ export default function CrearCuentaScreen() {
         router.replace({ pathname: '/ingresar', params: { aviso, correo: form.correo.trim() } });
       }
       // 'listo': la navegación cambia sola al vincularse el negocio.
+      if (resultado.tipo === 'listo') avisarSiNacioSinPrueba();
     } catch (e) {
       setError(mensajeDeError(e));
       setCargando(false);

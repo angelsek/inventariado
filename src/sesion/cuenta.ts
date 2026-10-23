@@ -75,17 +75,35 @@ export async function crearNegocio(
   equipo?: OpcionesEquipo,
 ): Promise<void> {
   const perfilId = randomUUID();
-  const { data: negocioId, error } = await supabase.rpc('crear_negocio', {
+  // El id del equipo se calcula antes de crear el negocio: el servidor lo usa como una de las
+  // llaves de la prueba gratis (una por negocio). En el teléfono es siempre el que sale del
+  // ANDROID_ID, no el guardado: si al vincular el equipo ya era de otro negocio, la app guardó un
+  // id nuevo, y mandar ese como llave le daría 7 días nuevos al siguiente negocio que se cree
+  // en este mismo teléfono. En la web no hay id propio, así que vale el que el navegador ya tenía.
+  const idGuardado = await leerAjuste(db, AJUSTE_DISPOSITIVO);
+  const equipoId =
+    Platform.OS === 'web' ? (idGuardado ?? (await idTelefonoEstable())) : await idTelefonoEstable();
+  const argumentos = {
     p_nombre: datos.nombreNegocio,
     p_rut: datos.rut,
     p_direccion: datos.direccion,
     p_perfil_id: perfilId,
     p_nombre_dueno: datos.nombreDueno,
     p_pin_hash: await hashPin(perfilId, datos.pin),
+  };
+  let { data: negocioId, error } = await supabase.rpc('crear_negocio', {
+    ...argumentos,
+    p_equipo_id: equipoId,
   });
+  // Servidor sin la migración de la prueba por negocio: no conoce p_equipo_id. Se reintenta sin
+  // él para no dejar a nadie sin poder registrarse.
+  if (error && (error.code === 'PGRST202' || /schema cache/i.test(error.message))) {
+    ({ data: negocioId, error } = await supabase.rpc('crear_negocio', argumentos));
+  }
   if (error) throw new Error(error.message);
 
-  await vincularTelefono(db, negocioId as string, equipo);
+  // Se vincula con el id que el equipo ya tenía guardado, si lo tenía (así no ocupa otro cupo).
+  await vincularTelefono(db, negocioId as string, equipo, idGuardado ?? equipoId);
 }
 
 /** Inicia sesión y, si la cuenta tiene negocio, vincula este teléfono a él. */
@@ -160,13 +178,16 @@ async function vincularTelefono(
   db: BaseLocal,
   negocioId: string,
   equipo?: OpcionesEquipo,
+  /** Id ya decidido (al crear el negocio): el mismo que se mandó como llave de la prueba. */
+  idDecidido?: string,
 ): Promise<void> {
   const esPc = Platform.OS === 'web';
 
   // Si el equipo ya tenía id (instalaciones anteriores) se conserva, para no ocupar otro cupo.
   // (borrarDatosLocales no borra ese ajuste.) La pregunta de reemplazo va antes del borrado:
-  // si se cancela, los datos locales quedan como estaban.
-  let dispositivoId = await leerAjuste(db, AJUSTE_DISPOSITIVO);
+  // si se cancela, los datos locales quedan como estaban. En un negocio recién creado no hay
+  // nada que reemplazar, así que ese camino solo corre al iniciar sesión.
+  let dispositivoId = idDecidido ?? (await leerAjuste(db, AJUSTE_DISPOSITIVO));
   if (!dispositivoId && esPc && equipo?.elegirReemplazo) {
     const pcs = await pcVinculados(negocioId);
     if (pcs.length) dispositivoId = await equipo.elegirReemplazo(pcs);

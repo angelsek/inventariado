@@ -40,6 +40,21 @@ ya instaladas: el tipo por defecto es `telefono`, así que siguen registrándose
 ya se ejecutaron y quedaron **sin uso**: la app ya no sincroniza la tabla `roles` ni
 `perfiles.rol_id`. No las borres por ahora; su limpieza queda para más adelante.
 
+`20261023000100_una_prueba_por_negocio.sql` (una prueba gratis por negocio) crea la tabla
+`inventariado.pruebas_usadas`, cambia el trigger de la suscripción de prueba, agrega el séptimo
+parámetro `p_equipo_id` a `crear_negocio` y la función `admin_liberar_prueba`. Al ejecutarla anota
+también los negocios que ya existen, con la fecha de su prueba actual. Es **obligatoria antes de
+fusionar el PR y de publicar el APK o la web** con ese cambio. Hay que ejecutar el archivo
+**completo**: borra la firma vieja de `crear_negocio` antes de crear la nueva, así que una
+ejecución a medias deja la app sin poder registrar negocios. `pruebas_usadas` **no** se agrega a
+«Exposed tables»: nadie la lee desde la API. Después de ejecutarla, **no vuelvas a ejecutar las
+migraciones anteriores** (`20260929000500_fase5_suscripciones.sql` y
+`20261022000100_prueba_7_dias.sql`): devolverían el trigger viejo, que da 7 días sin ningún tope
+y sin avisar. Si llegaras a ejecutarlas, vuelve a ejecutar esta. Se ejecutó el 23 de octubre de
+2026, antes de que la revisión del equipo cambiara el archivo: conviene volver a ejecutar la versión
+que quede en `main`, que además de las funciones trae un arreglo de una sola vez: borra los
+equipos que aquella primera ejecución anotó de más. Ver `docs/PRUEBA_GRATIS.md`.
+
 `20261021000100_permisos_por_persona.sql` (permisos por persona) agrega `perfiles.permisos` y
 `perfiles.permisos_en`, migra los datos desde los roles, deja 7 permisos por defecto para las
 personas nuevas, valida el formato y crea el trigger `proteger_permisos`. Es **obligatoria antes de
@@ -61,7 +76,8 @@ En la misma página, si aparecen **Exposed tables** y **Exposed functions**, act
 - Tablas de la fase 5: `planes`, `suscripciones`, `pagos_suscripcion`.
 - Tablas de la fase 8: `clientes`, `movimientos_cliente`.
 - Funciones de la fase 5: `registrar_dispositivo`, `mis_dispositivos`, `desvincular_dispositivo`,
-  `es_admin`, `admin_listar_negocios`, `admin_registrar_pago`, `admin_actualizar_suscripcion`.
+  `es_admin`, `admin_listar_negocios`, `admin_registrar_pago`, `admin_actualizar_suscripcion`,
+  `admin_liberar_prueba`.
 - Funciones de la fase 6: `ultima_version`, `registrar_error`, `enviar_comentario`,
   `admin_listar_reportes`, `admin_marcar_comentario`.
 - Función para Play Store: `eliminar_mi_negocio`.

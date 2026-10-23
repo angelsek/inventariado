@@ -60,10 +60,13 @@ gracia y la suspensión se ven con candado, y la pantalla explica y ofrece «Ver
 - **Es una regla de producto, no una frontera de seguridad:** se puede saltar editando la base
   local (SQLite en el teléfono, OPFS en la web) o parchando el JS en la web, y el respaldo completo
   entrega los mismos datos. El servidor no limita la lectura por plan.
+- **Negocio sin prueba gratis:** el que nace sin prueba (su equipo, su correo o su RUT ya la
+  usaron) también queda con candado, pero con su propio aviso: el de siempre empieza hablando de
+  «la prueba gratis» y él nunca la tuvo. Ver `docs/PRUEBA_GRATIS.md`.
 - **Límite conocido:** el ciclo «exporto al terminar la prueba → creo otra cuenta → importo →
-  prueba nueva» no queda cerrado del todo, porque quien guarde su propio CSV puede volver a
-  importarlo. Lo cierra limitar la prueba a una por dispositivo, correo o RUT en el servidor
-  (pendiente, `docs/ESTADO_ACTUAL.md`).
+  prueba nueva» ya no se cierra solo con esta regla, porque quien guarde su propio CSV puede
+  volver a importarlo. Lo que lo cierra es que la prueba sea una por equipo, correo o RUT en el
+  servidor (`docs/PRUEBA_GRATIS.md`).
 
 La regla vive en `src/features/suscripcion/planPagado.ts` (`esPlanPagado`, `usePlanPagado`,
 `bloqueadoSinPlanPagado`, `requierePlanPagado`) y se aplica en `src/app/exportar.tsx`,

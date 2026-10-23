@@ -20,7 +20,7 @@ El negocio se registra con un correo y contraseña, que son responsabilidad de q
 3. Prueba gratis, planes y pagos
 Los planes difieren, entre otras cosas, en la cantidad de teléfonos que se pueden usar. Los precios vigentes se informan al contratar y pueden cambiar con aviso previo de al menos 30 días.
 En la app descargada desde Google Play, la suscripción se contrata y se paga con Google Play: incluye una prueba gratis de 7 días (una vez por cuenta de Google) y, si no se cancela antes de que termine, Google cobra el plan elegido cada mes con el medio de pago de la cuenta de Google, hasta que se cancele desde Play Store (Suscripciones). Al cancelar, el plan sigue activo hasta el fin del período pagado. Los reembolsos se rigen por las políticas de Google Play.
-En la app instalada por otros medios, cada negocio nuevo tiene un período de prueba gratis y luego contrata el plan directamente con Stockeao.
+En la app instalada por otros medios, cada negocio nuevo tiene un período de prueba gratis y luego contrata el plan directamente con Stockeao. La prueba gratis es una sola por negocio: si el equipo, el correo o el RUT con que se crea la cuenta ya usaron una prueba, la cuenta se crea igual pero sin prueba, y la app queda en modo solo lectura hasta contratar un plan. Quien crea que eso ocurrió por error puede escribir al contacto indicado en la app.
 Exportar los datos a Excel (archivos CSV) está disponible con el plan pagado. El respaldo completo del negocio se puede descargar siempre, también durante la prueba gratis y después de que la suscripción vence. Cargar productos desde un archivo está disponible mientras la app no esté en modo solo lectura (punto 4).
 
 4. Vencimiento y suspensión
@@ -54,6 +54,7 @@ export const PRIVACIDAD = `Política de privacidad de Stockeao
 - Datos técnicos: modelo del teléfono, fecha de la última sincronización y un código que identifica al teléfono (se calcula a partir del identificador de Android, sin guardarlo), para reconocerlo aunque se reinstale la app.
 - Clientes con fiado: si el negocio usa el fiado, el nombre y teléfono de esos clientes y lo que deben, datos que ingresa el propio negocio.
 - Suscripción: el plan contratado y el identificador de la compra en Google Play. Los datos de la tarjeta los maneja Google; la app nunca los ve ni los guarda.
+- Prueba gratis: un código calculado con una función hash a partir del correo, del código del equipo y, cuando el negocio estrena la prueba, del RUT con que se creó, junto con la fecha en que termina su prueba, para que la prueba gratis sea una sola por negocio. El código no contiene esos datos y no se usa para ninguna otra cosa, pero no es anónimo: quien tenga acceso a la base de datos puede comprobar con él si un correo o un RUT determinado ya usó la prueba. Se conserva mientras sea necesario para ese fin.
 
 2. Para qué se usan
 Para prestar el servicio (guardar y sincronizar la información entre los teléfonos del negocio), administrar la suscripción y dar soporte. No se venden ni se ceden los datos a terceros.
@@ -65,7 +66,7 @@ En el teléfono (para funcionar sin internet) y en servidores de Supabase, prove
 La cámara se usa solo para leer códigos de barras. No se guardan fotos ni videos.
 
 5. Cuánto tiempo se guardan y cómo eliminarlos
-Mientras la cuenta exista. El dueño del negocio puede eliminar el negocio y todos sus datos en cualquier momento desde la app, en Más → Eliminar cuenta y datos, o solicitarlo escribiendo al contacto indicado. La eliminación es definitiva e incluye productos, ventas, cajas, usuarios, teléfonos y suscripción; solo se conservan registros técnicos anónimos de errores y lo que la ley obligue a conservar.
+Mientras la cuenta exista. El dueño del negocio puede eliminar el negocio y todos sus datos en cualquier momento desde la app, en Más → Eliminar cuenta y datos, o solicitarlo escribiendo al contacto indicado. La eliminación es definitiva e incluye productos, ventas, cajas, usuarios, teléfonos y suscripción; solo se conservan registros técnicos anónimos de errores, el código de la prueba gratis descrito en el punto 1 (que no se puede asociar a un negocio eliminado, y sin el cual bastaría con borrar la cuenta para empezar otra prueba) y lo que la ley obligue a conservar.
 
 6. Derechos
 El titular puede solicitar acceso, rectificación, eliminación u oposición al tratamiento de sus datos, y una copia de ellos, escribiendo al contacto indicado en la app.

@@ -165,7 +165,9 @@ compartido) y negocio creado desde el teléfono.
 - Planes en la base de datos (se cambian con SQL): **Básico** $9.990/mes, 2 teléfonos; **Pro**
   $14.990/mes, 5 teléfonos + reportes avanzados (fase 7).
 - **Prueba gratis de 7 días** (con plan Pro; hasta octubre de 2026 eran 14) creada
-  automáticamente al registrar un negocio.
+  automáticamente al registrar un negocio. Es **una sola por negocio real**: el servidor anota la
+  huella del equipo, del correo y del RUT, y quien ya usó su prueba nace sin ella (solo lectura
+  hasta contratar). Detalle en `docs/PRUEBA_GRATIS.md`.
 - Estados: prueba → activa → vencida (7 días de gracia, la app avisa) → suspendida (solo
   lectura: se ven los datos pero no se vende ni se modifica nada). Nunca se borran datos.
 - **Sin pasarela de pago** por ahora: el cliente paga (ej. transferencia) y el administrador
@@ -175,7 +177,8 @@ compartido) y negocio creado desde el teléfono.
   **desvincular** teléfonos desde Más → Suscripción (el teléfono desvinculado cierra sesión).
 - Pantalla Suscripción: estado, planes, teléfonos, historial de pagos y cómo pagar.
 - Panel de administración: clientes con estado, vencimiento, teléfonos y última conexión;
-  registrar pagos, extender prueba, suspender o reactivar; ingreso mensual estimado.
+  registrar pagos, extender prueba, liberar la prueba de un negocio que nació sin ella, suspender
+  o reactivar; ingreso mensual estimado.
 - Borradores de **Términos y condiciones** y **Política de privacidad** (revisar con abogado).
 - Pendiente: conectar con los terminales POS (Transbank, Getnet, etc.) al publicar en Play Store.
 

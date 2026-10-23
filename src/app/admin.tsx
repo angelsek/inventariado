@@ -25,6 +25,11 @@ type NegocioAdmin = {
   prueba_hasta: string | null;
   pagado_hasta: string | null;
   suspendida: boolean;
+  /**
+   * El negocio nació sin prueba porque su equipo, su correo o su RUT ya la usaron (la prueba
+   * es una por negocio). Los servidores sin esa migración no mandan el campo.
+   */
+  prueba_bloqueada?: boolean;
   notas: string | null;
   dispositivos: number;
   ultimo_sync: string | null;
@@ -127,6 +132,9 @@ export default function AdminScreen() {
               </Text>
             </View>
             <Text style={estilos.nota}>{n.correo ?? 'Sin correo'}</Text>
+            {n.prueba_bloqueada ? (
+              <Text style={estilos.distintivo}>Sin prueba (ya la usó este cliente)</Text>
+            ) : null}
             <Text style={estilos.nota}>
               Plan {NOMBRE_PLAN[n.plan_id] ?? n.plan_id}
               {vence ? ` · vence ${formatearFecha(new Date(vence))}` : ''} · {n.dispositivos}{' '}
@@ -262,7 +270,42 @@ function HojaNegocio({
       />
 
       <Text style={[estilos.subtitulo, estilos.espacio]}>Otras acciones</Text>
+      {negocio.prueba_bloqueada ? (
+        <Text style={estilos.nota}>
+          Este negocio nació sin prueba: su equipo, su correo o su RUT ya usaron la prueba gratis.
+          Liberarla olvida ese registro y le da 7 días nuevos.
+        </Text>
+      ) : null}
       <View style={estilos.acciones}>
+        {/* Solo liberar borra el registro de la prueba usada; extender no lo toca. */}
+        {/* Pide confirmación: reescribe la prueba del negocio y las fechas de sus llaves. */}
+        <Text
+          accessibilityRole="button"
+          style={estilos.enlace}
+          onPress={() =>
+            avisar(
+              'Liberar prueba',
+              `${negocio.nombre} olvidará que su equipo, su correo y su RUT ya usaron la prueba, y recibirá 7 días nuevos desde hoy.`,
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Liberar',
+                  onPress: () =>
+                    ejecutar(
+                      () =>
+                        supabase.rpc('admin_liberar_prueba', {
+                          p_negocio_id: negocio.id,
+                          p_dias: 7,
+                        }),
+                      `${negocio.nombre} recibió 7 días de prueba nuevos.`,
+                    ),
+                },
+              ],
+            )
+          }
+        >
+          Liberar prueba y dar 7 días
+        </Text>
         <Text
           accessibilityRole="button"
           style={estilos.enlace}
@@ -323,6 +366,7 @@ const estilos = StyleSheet.create({
   subtitulo: { marginBottom: 8, fontSize: 15, fontWeight: '700', color: colores.texto },
   espacio: { marginTop: 12 },
   acciones: { gap: 12 },
+  distintivo: { marginTop: 2, fontSize: 13, fontWeight: '600', color: colores.error },
   enlace: { fontSize: 15, color: colores.primario },
   peligro: { color: colores.error },
 });

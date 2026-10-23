@@ -81,6 +81,8 @@ las capture la página. Si el navegador se las queda, hay que cambiar esas dos t
 - El servidor no deja tomar el id de un equipo de otro negocio (error
   `DISPOSITIVO_DE_OTRO_NEGOCIO`): la app se vincula con un id nuevo. Puede pasar con un teléfono
   que antes estuvo en otro negocio.
+- La prueba gratis es una por negocio (`docs/PRUEBA_GRATIS.md`). En la web el id del equipo es al
+  azar y no identifica al PC, así que ahí solo rigen el correo y el RUT.
 
 ## Riesgos y recomendaciones de uso
 

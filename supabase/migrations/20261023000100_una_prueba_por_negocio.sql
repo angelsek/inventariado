@@ -396,6 +396,42 @@ $$;
 -- Sin esto, cualquier negocio de hoy podría borrarse y empezar una prueba más. Se anota con la
 -- fecha de su prueba actual; los que nunca tuvieron prueba (por ejemplo los de Google Play, donde
 -- la prueba la da Google) no se anotan. Se puede repetir: no pisa lo ya registrado.
+-- Arreglos que corren una sola vez, aunque el archivo se vuelva a ejecutar. Las migraciones de
+-- este proyecto se ejecutan a mano y se repiten a menudo, y un arreglo sobre los datos no siempre
+-- se puede repetir sin hacer daño.
+create table if not exists inventariado.arreglos_aplicados (
+  clave text primary key,
+  creado_en timestamptz not null default now()
+);
+alter table inventariado.arreglos_aplicados enable row level security;
+revoke all on inventariado.arreglos_aplicados from anon, authenticated;
+grant all on inventariado.arreglos_aplicados to service_role;
+
+-- La primera versión de este archivo, que alcanzó a ejecutarse en Supabase, anotaba todos los
+-- equipos vinculados a cada negocio y no solo el que lo creó: así, el empleado que alguna vez
+-- vinculó su teléfono al negocio de su jefe se quedaba sin prueba propia. Se borran esas llaves
+-- de más, una sola vez: repetirlo borraría la llave legítima del empleado que después abrió su
+-- propio negocio con ese mismo teléfono (su equipo sigue figurando en el negocio del jefe, porque
+-- el servidor no deja moverlo). Las llaves de negocios ya eliminados no se tocan: son justo las
+-- que cierran el ciclo.
+do $$
+begin
+  if exists (select 1 from inventariado.arreglos_aplicados where clave = 'equipos-de-mas-v1') then
+    return;
+  end if;
+  delete from inventariado.pruebas_usadas u
+   where u.tipo = 'equipo'
+     and exists (
+       select 1 from inventariado.dispositivos d
+        where inventariado.huella_prueba('equipo', d.id::text) = u.llave_hash
+          and d.id <> (select d2.id from inventariado.dispositivos d2
+                        where d2.negocio_id = d.negocio_id
+                        order by d2.creado_en limit 1)
+     );
+  insert into inventariado.arreglos_aplicados (clave) values ('equipos-de-mas-v1');
+end;
+$$;
+
 -- Del negocio se toma su primer equipo, no todos: el que lo creó. Anotar los demás dejaría sin
 -- prueba al empleado que alguna vez vinculó su teléfono al negocio de su jefe.
 -- El group by junta la misma llave en dos negocios (por ejemplo el mismo RUT) y se queda con la

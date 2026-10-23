@@ -1139,5 +1139,84 @@ begin
 end;
 $$;
 
+-- ---------------------------------------------------------------------------
+-- 19. Limpieza de los equipos anotados de más por la primera versión
+-- ---------------------------------------------------------------------------
+
+-- La primera versión de la migración, que alcanzó a ejecutarse en Supabase, anotaba todos los
+-- equipos de cada negocio. El teléfono de un empleado quedaba marcado como si hubiera gastado
+-- una prueba, y al crear su propio negocio nacía sin ella.
+
+select pg_temp.usuario('e10', 'jefa@ejemplo.cl') as jefa \gset
+select pg_temp.usuario('e11', 'empleado@ejemplo.cl') as empleado \gset
+
+do $$
+declare
+  v_negocio uuid;
+begin
+  -- Negocio con dos equipos: el que lo creó (f40) y el del empleado (f41).
+  v_negocio := pg_temp.nuevo(pg_temp.u('e10'), 'Almacén de la jefa', null, pg_temp.u('f40'));
+  perform pg_temp.vincular(pg_temp.u('e10'), v_negocio, pg_temp.u('f40'));
+  perform pg_temp.vincular(pg_temp.u('e10'), v_negocio, pg_temp.u('f41'));
+  perform set_config('pruebas.jefa', v_negocio::text, false);
+
+  -- Se reproduce lo que dejó la versión vieja: los dos equipos anotados y el arreglo sin aplicar.
+  perform pg_temp.anotar('equipo', pg_temp.u('f41')::text, pg_temp.hasta(v_negocio));
+  delete from inventariado.arreglos_aplicados where clave = 'equipos-de-mas-v1';
+  if pg_temp.fecha_llave('equipo', pg_temp.u('f41')::text) is null then
+    raise exception 'FALLA: la preparación no dejó anotado el equipo del empleado';
+  end if;
+
+  -- Y una llave de equipo de un negocio ya eliminado, que NO se debe borrar: esa es justo la
+  -- que impide empezar otra prueba después de borrar la cuenta.
+  perform pg_temp.anotar('equipo', pg_temp.u('f42')::text, now() + interval '2 days');
+end;
+$$;
+
+\ir ../migrations/20261023000100_una_prueba_por_negocio.sql
+
+do $$
+declare
+  v_negocio uuid := current_setting('pruebas.jefa')::uuid;
+  v_nuevo uuid;
+begin
+  -- El equipo que creó el negocio sigue anotado.
+  if pg_temp.fecha_llave('equipo', pg_temp.u('f40')::text) is null then
+    raise exception 'FALLA: se borró la llave del equipo que creó el negocio';
+  end if;
+  -- El del empleado ya no.
+  if pg_temp.fecha_llave('equipo', pg_temp.u('f41')::text) is not null then
+    raise exception 'FALLA: la llave del equipo del empleado debería haberse borrado';
+  end if;
+  -- La de un negocio que ya no existe se conserva.
+  if pg_temp.fecha_llave('equipo', pg_temp.u('f42')::text) is null then
+    raise exception 'FALLA: se borró la llave de un equipo sin negocio (cierra el ciclo)';
+  end if;
+
+  -- Y el empleado puede abrir su propio negocio con su teléfono, con sus 7 días.
+  v_nuevo := pg_temp.nuevo(pg_temp.u('e11'), 'Almacén del empleado', null, pg_temp.u('f41'));
+  if pg_temp.hasta(v_nuevo) is null
+     or pg_temp.hasta(v_nuevo) < now() + interval '6 days 23 hours' then
+    raise exception 'FALLA: el empleado debería recibir sus 7 días: %', pg_temp.hasta(v_nuevo);
+  end if;
+end;
+$$;
+
+-- El arreglo es de una sola vez: repetir el archivo ya no vuelve a borrar. Es lo que protege al
+-- empleado que acaba de abrir su negocio con ese mismo teléfono (su equipo sigue figurando en el
+-- negocio del jefe, así que una limpieza repetida le borraría la llave una y otra vez).
+\ir ../migrations/20261023000100_una_prueba_por_negocio.sql
+
+do $$
+begin
+  if pg_temp.fecha_llave('equipo', pg_temp.u('f41')::text) is null then
+    raise exception 'FALLA: repetir la migración borró la llave recién creada por el empleado';
+  end if;
+  if pg_temp.fecha_llave('equipo', pg_temp.u('f40')::text) is null then
+    raise exception 'FALLA: repetir la migración borró la llave del equipo que creó el negocio';
+  end if;
+end;
+$$;
+
 \o
 select 'Todas las pruebas SQL de una prueba por negocio pasaron';

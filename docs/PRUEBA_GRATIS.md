@@ -132,6 +132,21 @@ del equipo sí resiste, porque sale de un SHA-256. Si algún día hace falta sub
 que corresponde es un HMAC con un secreto fuera de la tabla (Supabase Vault), asumiendo que
 rotarlo invalida todo lo anotado.
 
+## Arreglo de una sola vez: equipos anotados de más
+
+La primera versión de esta migración alcanzó a ejecutarse en Supabase (23 de octubre de 2026) y su
+respaldo anotaba **todos** los equipos de cada negocio, no solo el que lo creó: 8 de 9 llaves de
+equipo sobraban. El archivo trae ahora un arreglo que las borra, protegido por
+`inventariado.arreglos_aplicados` para que corra una sola vez, aunque el archivo se repita.
+
+Tiene que ser una sola vez: el empleado que después abre su propio negocio con ese teléfono sigue
+figurando como equipo del negocio de su jefe (el servidor no deja mover un equipo a otro negocio),
+así que una limpieza repetida le borraría su llave legítima cada vez. Las llaves de negocios ya
+eliminados no se tocan: son justo las que cierran el ciclo.
+
+Para un arreglo futuro sobre los datos, el patrón es el mismo: una clave nueva en
+`arreglos_aplicados` y el bloque que sale temprano si ya está.
+
 ## Cómo comprobar qué versión quedó en el servidor
 
 La migración se ejecuta a mano y cambió varias veces durante la revisión, así que conviene

@@ -132,6 +132,49 @@ del equipo sí resiste, porque sale de un SHA-256. Si algún día hace falta sub
 que corresponde es un HMAC con un secreto fuera de la tabla (Supabase Vault), asumiendo que
 rotarlo invalida todo lo anotado.
 
+## Cómo comprobar qué versión quedó en el servidor
+
+La migración se ejecuta a mano y cambió varias veces durante la revisión, así que conviene
+confirmar qué quedó. En el SQL Editor de Supabase, esta consulta compara el cuerpo de las
+funciones con la versión final: si alguna fila dice `FALTA`, hay que volver a ejecutar el archivo
+completo.
+
+```sql
+with f as (
+  select p.proname, p.pronargs, p.prosrc
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'inventariado'
+)
+select t.revision, case when t.ok then 'OK' else 'FALTA' end as estado
+  from (
+    select 'consumir_prueba: cerrojos en bucle ordenado' as revision,
+           coalesce(bool_or(prosrc like '%for v_llave in%'), false) as ok
+      from f where proname = 'consumir_prueba'
+    union all
+    select 'consumir_prueba: el RUT solo se anota en prueba nueva',
+           coalesce(bool_or(prosrc like '%k.tipo <> ''rut''%'), false)
+      from f where proname = 'consumir_prueba'
+    union all
+    select 'trigger: limpia el ajuste del equipo al leerlo',
+           coalesce(bool_or(prosrc like '%set_config(''inventariado.equipo_prueba'', ''''%'), false)
+      from f where proname = 'crear_suscripcion_de_prueba'
+    union all
+    select 'admin_liberar_prueba: no levanta la suspensión manual',
+           coalesce(bool_and(prosrc not like '%suspendida = false%'), false)
+      from f where proname = 'admin_liberar_prueba'
+    union all
+    select 'crear_negocio: una sola versión, con p_equipo_id',
+           count(*) = 1 and coalesce(bool_and(pronargs = 7), false)
+      from f where proname = 'crear_negocio'
+  ) t;
+
+select count(*) as llaves_anotadas from inventariado.pruebas_usadas;
+```
+
+`llaves_anotadas` no debería dar 0 si ya hay negocios con prueba: ese número lo deja el respaldo
+de la propia migración.
+
 ## Paso manual
 
 La migración se ejecuta a mano en el **SQL Editor de Supabase** (`docs/SUPABASE.md`), **antes**

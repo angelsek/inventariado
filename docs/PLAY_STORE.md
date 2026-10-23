@@ -47,7 +47,9 @@ Están en el repositorio público `angelsek/inventariado-legal`, con GitHub Page
 - Términos: https://angelsek.github.io/inventariado-legal/terminos.html
 
 Para actualizarlas: regenera con el comando de arriba y copia los archivos de
-`docs/legal-web/` a ese repositorio.
+`docs/legal-web/` a ese repositorio (paso manual: el PR en `angelsek/inventariado-legal` se abre
+con el `GH_TOKEN` de angelsek). `docs/legal-web/*.html` se genera con `scripts/generar-legal.mjs`;
+no se editan a mano, y si el texto de la app cambia hay que regenerarlas y volver a publicarlas.
 
 ## Paso 2: crear la app en Play Console
 
@@ -101,7 +103,7 @@ VARIOS TELÉFONOS, SIN INTERNET
 • Cada cajero entra con su PIN; solo el dueño ve los costos y puede anular ventas.
 
 TUS DATOS SON TUYOS
-• Exporta productos y ventas a Excel cuando quieras.
+• Exporta productos y ventas a Excel con tu plan pagado, y descarga el respaldo completo cuando quieras.
 • Elimina tu cuenta y todos tus datos desde la misma app.
 
 Prueba gratis por 7 días. Stockeao no emite boletas electrónicas: los comprobantes son internos.

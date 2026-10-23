@@ -57,9 +57,13 @@ export const PERMISO_POR_RUTA: Record<string, readonly Permiso[]> = {
   '/eliminar-cuenta': ['cuenta_eliminar'],
 };
 
+/** Primer segmento de una ruta, sin lo que venga después ni el `?`: /venta/7 → /venta. */
+export function primerSegmento(ruta: string): string {
+  return '/' + (ruta.split('?')[0].split('/').filter(Boolean)[0] ?? '');
+}
+
 /** ¿Los `permisos` alcanzan para abrir `ruta`? Compara el primer segmento. */
 export function puedeAbrir(ruta: string, permisos: readonly Permiso[]): boolean {
-  const base = '/' + (ruta.split('?')[0].split('/').filter(Boolean)[0] ?? '');
-  const pide = PERMISO_POR_RUTA[base];
+  const pide = PERMISO_POR_RUTA[primerSegmento(ruta)];
   return !pide || pide.some((p) => permisos.includes(p));
 }

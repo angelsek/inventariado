@@ -2,10 +2,34 @@ import { listarProductos } from '@/db/productos';
 import type { BaseLocal } from '@/db/tipos';
 import { TABLAS_SYNC } from '@/sync/tablas';
 
-/** Escapa un valor para CSV con ";" (formato que abre Excel en Chile). */
+/**
+ * Caracteres con los que Excel y LibreOffice empiezan una fórmula. Si una celda
+ * parte con uno de ellos, la planilla la evalúa al abrir el archivo: un producto
+ * llamado `=HYPERLINK("http://...";"ver")` se convierte en un enlace dentro de la
+ * planilla del dueño, y otras fórmulas alcanzan a filtrar datos del archivo. Por
+ * eso esta regla no se borra. El tabulador y el salto de línea van en la lista
+ * porque algunas planillas los saltan y evalúan el carácter que sigue.
+ */
+const INICIO_DE_FORMULA = /^[=+\-@\t\r\n]/;
+
+/** Un número escrito como en la planilla (coma o punto decimal), negativo incluido. */
+const SOLO_NUMERO = /^-?\d+(?:[.,]\d+)?$/;
+
+/**
+ * Escapa un valor para CSV con ";" (formato que abre Excel en Chile) y le antepone
+ * un apóstrofo si empieza como una fórmula, para que quede como texto. Los números
+ * (precios, costos, stock, montos, cantidades, ganancias) nunca se tocan: un monto
+ * negativo tiene que seguir siendo número en la planilla o se rompen las sumas del
+ * dueño. "Importar productos" le quita ese apóstrofo (src/features/catalogo/importar.ts),
+ * así el CSV del catálogo sigue siendo de ida y vuelta.
+ */
 function celda(valor: unknown): string {
   if (valor === null || valor === undefined) return '';
-  const texto = typeof valor === 'number' ? String(valor).replace('.', ',') : String(valor);
+  const esNumero = typeof valor === 'number';
+  let texto = esNumero ? String(valor).replace('.', ',') : String(valor);
+  if (!esNumero && INICIO_DE_FORMULA.test(texto) && !SOLO_NUMERO.test(texto)) {
+    texto = `'${texto}`;
+  }
   return /[;"\n\r]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto;
 }
 

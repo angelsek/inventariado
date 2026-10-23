@@ -32,7 +32,7 @@ quiera.
 | `mercaderia`       | Ingresos de mercadería: compras y proveedores       |      Sí       |
 | `stock`            | Conteo de stock y por reponer                       |      Sí       |
 | `reportes`         | Reportes del negocio (totales y ganancias)          |      No       |
-| `exportar`         | Exportar datos a planillas                          |      No       |
+| `exportar`         | Exportar datos (con plan pagado, ver más abajo)     |      No       |
 | `negocio`          | Datos del negocio (nombre, RUT, dirección, alcohol) |      No       |
 | `usuarios`         | Agregar personas y editar sus datos y permisos      |      No       |
 | `suscripcion`      | Pagar el plan y desvincular equipos                 |      No       |
@@ -40,6 +40,34 @@ quiera.
 
 Ver productos y stock, Inicio y "Cambiar de usuario" no necesitan permiso. Las claves nunca se
 renombran una vez publicadas: solo se agregan nuevas.
+
+## Exportar y el plan pagado
+
+El permiso `exportar` ya no alcanza por sí solo para sacar planillas: los CSV de productos y de
+ventas (Más → Exportar datos) y el CSV «Exportar a Excel» de Reportes (Estadísticas) exigen además
+que la suscripción esté pagada y al día (estado `activa`). Durante la prueba gratis, los 7 días de
+gracia y la suspensión se ven con candado, y la pantalla explica y ofrece «Ver planes».
+
+- **Se suma al permiso, no lo reemplaza:** quien no tiene `exportar` sigue sin ver la pantalla, sin
+  candado ni invitación a pagar.
+- **Importar productos no se bloquea por esta regla**, para que un cliente nuevo pueda evaluar la
+  app con su propio catálogo. La suspensión sí lo bloquea, como cualquier cambio de datos.
+- **El respaldo completo (JSON) está siempre disponible:** es la portabilidad de datos que prometen
+  los Términos §8, y no se puede volver a importar (solo se importa CSV).
+- **Google Play:** la prueba de Google deja `pagado_hasta` puesto, así que ahí el estado es
+  `activa` y sí se puede exportar durante la prueba. El candado se ve en el APK y en la web (el
+  cobro con Play está en pausa).
+- **Es una regla de producto, no una frontera de seguridad:** se puede saltar editando la base
+  local (SQLite en el teléfono, OPFS en la web) o parchando el JS en la web, y el respaldo completo
+  entrega los mismos datos. El servidor no limita la lectura por plan.
+- **Límite conocido:** el ciclo «exporto al terminar la prueba → creo otra cuenta → importo →
+  prueba nueva» no queda cerrado del todo, porque quien guarde su propio CSV puede volver a
+  importarlo. Lo cierra limitar la prueba a una por dispositivo, correo o RUT en el servidor
+  (pendiente, `docs/ESTADO_ACTUAL.md`).
+
+La regla vive en `src/features/suscripcion/planPagado.ts` (`esPlanPagado`, `usePlanPagado`,
+`bloqueadoSinPlanPagado`, `requierePlanPagado`) y se aplica en `src/app/exportar.tsx`,
+`src/app/estadisticas.tsx`, `src/app/(tabs)/mas.tsx` y `src/web/componentes/MarcoApp.web.tsx`.
 
 ## Reglas de edición
 

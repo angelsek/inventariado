@@ -6,9 +6,9 @@ nuevo (migración `supabase/migrations/20261023000100_una_prueba_por_negocio.sql
 
 Antes, cada fila nueva de `inventariado.negocios` recibía 7 días sin ningún tope, así que
 cualquiera creaba otra cuenta con otro correo y empezaba otra prueba. El candado de exportar a
-Excel solo con plan pagado (rama `feat/importar-exportar-solo-pagado`, todavía sin fusionar) deja
-el ciclo «exporto el catálogo → creo otra cuenta → importo → prueba nueva» a medias, porque
-importar sigue libre a propósito. Esto es lo que lo cierra.
+Excel solo con plan pagado (ver `docs/PERMISOS.md`) deja el ciclo «exporto el catálogo → creo otra
+cuenta → importo → prueba nueva» a medias, porque importar sigue libre a propósito. Esto es lo que
+lo cierra.
 
 ## Las tres llaves
 

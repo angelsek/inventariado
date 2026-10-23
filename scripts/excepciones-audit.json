@@ -18,20 +18,12 @@
       "documento": "docs/SEGURIDAD_DEPENDENCIAS.md#decode-uri-component"
     },
     {
-      "ghsa": "GHSA-vfj7-8cjw-p6xm",
-      "paquete": "braces",
+      "ghsa": "GHSA-mrhx-c7xc-m3w5",
+      "paquete": "zod",
       "severidad": "high",
-      "justificacion": "Sin versión corregida. Llega vía micromatch, que solo usan las herramientas de compilación y pruebas (Metro, Jest, Babel) con patrones de la configuración del proyecto. No va en el APK.",
-      "revisar_antes": "2027-01-04",
-      "documento": "docs/SEGURIDAD_DEPENDENCIAS.md#braces"
-    },
-    {
-      "ghsa": "GHSA-hp3w-g68c-fv3c",
-      "paquete": "sprintf-js",
-      "severidad": "moderate",
-      "justificacion": "Sin versión corregida (afecta hasta la 1.1.3, la última). Llega vía argparse → js-yaml → babel-plugin-istanbul de Jest, que solo formatea textos de la configuración de cobertura. No va en el APK ni en la web.",
-      "revisar_antes": "2027-01-18",
-      "documento": "docs/SEGURIDAD_DEPENDENCIAS.md#sprintf-js"
+      "justificacion": "La corrección exige zod 4.6.6 y la instalada es la 3.25.76: subir a la 4 es un cambio mayor de API y quienes la traen piden ^3. Llega solo por herramientas de desarrollo (expo → @expo/cli, y eslint-config-expo → eslint-plugin-react-hooks), que validan la configuración del propio proyecto, nunca datos de clientes. La app no importa zod: no va en el APK ni en la web.",
+      "revisar_antes": "2027-01-23",
+      "documento": "docs/SEGURIDAD_DEPENDENCIAS.md#zod"
     }
   ]
 }

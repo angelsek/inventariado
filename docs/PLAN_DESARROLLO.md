@@ -194,7 +194,8 @@ compartido) y negocio creado desde el teléfono.
 - **Comentarios** desde la app (Más → Enviar comentario o problema), visibles para el
   administrador, con marca de leído.
 - **Exportar datos** (dueño): productos en CSV reimportable, ventas por ítem en CSV (mes actual
-  y anterior) y respaldo completo en JSON.
+  y anterior) y respaldo completo en JSON. Los CSV solo con el plan pagado y al día; el respaldo
+  completo siempre (`docs/PERMISOS.md`).
 - **Respaldo semanal** de la base de datos con GitHub Actions (pg_dump, 90 días).
 - Pendiente del dueño del proyecto: crear la clave de firma, los secretos y elegir los locales.
 
@@ -220,7 +221,8 @@ con los datos sincronizados de todos los teléfonos (funciona sin internet, sin 
   en el período (con su valor a costo).
 - **Inventario:** valor de la mercadería a costo y a precio de venta, ganancia posible, avisos de
   productos sin costo o con stock negativo, y margen por producto (primero los más bajos).
-- **Exportar a Excel:** el reporte del período en CSV. (PDF queda para más adelante.)
+- **Exportar a Excel:** el reporte del período en CSV, solo con el plan pagado y al día. (PDF
+  queda para más adelante.)
 
 ## Fase 8 — Funciones del rubro
 

@@ -39,3 +39,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# flyer de difusión (se arma a mano y pesa; vive solo en el equipo)
+/docs/flyer

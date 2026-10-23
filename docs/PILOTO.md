@@ -167,7 +167,10 @@ corrompe el respaldo.)
 luego descomprimir el `.sql.gz` y ejecutarlo con `psql` sobre un proyecto vacío que ya tenga
 aplicadas las migraciones.
 
-Además, cada dueño puede descargar sus datos desde **Más → Exportar datos**.
+Además, cada dueño puede descargar sus datos desde **Más → Exportar datos**: el respaldo completo
+(JSON) siempre, y los CSV para Excel (productos, ventas y el de Reportes) solo con el plan pagado
+y al día; durante la prueba gratis o con la suscripción vencida se ven con candado
+(`docs/PERMISOS.md`). Importar productos desde Excel sí se puede en la prueba.
 
 ## 4. Incorporar un local al piloto
 

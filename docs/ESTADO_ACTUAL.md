@@ -1,6 +1,6 @@
 # Estado actual del proyecto (para retomar)
 
-Última actualización: 21 de octubre de 2026.
+Última actualización: 23 de octubre de 2026.
 
 ## Qué es
 
@@ -70,6 +70,15 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
   con rasgos, planes y precios, 7 días gratis, botón a `stockeao/`, contacto y legales, en español
   e inglés. La página de descarga ya tiene el ícono nuevo. Los precios están escritos a mano en
   `public/index.html` y `public/js/landing.js` de ese repo: si cambian, hay que tocarlos ahí.
+- Exportar a Excel solo con el plan pagado (rama `feat/importar-exportar-solo-pagado`): los CSV de
+  productos y de ventas (Más → Exportar datos) y el CSV «Exportar a Excel» de Reportes solo
+  funcionan con la suscripción pagada y al día (estado `activa`). Durante la prueba gratis, los 7
+  días de gracia y la suspensión se ven con candado y la pantalla ofrece «Ver planes». Importar
+  productos no se bloquea (así un cliente nuevo evalúa la app con su propio catálogo) y el respaldo
+  completo (JSON) está siempre disponible (Términos §8). Es una regla de producto, no una frontera
+  de seguridad. Decisiones y límites en `docs/PERMISOS.md` (sección «Exportar y el plan pagado»).
+- Páginas legales: `docs/legal-web/*.html` se genera con `scripts/generar-legal.mjs` y estaba
+  atrasado; se regeneró (ver Pendiente para publicarlo).
 - Dependencias revisadas: el workflow **Dependencias** corre `npm audit` contra las excepciones
   registradas (estricto en PR que tocan dependencias y los lunes; no obligatorio). Las
   vulnerabilidades actuales están analizadas en `docs/SEGURIDAD_DEPENDENCIAS.md`.
@@ -97,12 +106,22 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
    `docs/play-store/icono-512.png` y el gráfico destacado en Play Console; publicar una versión
    APK para que los clientes vean el ícono nuevo (los íconos no cambian por OTA); revisar en el
    emulador el ícono adaptable (máscaras circular y squircle), el ícono temático y el splash de
-   Android 12+; actualizar el flyer (`docs/flyer`, fuera de git) con el ícono nuevo.
+   Android 12+; actualizar el flyer (`docs/flyer`, fuera de git y ahora en `.gitignore`) con
+   el ícono nuevo y con los 7 días de prueba (hoy dice 14).
 5. Versión web, fases 2 a 5: caja y ventas; catálogo; inventario y clientes; gestión, respaldo y
    documentación (hoy esas pantallas se ven con el diseño del teléfono).
 6. Revisar los textos legales: la política de privacidad debe decir que los datos se guardan en
    el navegador del PC, y los textos que hablan de "teléfonos" deben hablar de "equipos".
-7. Cobro con Google Play (en pausa): Google paga a Chile por transferencia internacional y exige
+7. **Publicar las páginas legales** (paso manual): `docs/legal-web/*.html` se genera con
+   `scripts/generar-legal.mjs` y estaba atrasado respecto de la app; ya está regenerado en este
+   repo, pero falta copiarlo al repositorio `angelsek/inventariado-legal` (GitHub Pages) con un PR
+   (usar `GH_TOKEN` de angelsek) para que las URL públicas lo muestren (`docs/PLAY_STORE.md`).
+8. **Limitar la prueba gratis a una por dispositivo, correo o RUT, en el servidor.** Exportar a
+   Excel solo con plan pagado no cierra del todo el ciclo «exporto al terminar la prueba → creo
+   otra cuenta → importo → prueba nueva»: quien guarde su propio CSV puede volver a importarlo
+   (importar no se bloquea a propósito). Lo que de verdad lo cierra es esta limitación; sigue
+   pendiente.
+9. Cobro con Google Play (en pausa): Google paga a Chile por transferencia internacional y exige
    código SWIFT/BIC. Mercado Pago no tiene, y los bancos que sí tienen piden historial de
    facturación a la SpA. Con la cuenta abierta: agregarla al perfil de pagos y seguir desde el
    paso 2 de `docs/COBRO_GOOGLE_PLAY.md` (subir el `.aab`, suscripciones, cuenta de servicio,
@@ -110,14 +129,14 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
    `prueba-7-dias` (7 días). El `.aab` 1015 ya compilado tiene los textos de 14 días: hay que
    compilar uno nuevo antes de subirlo. Después: ficha de Play Store, cuenta demo y,
    si la cuenta de desarrollador es personal, prueba cerrada de 12 probadores por 14 días.
-8. **Boletas y facturas electrónicas (DTE)** (plan aún sin aprobar): servicio extra que se cobra
-   aparte del plan. Grimorio Labs paga el certificado y le cobra al negocio un delta sobre su
-   costo. Se están cotizando OpenFactura (Haulmer) y SimpleAPI; el piloto será certificar el RUT
-   de Grimorio Labs. Ojo: los clientes que cobran con la POS de Mercado Pago ya reciben boleta de
-   la máquina, así que hay que evitar emitir una segunda boleta por la misma venta.
-9. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**
-   (ver abajo).
-10. Limpieza menor: borrar en Supabase la tabla `roles`, `perfiles.rol_id` y sus triggers
+10. **Boletas y facturas electrónicas (DTE)** (plan aún sin aprobar): servicio extra que se cobra
+    aparte del plan. Grimorio Labs paga el certificado y le cobra al negocio un delta sobre su
+    costo. Se están cotizando OpenFactura (Haulmer) y SimpleAPI; el piloto será certificar el RUT
+    de Grimorio Labs. Ojo: los clientes que cobran con la POS de Mercado Pago ya reciben boleta de
+    la máquina, así que hay que evitar emitir una segunda boleta por la misma venta.
+11. Más adelante: fotos de productos, unir la rama a `main` y **conexión con terminales POS**
+    (ver abajo).
+12. Limpieza menor: borrar en Supabase la tabla `roles`, `perfiles.rol_id` y sus triggers
     (migraciones `20261019000100` y `20261020000100`), que quedaron sin uso (`docs/PERMISOS.md`).
 
 ## Idea a futuro: cobrar con la máquina POS desde Stockeao

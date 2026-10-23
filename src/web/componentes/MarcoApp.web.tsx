@@ -6,6 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Logotipo } from '@/components/LogoStockeao';
 import { obtenerNegocio } from '@/db/negocio';
 import { useBase } from '@/db/proveedor';
+import { requierePlanPagado, usePlanPagado } from '@/features/suscripcion/planPagado';
 import { useCarrito } from '@/features/ventas/carrito';
 import { useNombreConEtiqueta, usePermisos } from '@/sesion/permisos';
 import { useSesion } from '@/sesion/store';
@@ -70,6 +71,8 @@ function MenuLateral() {
   const sync = useSesion((s) => s.sync);
   const enLinea = useEnLinea();
   const permisos = usePermisos();
+  // Exportar es del plan pagado: la entrada se ve con candado y se abre para explicarlo.
+  const pagado = usePlanPagado();
   const nombreConEtiqueta = useNombreConEtiqueta();
   const activa = entradaActiva(ruta, permisos);
   const [negocio, setNegocio] = useState('');
@@ -107,6 +110,7 @@ function MenuLateral() {
             <Text style={estilos.tituloGrupo}>{grupo.titulo.toUpperCase()}</Text>
             {grupo.entradas.map((entrada) => {
               const seleccionada = entrada === activa;
+              const bloqueada = !pagado && requierePlanPagado(entrada.ruta);
               return (
                 <Pressable
                   key={entrada.ruta}
@@ -131,6 +135,13 @@ function MenuLateral() {
                   >
                     {entrada.texto}
                   </Text>
+                  {bloqueada ? (
+                    <Ionicons
+                      name="lock-closed"
+                      size={15}
+                      color={seleccionada ? colores.superficie : colores.primarioSuave}
+                    />
+                  ) : null}
                 </Pressable>
               );
             })}

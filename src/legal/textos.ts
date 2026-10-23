@@ -5,7 +5,7 @@
  * Al cambiarlos, actualizar la fecha.
  */
 
-export const FECHA_LEGAL = '20 de octubre de 2026';
+export const FECHA_LEGAL = '23 de octubre de 2026';
 
 export const TERMINOS = `Términos y condiciones de uso de Stockeao
 
@@ -21,6 +21,7 @@ El negocio se registra con un correo y contraseña, que son responsabilidad de q
 Los planes difieren, entre otras cosas, en la cantidad de teléfonos que se pueden usar. Los precios vigentes se informan al contratar y pueden cambiar con aviso previo de al menos 30 días.
 En la app descargada desde Google Play, la suscripción se contrata y se paga con Google Play: incluye una prueba gratis de 7 días (una vez por cuenta de Google) y, si no se cancela antes de que termine, Google cobra el plan elegido cada mes con el medio de pago de la cuenta de Google, hasta que se cancele desde Play Store (Suscripciones). Al cancelar, el plan sigue activo hasta el fin del período pagado. Los reembolsos se rigen por las políticas de Google Play.
 En la app instalada por otros medios, cada negocio nuevo tiene un período de prueba gratis y luego contrata el plan directamente con Stockeao.
+Exportar los datos a Excel (archivos CSV) está disponible con el plan pagado. Cargar productos desde un archivo y descargar el respaldo completo del negocio están disponibles siempre, también durante la prueba gratis y después de que la suscripción vence.
 
 4. Vencimiento y suspensión
 Si la suscripción vence, hay un período de gracia durante el cual la app sigue funcionando con avisos. Terminado ese período, la app queda en modo solo lectura: se pueden consultar los datos, pero no registrar ventas ni hacer cambios. Los datos no se borran por falta de pago y el servicio se reactiva al pagar.
@@ -35,7 +36,7 @@ La app funciona sin internet y sincroniza los datos cuando hay conexión. Se hac
 El servicio se entrega "tal cual". Stockeao no responde por pérdidas derivadas de un mal uso, de datos ingresados incorrectamente, de fallas del teléfono o de la conexión, ni por decisiones comerciales tomadas con la información de la app, en la medida que la ley lo permita.
 
 8. Término del servicio
-El cliente puede dejar de usar el servicio en cualquier momento. Puede descargar una copia de sus datos (Más → Exportar datos) y eliminar el negocio con todos sus datos (Más → Eliminar cuenta y datos), según la Política de privacidad.
+El cliente puede dejar de usar el servicio en cualquier momento. Puede descargar una copia de sus datos (Más → Exportar datos → Respaldo completo), que está disponible siempre, también sin un plan pagado, y eliminar el negocio con todos sus datos (Más → Eliminar cuenta y datos), según la Política de privacidad.
 
 9. Cambios
 Estos términos pueden actualizarse. Los cambios relevantes se avisarán en la app.

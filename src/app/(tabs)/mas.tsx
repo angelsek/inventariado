@@ -8,6 +8,7 @@ import { obtenerNegocio } from '@/db/negocio';
 import { formatearFechaHora } from '@/lib/formato';
 import { useActualizacion } from '@/features/actualizacion/actualizacion';
 import { confirmarCierreSesion } from '@/features/cuenta/cierreSesion';
+import { usePlanPagado } from '@/features/suscripcion/planPagado';
 import { supabase } from '@/lib/supabase';
 import { versionActual } from '@/lib/version';
 import { useNombreConEtiqueta, usePermiso } from '@/sesion/permisos';
@@ -30,6 +31,8 @@ export default function MasScreen() {
   const puedeUsuarios = usePermiso('usuarios');
   const puedeEliminar = usePermiso('cuenta_eliminar');
   const puedeExportar = usePermiso('exportar');
+  // Exportar a Excel es del plan pagado: la opción se ve con candado y explica adentro.
+  const pagado = usePlanPagado();
 
   const [esAdmin, setEsAdmin] = useState(false);
   const nueva = useActualizacion((s) => s.nueva);
@@ -127,6 +130,7 @@ export default function MasScreen() {
           <Opcion
             icono="download-outline"
             texto="Exportar datos"
+            bloqueada={!pagado}
             onPress={() => router.push('/exportar')}
           />
         ) : null}
@@ -193,13 +197,16 @@ function Opcion({
   texto,
   onPress,
   peligro,
+  bloqueada,
 }: {
   icono: React.ComponentProps<typeof Ionicons>['name'];
   texto: string;
   onPress: () => void;
   peligro?: boolean;
+  /** Con candado: se abre igual, pero adentro se explica que es del plan pagado. */
+  bloqueada?: boolean;
 }) {
-  const color = peligro ? colores.error : colores.texto;
+  const color = peligro ? colores.error : bloqueada ? colores.textoSecundario : colores.texto;
   return (
     <Pressable
       accessibilityRole="button"
@@ -210,7 +217,11 @@ function Opcion({
         <Ionicons name={icono} size={22} color={peligro ? colores.error : colores.primario} />
       </View>
       <Text style={[estilos.opcionTexto, { color }]}>{texto}</Text>
-      <Ionicons name="chevron-forward" size={20} color={colores.inactivo} />
+      <Ionicons
+        name={bloqueada ? 'lock-closed' : 'chevron-forward'}
+        size={20}
+        color={colores.inactivo}
+      />
     </Pressable>
   );
 }

@@ -9,6 +9,7 @@ import { Selector } from '@/components/Selector';
 import { generarReporte, type Inventario, type Reporte, valorizarInventario } from '@/db/reportes';
 import { compartirArchivo } from '@/features/exportar/compartir';
 import { csvReporte } from '@/features/reportes/csv';
+import { bloqueadoSinPlanPagado, usePlanPagado } from '@/features/suscripcion/planPagado';
 import {
   calcularPeriodo,
   claveDia,
@@ -36,6 +37,8 @@ export default function EstadisticasScreen() {
   const db = useBase();
   const { negocioId, versionDatos } = useSesion();
   const puedeVer = usePermiso('reportes');
+  // Sacar el reporte a Excel es parte del plan pagado, como el resto de exportar.
+  const pagado = usePlanPagado();
   const [periodo, setPeriodo] = useState<Periodo>(() => calcularPeriodo('dia', new Date()));
   const [vista, setVista] = useState<Vista>('ventas');
   const [reporte, setReporte] = useState<Reporte | null>(null);
@@ -65,6 +68,7 @@ export default function EstadisticasScreen() {
   const titulo = etiquetaPeriodo(periodo);
 
   const exportar = async () => {
+    if (bloqueadoSinPlanPagado()) return;
     if (!reporte) return;
     setExportando(true);
     setError(null);
@@ -137,12 +141,19 @@ export default function EstadisticasScreen() {
 
       {vista !== 'inventario' && reporte && reporte.cantidad > 0 ? (
         <View style={estilos.espacioGrande}>
-          <Boton
-            titulo="Exportar a Excel"
-            variante="secundario"
-            cargando={exportando}
-            onPress={exportar}
-          />
+          {pagado ? (
+            <Boton
+              titulo="Exportar a Excel"
+              variante="secundario"
+              cargando={exportando}
+              onPress={exportar}
+            />
+          ) : (
+            <Pressable accessibilityRole="button" style={estilos.candado} onPress={exportar}>
+              <Ionicons name="lock-closed" size={18} color={colores.textoSecundario} />
+              <Text style={estilos.notaCandado}>Exportar a Excel es del plan pagado</Text>
+            </Pressable>
+          )}
         </View>
       ) : null}
     </ScrollView>
@@ -459,6 +470,18 @@ const estilos = StyleSheet.create({
   nota: { marginTop: 4, fontSize: 13, color: colores.textoSecundario },
   vacio: { marginTop: 24, textAlign: 'center', fontSize: 15, color: colores.textoSecundario },
   error: { marginBottom: 12, color: colores.error },
+  candado: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 56,
+    paddingHorizontal: 20,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: colores.borde,
+  },
+  notaCandado: { fontSize: 15, fontWeight: '600', color: colores.textoSecundario },
   filaLista: {
     flexDirection: 'row',
     alignItems: 'center',

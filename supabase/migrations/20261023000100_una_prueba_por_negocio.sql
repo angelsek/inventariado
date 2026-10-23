@@ -148,6 +148,14 @@ as $$
 declare
   v_hasta timestamptz;
 begin
+  -- Dos cuentas creadas al mismo tiempo con la misma llave no se ven entre sí (cada una lee
+  -- antes de que la otra escriba) y las dos recibirían 7 días. El cerrojo de transacción las
+  -- pone en fila; ordenado por llave para que dos transacciones con llaves en común no se
+  -- traben entre ellas. Se suelta solo al terminar la transacción.
+  perform pg_advisory_xact_lock(hashtextextended(k.llave_hash, 0))
+     from inventariado.llaves_de_prueba(p_correo, p_rut, p_equipo_id) k
+    order by k.llave_hash;
+
   select min(u.prueba_hasta) into v_hasta
     from inventariado.llaves_de_prueba(p_correo, p_rut, p_equipo_id) k
     join inventariado.pruebas_usadas u on u.llave_hash = k.llave_hash;

@@ -81,6 +81,17 @@ plan pagado). El cierre duro sigue siendo el pago.
 - En la **versión web (PC)** el id del equipo es al azar, así que ahí solo rigen correo y RUT.
 - El id del equipo **lo envía el cliente**: un APK modificado puede mandar cualquier UUID.
 - Un correo nuevo es gratis, y el RUT es opcional.
+- El servidor **no valida el dígito verificador** del RUT (lo valida la app): un cliente
+  modificado puede cambiar ese último dígito y conseguir una llave distinta. Se podría usar solo
+  el cuerpo del RUT como llave; no se hizo porque quien modifica el cliente también puede cambiar
+  el equipo y el correo.
+- Los **negocios sin `prueba_hasta`** que ya existían (por ejemplo los de Google Play, donde la
+  prueba la da Google) no quedaron anotados: pueden borrarse y recibir una prueba una vez más.
+
+Lo que **no** es un hueco: dos cuentas creadas en el mismo instante con la misma llave. Antes
+las dos habrían recibido 7 días, porque cada una leía antes de que la otra escribiera;
+`consumir_prueba` toma un cerrojo de transacción por llave (ordenado, para no trabarse) y las
+pone en fila.
 
 Lo que sí cierra es el caso común: el mismo almacenero, en el mismo teléfono, con el mismo correo
 o el mismo RUT.

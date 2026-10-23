@@ -46,3 +46,34 @@ it('al intentar vender, el mensaje habla de la prueba y no de una suspensión', 
   expect(bloqueadoPorSuscripcion()).toBe(true);
   expect((avisar as jest.Mock).mock.calls[0][0]).toBe('Solo lectura');
 });
+
+it('sin estado de suscripción todavía (antes de sincronizar) no avisa ni bloquea', () => {
+  useSesion.getState().fijarSuscripcion(null);
+  expect(avisarSiNacioSinPrueba()).toBe(false);
+  expect(bloqueadoPorSuscripcion()).toBe(false);
+  expect(avisar).not.toHaveBeenCalled();
+});
+
+it('una suscripción activa o en prueba no se bloquea ni se avisa', () => {
+  useSesion.getState().fijarSuscripcion(estado(new Date(Date.now() + 5 * 86400000).toISOString()));
+  expect(bloqueadoPorSuscripcion()).toBe(false);
+  expect(avisar).not.toHaveBeenCalled();
+});
+
+it('"Ahora no" cierra el aviso sin ir a ninguna parte y el mensaje apunta a contratar', () => {
+  useSesion.getState().fijarSuscripcion(estado(null));
+  avisarSiNacioSinPrueba();
+  const [, mensaje, botones] = (avisar as jest.Mock).mock.calls[0];
+  expect(mensaje).toContain('Contrata un plan');
+  expect(mensaje).toContain('escríbenos');
+  expect(botones.map((b: { text: string }) => b.text)).toEqual(['Ahora no', 'Ver planes']);
+  expect(botones[0].onPress).toBeUndefined();
+  expect(router.push).not.toHaveBeenCalled();
+});
+
+it('el aviso se puede repetir: cada negocio nuevo sin prueba lo vuelve a mostrar', () => {
+  useSesion.getState().fijarSuscripcion(estado(null));
+  avisarSiNacioSinPrueba();
+  avisarSiNacioSinPrueba();
+  expect(avisar).toHaveBeenCalledTimes(2);
+});

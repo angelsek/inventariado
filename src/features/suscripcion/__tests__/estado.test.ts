@@ -93,3 +93,45 @@ describe('negocio que nació sin prueba gratis (una prueba por negocio)', () => 
     expect(vencidaHaceRato.sinPrueba).toBe(false);
   });
 });
+
+describe('sinPrueba: solo el negocio que nunca tuvo prueba ni pago', () => {
+  const calcular = (pruebaHasta: string | null, pagadoHasta: string | null, suspendida = false) =>
+    calcularEstado({ planId: 'pro', pruebaHasta, pagadoHasta, suspendida }, AHORA);
+
+  it('una suspensión manual sin fechas sigue siendo una suspensión, no "sin prueba"', () => {
+    const e = calcular(null, null, true);
+    expect(e).toMatchObject({ estado: 'suspendida', soloLectura: true, sinPrueba: false });
+    expect(avisoSuscripcion(e)?.texto).toContain('Suscripción suspendida');
+  });
+
+  it('un negocio que pagó nunca se marca sin prueba, aunque no tenga fecha de prueba', () => {
+    // Pagó y está al día (por ejemplo, un cliente que entró directo por Google Play).
+    expect(calcular(null, dias(20))).toMatchObject({ estado: 'activa', sinPrueba: false });
+    // Pagó, no renovó y ya pasaron los 7 días de gracia: suspendido de verdad.
+    const lapsado = calcular(null, dias(-30));
+    expect(lapsado).toMatchObject({ estado: 'suspendida', soloLectura: true, sinPrueba: false });
+    expect(avisoSuscripcion(lapsado)?.texto).toContain('Suscripción suspendida');
+  });
+
+  it('con prueba vigente o en gracia tampoco', () => {
+    expect(calcular(dias(3), null).sinPrueba).toBe(false);
+    expect(calcular(dias(-2), null)).toMatchObject({ estado: 'vencida', sinPrueba: false });
+  });
+
+  it('el borde: una prueba que termina justo ahora todavía vale', () => {
+    expect(calcular(AHORA.toISOString(), null)).toMatchObject({
+      estado: 'prueba',
+      sinPrueba: false,
+    });
+  });
+
+  it('no deja pasar a vender: solo lectura y sin fecha de vencimiento', () => {
+    const e = calcular(null, null);
+    expect(e).toMatchObject({
+      soloLectura: true,
+      venceEn: null,
+      diasRestantes: null,
+      diasGracia: null,
+    });
+  });
+});

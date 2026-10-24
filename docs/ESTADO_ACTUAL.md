@@ -1,6 +1,6 @@
 # Estado actual del proyecto (para retomar)
 
-Última actualización: 23 de octubre de 2026.
+Última actualización: 24 de octubre de 2026.
 
 ## Qué es
 
@@ -50,6 +50,12 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
   botón flotante "Nuevo producto" en Productos.
 - Firma con clave propia; app en Play Console con **prueba interna** (último `.aab` compilado:
   1015, desde `main`, run 39099334938; aún no subido).
+- Subida automática a Google Play: el workflow **Construir para Google Play** sube el `.aab` solo a
+  la pista que se elija. Cuenta de servicio `subir-stockeao@stockeao-play.iam.gserviceaccount.com`
+  (proyecto de Google Cloud `stockeao-play`) y secreto `PLAY_SERVICE_ACCOUNT_JSON` en GitHub. Tiene
+  permiso solo para las pistas de prueba: el de producción se deja sin marcar a propósito y se
+  agrega el día que se use esa pista. La primera versión de la app igual hay que subirla a mano,
+  porque la API de Google no puede crearla. Detalle en `docs/PLAY_STORE.md` (paso 6).
 - Cobro con Google Play Billing programado (en pausa) y **perfil de pagos de Grimorio Labs SpA**
   creado en Play Console (le falta la cuenta bancaria).
 - APK publicado (versión 35) con actualización dentro de la app y página de descarga.
@@ -129,10 +135,11 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
 8. Cobro con Google Play (en pausa): Google paga a Chile por transferencia internacional y exige
    código SWIFT/BIC. Mercado Pago no tiene, y los bancos que sí tienen piden historial de
    facturación a la SpA. Con la cuenta abierta: agregarla al perfil de pagos y seguir desde el
-   paso 2 de `docs/COBRO_GOOGLE_PLAY.md` (subir el `.aab`, suscripciones, cuenta de servicio,
-   secretos, SQL, Pub/Sub, pruebas de licencias). Al crear la oferta en Play Console, usar
-   `prueba-7-dias` (7 días). El `.aab` 1015 ya compilado tiene los textos de 14 días: hay que
-   compilar uno nuevo antes de subirlo. Después: ficha de Play Store, cuenta demo y,
+   paso 2 de `docs/COBRO_GOOGLE_PLAY.md` (subir el `.aab`, suscripciones, la cuenta de servicio
+   que verifica las compras —es otra, distinta de la que sube el `.aab`—, secretos, SQL, Pub/Sub,
+   pruebas de licencias). Al crear la oferta en Play Console, usar `prueba-7-dias` (7 días). El
+   `.aab` 1015 ya compilado tiene los textos de 14 días: hay que compilar uno nuevo antes de
+   subirlo. Después: ficha de Play Store, cuenta demo y,
    si la cuenta de desarrollador es personal, prueba cerrada de 12 probadores por 14 días.
 9. **Boletas y facturas electrónicas (DTE)** (plan aún sin aprobar): servicio extra que se cobra
    aparte del plan. Grimorio Labs paga el certificado y le cobra al negocio un delta sobre su

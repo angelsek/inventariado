@@ -6,7 +6,7 @@ name: Construir para Google Play
 #
 # Si existe el secreto PLAY_SERVICE_ACCOUNT_JSON, además lo sube a la pista
 # elegida de Play Console (ver docs/PLAY_STORE.md). La primera subida de la app
-# siempre debe hacerse a mano desde Play Console.
+# siempre debe hacerse a mano desde Play Console: para esa vez, desmarca "subir".
 on:
   workflow_dispatch:
     inputs:
@@ -19,6 +19,10 @@ on:
         description: 'Novedades de esta versión (se muestran en Play Store)'
         type: string
         default: ''
+      subir:
+        description: 'Subir a Play Console (desmárcalo para la primera versión de la app, que Play exige subir a mano)'
+        type: boolean
+        default: true
 
 # Solo a mano (Actions → Construir para Google Play → Run workflow), mientras el cobro con Play
 # esté en pausa. Tarda ~20 min.
@@ -123,12 +127,24 @@ jobs:
 
       - name: Revisar cuenta de servicio de Play
         id: play
+        if: inputs.subir
         env:
           CUENTA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-        run: echo "configurada=$([ -n "$CUENTA" ] && echo si || echo no)" >> "$GITHUB_OUTPUT"
+        run: |
+          if [ -n "$CUENTA" ]; then
+            echo "configurada=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "configurada=no" >> "$GITHUB_OUTPUT"
+            echo "::notice::Sin cuenta de servicio (PLAY_SERVICE_ACCOUNT_JSON): el .aab queda solo en Artifacts."
+          fi
+
+      - name: Avisar que no se sube
+        if: '${{ !inputs.subir }}'
+        run: |
+          echo "::notice::Subida a Play Console omitida: el .aab queda en Artifacts para subirlo a mano."
 
       - name: Subir a Google Play
-        if: steps.play.outputs.configurada == 'si'
+        if: inputs.subir && steps.play.outputs.configurada == 'si'
         uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}

@@ -16,7 +16,9 @@ const correo = process.env.CONTACTO_CORREO || '[correo de contacto]';
 const salida = join(raiz, 'docs/legal-web');
 mkdirSync(salida, { recursive: true });
 
-const escapar = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// Incluye las comillas dobles: el correo se inserta dentro de href="mailto:...".
+const escapar = (t) =>
+  t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /** Convierte el texto plano (título, párrafos y listas con "- ") en HTML simple. */
 function aHtml(texto) {

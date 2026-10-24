@@ -1,5 +1,5 @@
 /**
- * Términos y condiciones y política de privacidad (borradores).
+ * Términos y condiciones, política de privacidad y cómo eliminar la cuenta (borradores).
  * IMPORTANTE: deben revisarse con un abogado antes de vender la app
  * (Ley 19.628 y Ley 21.719 de protección de datos personales, Ley 19.496 del consumidor).
  * Al cambiarlos, actualizar la fecha.
@@ -93,7 +93,7 @@ La eliminación es definitiva y no se puede deshacer. Se borran el negocio, sus 
 3. Qué se conserva
 Después de eliminar la cuenta solo quedan guardados:
 - Registros técnicos anónimos de errores.
-- El código de la prueba gratis descrito en el punto 1 de la Política de privacidad, que sirve para que la prueba gratis sea una sola por negocio. Se calcula con una función hash a partir del correo, del código del equipo y del RUT con que se creó la cuenta; no contiene esos datos y no se puede asociar a un negocio eliminado, pero no es anónimo.
+- El código de la prueba gratis descrito en el punto 1 de la Política de privacidad, junto con la fecha en que termina esa prueba, para que la prueba gratis sea una sola por negocio. El código no contiene los datos con que se calcula, pero no es anónimo: quien tenga acceso a la base de datos puede comprobar con él si un correo o un RUT determinado ya usó la prueba.
 - Lo que la ley obligue a conservar.
 
 4. Si ya no tienes acceso a la app

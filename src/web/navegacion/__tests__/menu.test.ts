@@ -96,6 +96,7 @@ it.each([
   ['/cliente/123', 'Clientes y fiado'],
   ['/', 'Resumen de hoy'],
   ['/legal/terminos', 'Cuenta y equipo'],
+  ['/legal/eliminar-cuenta', 'Cuenta y equipo'],
   ['/admin', 'Cuenta y equipo'],
   ['/reportes', 'Cuenta y equipo'],
 ])('la ruta %s marca la entrada "%s"', (ruta, texto) => {

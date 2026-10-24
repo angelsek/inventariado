@@ -1,19 +1,18 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, Text } from 'react-native';
 
 import { CONTACTO } from '@/config';
-import { PRIVACIDAD, TERMINOS } from '@/legal/textos';
 import { colores } from '@/theme/colores';
 
-export default function LegalScreen() {
-  const { doc } = useLocalSearchParams<{ doc: string }>();
-  const esPrivacidad = doc === 'privacidad';
+/**
+ * Cuerpo compartido de las páginas legales (términos, privacidad y cómo eliminar la cuenta).
+ * El título de cada una vive en `src/app/_layout.tsx`, no acá.
+ */
+export function PantallaLegal({ texto }: { texto: string }) {
   const contacto = [CONTACTO.correo, CONTACTO.whatsapp].filter(Boolean).join(' · ');
 
   return (
     <ScrollView style={estilos.pantalla} contentContainerStyle={estilos.contenido}>
-      <Stack.Screen options={{ title: esPrivacidad ? 'Privacidad' : 'Términos' }} />
-      <Text style={estilos.texto}>{esPrivacidad ? PRIVACIDAD : TERMINOS}</Text>
+      <Text style={estilos.texto}>{texto}</Text>
       {contacto ? <Text style={estilos.contacto}>Contacto: {contacto}</Text> : null}
     </ScrollView>
   );

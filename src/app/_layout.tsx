@@ -183,11 +183,19 @@ function Navegacion() {
         </Stack.Protected>
 
         {/*
-        Términos y privacidad: se pueden leer antes y después de iniciar sesión.
-        Va al final: si una ruta protegida no está disponible, se abre la primera
-        de la lista que sí lo esté, y no debe ser esta.
+        Páginas legales y "no encontrado": se pueden leer antes y después de iniciar sesión.
+        Van al final: si una ruta protegida no está disponible, se abre la primera
+        de la lista que sí lo esté, y no debe ser ninguna de estas.
+        legal/eliminar-cuenta solo explica cómo eliminar la cuenta (es la URL que revisa
+        Google Play); la que de verdad borra el negocio es la pantalla eliminar-cuenta.
       */}
-        <Stack.Screen name="legal/[doc]" options={conEncabezado('')} />
+        <Stack.Screen name="legal/terminos" options={conEncabezado('Términos y condiciones')} />
+        <Stack.Screen name="legal/privacidad" options={conEncabezado('Política de privacidad')} />
+        <Stack.Screen
+          name="legal/eliminar-cuenta"
+          options={conEncabezado('Cómo eliminar tu cuenta')}
+        />
+        <Stack.Screen name="+not-found" options={conEncabezado('Página no encontrada')} />
       </Stack>
     </MarcoApp>
   );

@@ -5,7 +5,7 @@
  * Al cambiarlos, actualizar la fecha.
  */
 
-export const FECHA_LEGAL = '23 de octubre de 2026';
+export const FECHA_LEGAL = '24 de octubre de 2026';
 
 export const TERMINOS = `Términos y condiciones de uso de Stockeao
 
@@ -76,3 +76,28 @@ La comunicación con el servidor va cifrada y el acceso está restringido por ne
 
 8. Cambios
 Esta política puede actualizarse. Los cambios relevantes se avisarán en la app.`;
+
+export const ELIMINAR_CUENTA = `Cómo eliminar tu cuenta de Stockeao
+
+Última actualización: ${FECHA_LEGAL}
+
+1. Cómo eliminarla desde la app
+El dueño del negocio puede eliminar el negocio y todos sus datos en cualquier momento, sin pedírselo a nadie:
+- Abre Stockeao e ingresa con tu PIN de dueño.
+- Ve a la pestaña Más → Eliminar cuenta y datos.
+- Escribe ELIMINAR, ingresa la contraseña de la cuenta y confirma.
+
+2. Qué se elimina
+La eliminación es definitiva y no se puede deshacer. Se borran el negocio, sus usuarios y equipos, los productos, el stock, las ventas, las cajas, los proveedores, los ingresos de mercadería, la suscripción y su historial de pagos.
+
+3. Qué se conserva
+Después de eliminar la cuenta solo quedan guardados:
+- Registros técnicos anónimos de errores.
+- El código de la prueba gratis descrito en el punto 1 de la Política de privacidad, que sirve para que la prueba gratis sea una sola por negocio. Se calcula con una función hash a partir del correo, del código del equipo y del RUT con que se creó la cuenta; no contiene esos datos y no se puede asociar a un negocio eliminado, pero no es anónimo.
+- Lo que la ley obligue a conservar.
+
+4. Si ya no tienes acceso a la app
+Escribe al contacto indicado más abajo desde el correo de la cuenta, indicando el nombre del negocio. Los datos se eliminan en un plazo máximo de 30 días y se confirma la eliminación por correo.
+
+5. Antes de eliminar
+Puedes descargar una copia de tus datos en Más → Exportar datos → Respaldo completo. Está disponible siempre, también durante la prueba gratis y sin un plan pagado.`;

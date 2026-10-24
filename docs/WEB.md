@@ -93,6 +93,22 @@ las capture la página. Si el navegador se las queda, hay que cambiar esas dos t
 - Instalar la web como app (PWA, ícono "Instalar" de la barra de direcciones) ayuda a que el
   navegador conserve los datos.
 
+## Páginas legales y direcciones inexistentes
+
+La web sirve los textos legales en direcciones públicas, sin iniciar sesión:
+
+- `/legal/terminos`
+- `/legal/privacidad`
+- `/legal/eliminar-cuenta`
+
+Son tres rutas explícitas (`src/app/legal/`) que comparten el cuerpo `src/features/legal/PantallaLegal.tsx`;
+los textos viven en `src/legal/textos.ts`. Una dirección que no existe (por ejemplo
+`/legal/cualquier-cosa`) muestra la pantalla "no encontrado" (`src/app/+not-found.tsx`) y no los
+Términos, como pasaba antes.
+
+Ojo: con `web.output: "single"` el servidor responde 200 incluso para direcciones que no existen
+(todas abren `index.html`). El aviso es de pantalla, no un 404 real.
+
 ## Seguridad
 
 `scripts/construir-web.mjs` genera las cabeceras (`dist/_headers`):

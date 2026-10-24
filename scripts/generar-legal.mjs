@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
-const { FECHA_LEGAL, PRIVACIDAD, TERMINOS } = await import(
+const { ELIMINAR_CUENTA, FECHA_LEGAL, PRIVACIDAD, TERMINOS } = await import(
   pathToFileURL(join(raiz, 'src/legal/textos.ts')).href
 );
 
@@ -16,7 +16,9 @@ const correo = process.env.CONTACTO_CORREO || '[correo de contacto]';
 const salida = join(raiz, 'docs/legal-web');
 mkdirSync(salida, { recursive: true });
 
-const escapar = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// Incluye las comillas dobles: el correo se inserta dentro de href="mailto:...".
+const escapar = (t) =>
+  t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /** Convierte el texto plano (título, párrafos y listas con "- ") en HTML simple. */
 function aHtml(texto) {
@@ -93,27 +95,11 @@ const escribir = (nombre, html) => {
 for (const [nombre, texto] of [
   ['privacidad.html', PRIVACIDAD],
   ['terminos.html', TERMINOS],
+  ['eliminar-cuenta.html', ELIMINAR_CUENTA],
 ]) {
   const { titulo, cuerpo } = aHtml(texto);
   escribir(nombre, pagina(titulo, cuerpo));
 }
-
-escribir(
-  'eliminar-cuenta.html',
-  pagina(
-    'Eliminar tu cuenta de Stockeao',
-    `<p>El dueño del negocio puede eliminar el negocio y <strong>todos sus datos</strong> en cualquier momento:</p>
-<ol>
-  <li>Abre Stockeao e ingresa con tu PIN de dueño.</li>
-  <li>Ve a la pestaña <strong>Más</strong> → <strong>Eliminar cuenta y datos</strong>.</li>
-  <li>Escribe ELIMINAR, ingresa la contraseña de la cuenta y confirma.</li>
-</ol>
-<p>Se eliminan de forma definitiva: el negocio, sus usuarios y teléfonos, productos, stock, ventas, cajas, proveedores, ingresos de mercadería, la suscripción y su historial de pagos. Solo se conservan registros técnicos anónimos de errores, el código de la prueba gratis descrito en el punto 1 de la Política de privacidad y lo que la ley obligue a conservar.</p>
-<p>Si ya no tienes acceso a la app, escríbenos a <a href="mailto:${escapar(correo)}">${escapar(correo)}</a> desde el correo de la cuenta, indicando el nombre del negocio. Eliminaremos los datos en un plazo máximo de 30 días y te confirmaremos por correo.</p>
-<p>Antes de eliminar, puedes descargar una copia de tus datos en Más → Exportar datos →
-Respaldo completo, que está disponible siempre, también sin un plan pagado.</p>`,
-  ),
-);
 
 escribir(
   'index.html',

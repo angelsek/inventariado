@@ -139,8 +139,10 @@ rotarlo invalida todo lo anotado.
 
 La primera versión de esta migración alcanzó a ejecutarse en Supabase (23 de octubre de 2026) y su
 respaldo anotaba **todos** los equipos de cada negocio, no solo el que lo creó: 8 de 9 llaves de
-equipo sobraban. El archivo trae ahora un arreglo que las borra, protegido por
-`inventariado.arreglos_aplicados` para que corra una sola vez, aunque el archivo se repita.
+equipo sobraban. El archivo trae un arreglo que las borra, protegido por
+`inventariado.arreglos_aplicados` para que corra una sola vez, aunque el archivo se repita. **Ya
+corrió**: el 24 de octubre de 2026 quedaron 3 llaves (el correo, el RUT y el equipo que creó el
+negocio).
 
 Tiene que ser una sola vez: el empleado que después abre su propio negocio con ese teléfono sigue
 figurando como equipo del negocio de su jefe (el servidor no deja mover un equipo a otro negocio),
@@ -193,8 +195,16 @@ select count(*) as llaves_anotadas from inventariado.pruebas_usadas;
 `llaves_anotadas` no debería dar 0 si ya hay negocios con prueba: ese número lo deja el respaldo
 de la propia migración.
 
-## Paso manual
+## Paso manual (ya hecho)
 
-La migración se ejecuta a mano en el **SQL Editor de Supabase** (`docs/SUPABASE.md`), **antes**
-de fusionar el PR y de publicar el APK o la web. Al ejecutarla, anota también los negocios que ya
-existen con la fecha de su prueba actual, para que no puedan empezar otra.
+La migración se ejecuta a mano en el **SQL Editor de Supabase** (`docs/SUPABASE.md`). Se ejecutó
+el 23 de octubre de 2026 con la versión de entonces y el **24 de octubre de 2026** con la
+definitiva, la que está en `main`. No queda nada pendiente en el servidor.
+
+Al ejecutarla quedaron anotados también los negocios que ya existían, con la fecha de su prueba
+actual, para que no puedan empezar otra.
+
+Una advertencia que costó dos ejecuciones equivocadas: **copia el archivo desde `main`**, no desde
+una pestaña abierta ni desde una copia de trabajo que esté en otro commit. La versión definitiva
+tiene 486 líneas y termina en `notify pgrst, 'reload schema';`; si la tuya tiene menos, es otra.
+La consulta de la sección anterior dice en un segundo cuál quedó.

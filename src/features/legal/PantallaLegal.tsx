@@ -7,13 +7,22 @@ import { colores } from '@/theme/colores';
  * Cuerpo compartido de las páginas legales (términos, privacidad y cómo eliminar la cuenta).
  * El título de cada una vive en `src/app/_layout.tsx`, no acá.
  */
+const PAGINA_PUBLICA = 'https://grimoriolabs.com/stockeao/';
+
 export function PantallaLegal({ texto }: { texto: string }) {
   const contacto = [CONTACTO.correo, CONTACTO.whatsapp].filter(Boolean).join(' · ');
 
   return (
     <ScrollView style={estilos.pantalla} contentContainerStyle={estilos.contenido}>
       <Text style={estilos.texto}>{texto}</Text>
-      {contacto ? <Text style={estilos.contacto}>Contacto: {contacto}</Text> : null}
+      {/*
+        Siempre hay una línea de contacto: la página de eliminación promete escribir "al contacto
+        indicado más abajo", y Google Play exige que esa vía exista. Si el build no trae las
+        variables EXPO_PUBLIC_CONTACTO_*, se remite a la página pública en vez de no mostrar nada.
+      */}
+      <Text style={estilos.contacto}>
+        {contacto ? `Contacto: ${contacto}` : `Contacto: ${PAGINA_PUBLICA}`}
+      </Text>
     </ScrollView>
   );
 }

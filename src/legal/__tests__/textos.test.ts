@@ -24,3 +24,8 @@ it('ningún texto legal trae el correo de contacto escrito a mano', () => {
     expect(texto).not.toMatch(/@/);
   }
 });
+
+// La vía de contacto de esa página es la que exige Google Play para quien ya no tiene la app.
+it('la página de eliminar cuenta remite a un contacto', () => {
+  expect(ELIMINAR_CUENTA).toContain('Escribe al contacto indicado más abajo');
+});

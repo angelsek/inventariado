@@ -190,8 +190,9 @@ _Funcionalidad de la app_ y _Administración de la cuenta_):
 
 ## Paso 5: prueba interna y prueba cerrada
 
-1. En GitHub: **Actions → Construir para Google Play → Run workflow** (pista _internal_).
-   Descarga el `.aab` desde Artifacts.
+1. En GitHub: **Actions → Construir para Google Play → Run workflow** (pista _internal_), con la
+   casilla **subir** desmarcada: esta vez el `.aab` tiene que quedarse en Artifacts, porque Play
+   exige que la primera versión se suba a mano. Descárgalo desde Artifacts.
 2. Play Console → **Probar y publicar → Pruebas internas → Crear versión** → sube el `.aab`
    (la primera vez siempre a mano). Agrega tu correo como probador e instálala desde el
    enlace que te da Play.
@@ -211,8 +212,9 @@ Está hecho desde el 24 de octubre de 2026: el workflow **Construir para Google 
 antes de publicar). No hay que bajar el archivo ni subirlo a mano.
 
 > **La primera versión de una app siempre es manual.** La API de Google no puede crear la primera
-> versión: hay que subir un `.aab` desde Play Console al menos una vez (paso 5). Recién después el
-> workflow puede tomar las siguientes.
+> versión: hay que subir un `.aab` desde Play Console al menos una vez (paso 5). Para esa corrida,
+> **desmarca la casilla `subir`** del workflow; si no, el intento falla y la ejecución queda en
+> rojo. Recién después el workflow puede tomar las siguientes.
 
 Lo que quedó configurado, por si hay que rehacerlo:
 
@@ -274,6 +276,7 @@ no se tocan.
 
 1. Sube `version` en `app.json` si es un cambio visible (ej. 1.0.0 → 1.1.0); el número interno
    de versión sube solo en cada compilación.
-2. Actions → **Construir para Google Play** → Run workflow, con la pista y las novedades.
+2. Actions → **Construir para Google Play** → Run workflow, con la pista y las novedades, y la
+   casilla **subir** marcada (viene marcada por defecto).
 3. Listo: el workflow sube la versión a Play Console solo (paso 6). La subida a mano solo hizo
    falta para la primera versión de la app.

@@ -55,7 +55,8 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
   (proyecto de Google Cloud `stockeao-play`) y secreto `PLAY_SERVICE_ACCOUNT_JSON` en GitHub. Tiene
   permiso solo para las pistas de prueba: el de producción se deja sin marcar a propósito y se
   agrega el día que se use esa pista. La primera versión de la app igual hay que subirla a mano,
-  porque la API de Google no puede crearla. Detalle en `docs/PLAY_STORE.md` (paso 6).
+  porque la API de Google no puede crearla: para esa corrida se desmarca la casilla `subir` del
+  workflow. Detalle en `docs/PLAY_STORE.md` (paso 6).
 - Cobro con Google Play Billing programado (en pausa) y **perfil de pagos de Grimorio Labs SpA**
   creado en Play Console (le falta la cuenta bancaria).
 - APK publicado (versión 35) con actualización dentro de la app y página de descarga.

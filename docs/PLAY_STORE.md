@@ -204,21 +204,76 @@ _Funcionalidad de la app_ y _Administración de la cuenta_):
 > para pasar a la de Play hay que **desinstalar el APK una vez** (revisa antes que diga "Todo
 > sincronizado"; los datos vuelven al iniciar sesión). Después, Play la actualiza sola.
 
-## Paso 6 (opcional): subir automáticamente desde GitHub
+## Paso 6: subir automáticamente desde GitHub (ya configurado)
 
-Cuando la app ya exista en Play Console, puedes evitar la subida manual:
+Está hecho desde el 24 de octubre de 2026: el workflow **Construir para Google Play** compila el
+`.aab` y lo sube solo a la pista que elijas (producción queda como borrador para que la revises
+antes de publicar). No hay que bajar el archivo ni subirlo a mano.
 
-1. Play Console → **Configuración → Acceso a la API** → vincular un proyecto de Google Cloud y
-   crear una **cuenta de servicio**; descarga su clave JSON.
-2. En Play Console → **Usuarios y permisos** → invita el correo de la cuenta de servicio con
-   permiso para publicar versiones en esta app.
-3. En GitHub crea el secreto `PLAY_SERVICE_ACCOUNT_JSON` con el contenido completo del JSON.
-4. Desde ahí, **Construir para Google Play** sube el `.aab` a la pista que elijas (producción
-   queda como borrador para que la revises antes de publicar).
+> **La primera versión de una app siempre es manual.** La API de Google no puede crear la primera
+> versión: hay que subir un `.aab` desde Play Console al menos una vez (paso 5). Recién después el
+> workflow puede tomar las siguientes.
+
+Lo que quedó configurado, por si hay que rehacerlo:
+
+- Proyecto de Google Cloud `stockeao-play`, con la **Google Play Android Developer API** habilitada.
+- Cuenta de servicio `subir-stockeao@stockeao-play.iam.gserviceaccount.com`, sin ningún rol de
+  Google Cloud (los permisos se dan en Play Console).
+- Secreto `PLAY_SERVICE_ACCOUNT_JSON` en GitHub con la clave JSON de esa cuenta. Es el único lugar
+  donde vive la clave: el archivo descargado se borró.
+
+### Cómo se hizo (el camino que funcionó)
+
+En Play Console no aparece la página **Configuración → Acceso a la API** que nombran los
+tutoriales; Google la movió y no está bajo "Configuración de las apps de Play" (ahí solo hay
+"Configuración general" y "Configuración de monetización"). No hace falta: se arma desde Google
+Cloud y se invita la cuenta como un usuario más.
+
+1. En [console.cloud.google.com](https://console.cloud.google.com), con la cuenta dueña de Play
+   Console: crear el proyecto (`stockeao-play`).
+2. Buscar **Google Play Android Developer API** y **habilitarla** en ese proyecto. Sin esto, la
+   subida falla aunque los permisos estén bien.
+3. **IAM y administración → Cuentas de servicio → Crear cuenta de servicio**. Sin roles en los
+   pasos 2 y 3.
+4. En la cuenta creada: **Administrar claves → Agregar clave → Crear clave nueva → JSON**. Se
+   descarga el archivo.
+5. Play Console → **Usuarios y permisos → Invitar a usuarios nuevos**, con el correo de la cuenta
+   de servicio.
+6. En **Permisos de la app**, agregar Stockeao y marcar solo estos (nombres del formulario actual):
+   - Ver la información de la app (solo lectura)
+   - Ver información de calidad de la app (solo lectura) — se marca sola
+   - Editar y eliminar apps en borrador
+   - **Lanzar apps a los segmentos de pruebas** — es el que permite subir a `internal`, `alpha` y
+     `beta`; sin él la subida falla con `The caller does not have permission`
+7. Guardar la clave como secreto y borrar el archivo del disco:
+
+   ```bash
+   gh secret set PLAY_SERVICE_ACCOUNT_JSON < ruta/al/archivo.json
+   rm ruta/al/archivo.json
+   ```
+
+### El permiso de producción está fuera a propósito
+
+La cuenta de servicio **no** tiene "Lanzar a producción, excluir dispositivos y usar la firma de
+apps de Play". Así, aunque alguien se robe el JSON, no puede publicar nada al público: lo peor que
+logra es subir a una pista de prueba.
+
+Cuando se quiera usar la pista `production` del workflow, hay que volver a Play Console →
+**Usuarios y permisos** → la cuenta de servicio → **Permisos de la app** y marcarlo. Es un minuto.
+Mientras no esté marcado, lanzar el workflow con `production` falla.
+
+### Rotar la clave
+
+Si la clave se filtra o se quiere renovar: en Google Cloud → **IAM y administración → Cuentas de
+servicio → subir-stockeao → Administrar claves**, crear una clave nueva, correr
+`gh secret set PLAY_SERVICE_ACCOUNT_JSON` con ella y recién ahí **borrar la clave vieja** desde esa
+misma pantalla. La cuenta de servicio sigue siendo la misma, así que los permisos de Play Console
+no se tocan.
 
 ## Cada versión nueva
 
 1. Sube `version` en `app.json` si es un cambio visible (ej. 1.0.0 → 1.1.0); el número interno
    de versión sube solo en cada compilación.
-2. Actions → **Construir para Google Play** → Run workflow, con las novedades.
-3. Si no configuraste el paso 6: sube el `.aab` en Play Console.
+2. Actions → **Construir para Google Play** → Run workflow, con la pista y las novedades.
+3. Listo: el workflow sube la versión a Play Console solo (paso 6). La subida a mano solo hizo
+   falta para la primera versión de la app.

@@ -58,9 +58,10 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
   (proyecto de Google Cloud `stockeao-play`) y secreto `PLAY_SERVICE_ACCOUNT_JSON` en GitHub. Tiene
   permiso solo para las pistas de prueba: el de producción se deja sin marcar a propósito y se
   agrega el día que se use esa pista. La primera versión de la app igual hay que subirla a mano,
-  porque la API de Google no puede crearla. Detalle en `docs/PLAY_STORE.md` (paso 6). Falta
-  confirmar que la subida automática funcione: el intento del run 40123992300 falló por permisos,
-  pero fue antes de que existiera la primera versión y puede ser solo eso.
+  porque la API de Google no puede crearla. Detalle en `docs/PLAY_STORE.md` (paso 6). **Confirmado
+  el 24 de octubre de 2026:** la compilación 40126400298 terminó en verde y publicó sola la versión
+  1.0.0 (1017) en la pista internal. El error del run 40123992300 era la limitación de la primera
+  versión, no un problema de permisos.
 - Cobro con Google Play Billing programado (en pausa) y **perfil de pagos de Grimorio Labs SpA**
   creado en Play Console (le falta la cuenta bancaria).
 - APK publicado (versión 35) con actualización dentro de la app y página de descarga.
@@ -90,6 +91,12 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
   de seguridad. Decisiones y límites en `docs/PERMISOS.md` (sección «Exportar y el plan pagado»).
 - Páginas legales: `docs/legal-web/*.html` se genera con `scripts/generar-legal.mjs` y estaba
   atrasado; se regeneró (ver Pendiente para publicarlo).
+- Página legal de la web (rama `fix/legal-eliminar-cuenta-web`): `/legal/eliminar-cuenta` mostraba
+  los Términos. Ahora hay tres rutas explícitas (términos, privacidad y eliminar cuenta) y una
+  pantalla "no encontrado" para direcciones inventadas. El texto de eliminación de cuenta vive en
+  `src/legal/textos.ts` y el generador lo usa; los cuatro HTML de `docs/legal-web/` se regeneraron
+  (fecha legal: 24 de octubre de 2026). En Play Console la URL declarada sigue siendo la de GitHub
+  Pages. Cómo regenerar, en `docs/PLAY_STORE.md`; rutas en `docs/WEB.md`.
 - Dependencias revisadas: el workflow **Dependencias** corre `npm audit` contra las excepciones
   registradas (estricto en PR que tocan dependencias y los lunes; no obligatorio). Las
   vulnerabilidades actuales están analizadas en `docs/SEGURIDAD_DEPENDENCIAS.md`.

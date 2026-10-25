@@ -36,7 +36,17 @@ El `.aab` solo se genera a mano y únicamente desde la rama `main`.
 Para regenerar el ícono y la imagen destacada: `npm run iconos:generar` (detalle en
 `assets/marca/LEEME.md`).
 Para regenerar las páginas con tu correo:
-`CONTACTO_CORREO=tu@correo.cl node --experimental-strip-types scripts/generar-legal.mjs`.
+
+```
+CONTACTO_CORREO=contacto@grimoriolabs.com node --experimental-strip-types scripts/generar-legal.mjs
+npx prettier --write docs/legal-web
+```
+
+- Sin `CONTACTO_CORREO`, el generador escribe "[correo de contacto]" en los textos.
+- Después de generar hay que correr `npx prettier --write docs/legal-web`; si no, `npm run check`
+  falla por formato.
+- La prueba `scripts/__tests__/legal-html.test.js` compara los HTML versionados con los textos:
+  todo cambio de texto obliga a regenerar y commitear los HTML.
 
 ## Paso 1: páginas legales (publicadas)
 
@@ -50,6 +60,10 @@ Para actualizarlas: regenera con el comando de arriba y copia los archivos de
 `docs/legal-web/` a ese repositorio (paso manual: el PR en `angelsek/inventariado-legal` se abre
 con el `GH_TOKEN` de angelsek). `docs/legal-web/*.html` se genera con `scripts/generar-legal.mjs`;
 no se editan a mano, y si el texto de la app cambia hay que regenerarlas y volver a publicarlas.
+El texto de eliminación de cuenta sale de `src/legal/textos.ts` (el mismo que muestra la web en
+`/legal/eliminar-cuenta`). La URL que se declara en Play Console sigue siendo la de GitHub Pages
+(`https://angelsek.github.io/inventariado-legal/eliminar-cuenta.html`), no la de
+stockeao.grimoriolabs.com (decisión del usuario).
 
 ## Paso 2: crear la app en Play Console
 

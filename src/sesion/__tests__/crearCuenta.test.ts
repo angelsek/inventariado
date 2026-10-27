@@ -1,6 +1,5 @@
 import { migrarBaseDeDatos } from '@/db/migraciones';
 import type { BaseLocal } from '@/db/tipos';
-import { URL_CONFIRMACION_CORREO } from '@/lib/enlaces';
 import { crearBaseEnMemoria } from '@/test/baseEnMemoria';
 import { supabase } from '@/test/mockSupabase';
 
@@ -38,7 +37,6 @@ it('el enlace del correo de confirmación vuelve a la página de Stockeao', asyn
     password: 'clave-segura',
     options: { emailRedirectTo: 'https://grimoriolabs.com/stockeao/' },
   });
-  expect(URL_CONFIRMACION_CORREO).toBe('https://grimoriolabs.com/stockeao/');
 });
 
 it('sin sesión pide confirmar el correo y no crea el negocio todavía', async () => {

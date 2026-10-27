@@ -163,6 +163,10 @@ Pasos manuales antes de la primera publicación:
 3. Conectar el dominio: proyecto → Settings → Domains & Routes → Add → Custom domain →
    `stockeao.grimoriolabs.com`.
 4. Si se usan enlaces de correo de Supabase Auth, agregar el dominio a las URL permitidas.
+   Hoy el enlace de confirmación del registro lleva a `https://grimoriolabs.com/stockeao/` también
+   desde la web (`src/lib/enlaces.ts`): el usuario confirma y vuelve a iniciar sesión a mano. Si
+   algún día debe volver a la web sola, hay que cambiar el destino según `Platform.OS` y
+   registrarlo en esas URL permitidas.
 
 **La dirección es definitiva:** cambiarla deja los datos locales de los PC en la dirección
 anterior (cada dirección tiene su propia base en el navegador).

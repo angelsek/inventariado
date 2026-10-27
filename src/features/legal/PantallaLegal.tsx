@@ -1,14 +1,13 @@
 import { ScrollView, StyleSheet, Text } from 'react-native';
 
 import { CONTACTO } from '@/config';
+import { PAGINA_PUBLICA } from '@/lib/enlaces';
 import { colores } from '@/theme/colores';
 
 /**
  * Cuerpo compartido de las páginas legales (términos, privacidad y cómo eliminar la cuenta).
  * El título de cada una vive en `src/app/_layout.tsx`, no acá.
  */
-const PAGINA_PUBLICA = 'https://grimoriolabs.com/stockeao/';
-
 export function PantallaLegal({ texto }: { texto: string }) {
   const contacto = [CONTACTO.correo, CONTACTO.whatsapp].filter(Boolean).join(' · ');
 

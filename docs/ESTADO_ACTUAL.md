@@ -114,6 +114,13 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
   equipos que aquella anotó de más. No queda nada pendiente en el servidor. Detalle en
   `docs/PRUEBA_GRATIS.md`.
 
+- Enlace de confirmación de correo (rama `fix/redireccion-confirmacion-correo`): al crear la
+  cuenta, el enlace llevaba a Prensa Arcana porque el Site URL del proyecto Supabase compartido es
+  de esa app. Ahora la app pide volver a `https://grimoriolabs.com/stockeao/`
+  (`src/lib/enlaces.ts`). El enlace de Stockeao ya se agregó a Redirect URLs de Supabase
+  (`docs/SUPABASE.md`, sección 4). Sirve desde la próxima versión publicada; los APK ya
+  instalados siguen mandando al Site URL.
+
 ## Pendiente (en orden)
 
 1. **Antes de fusionar el PR de permisos por persona y de publicar el APK o la web:** ejecutar

@@ -93,6 +93,15 @@ En **Authentication → Sign In / Providers → Email**:
 - **Confirm email**: si está activado, el dueño debe confirmar su correo antes de usar la app
   (la app lo indica). Para las pruebas conviene desactivarlo.
 
+En **Authentication → URL Configuration → Redirect URLs** agregar, para que el enlace del correo
+de confirmación lleve a la página de Stockeao (`URL_CONFIRMACION_CORREO` en `src/lib/enlaces.ts`):
+
+- `https://grimoriolabs.com/stockeao/`
+- `https://grimoriolabs.com/stockeao/**`
+
+Si la dirección no está en la lista, Supabase ignora el `emailRedirectTo` de la app y manda al
+**Site URL**. No se cambia el Site URL: es el de la otra app que comparte el proyecto.
+
 ## 5. Conectar la app
 
 En **Project Settings → API Keys** (o **Data API**) copiar:
@@ -134,7 +143,8 @@ Funciona sin problemas mientras el uso sea bajo. A tener en cuenta:
 - **Usuarios compartidos**: Supabase Auth es uno solo por proyecto. Una persona registrada en
   la otra app podría iniciar sesión en Stockeao (llegaría a la pantalla "Datos del
   negocio" y no vería datos de nadie). La configuración de correo (confirmación, plantillas)
-  también es común a ambas.
+  también es común a ambas. Por eso el Site URL es el de la otra app y Stockeao indica su propio
+  destino con `emailRedirectTo` (ver «4. Autenticación»).
 - **Pausa por inactividad**: los proyectos gratuitos se pausan tras 7 días sin uso; si la otra
   app lo usa a diario, no pasa.
 - **Al vender la app** (fase 5) conviene pasar a un proyecto propio. Como todo está en el

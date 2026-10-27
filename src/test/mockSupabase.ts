@@ -30,6 +30,7 @@ export const supabase = {
   },
   auth: {
     getSession: jest.fn(() => Promise.resolve({ data: { session: null } })),
+    signUp: jest.fn(() => Promise.resolve({ data: { user: null, session: null }, error: null })),
     signInWithPassword: jest.fn(() => Promise.resolve({ data: {}, error: null })),
     signOut: jest.fn(() => Promise.resolve({ error: null })),
   },

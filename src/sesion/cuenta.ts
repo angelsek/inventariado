@@ -6,6 +6,7 @@ import { registrarDispositivo } from '@/db/dispositivos';
 import { borrarDatosLocales } from '@/db/negocio';
 import { obtenerEstadoSuscripcion } from '@/db/suscripcion';
 import type { BaseLocal } from '@/db/tipos';
+import { URL_CONFIRMACION_CORREO } from '@/lib/enlaces';
 import { hashPin } from '@/lib/pin';
 import { supabase } from '@/lib/supabase';
 import { sincronizar } from '@/sync/motor';
@@ -57,6 +58,7 @@ export async function crearCuentaYNegocio(
   const { data, error } = await supabase.auth.signUp({
     email: correo.trim(),
     password: contrasena,
+    options: { emailRedirectTo: URL_CONFIRMACION_CORREO },
   });
   if (error) throw error;
   // Si el correo ya existe, Supabase no da error (para no revelar qué correos

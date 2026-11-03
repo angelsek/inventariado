@@ -11,7 +11,7 @@ export const colores = {
   texto: '#18201E',
   textoSecundario: '#55625F',
   borde: '#E1E6E4',
-  inactivo: '#88948F',
+  inactivo: '#6B7772',
   error: '#C62828',
   fondoError: '#FDECEA',
   exito: '#2E7D32',

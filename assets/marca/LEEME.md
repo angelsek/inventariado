@@ -4,16 +4,22 @@ Logo "cajas en S": tres cajas escalonadas (blanca arriba a la derecha, mostaza a
 izquierda, menta abajo a la derecha) con una cinta de embalaje verde al 25 %, sobre fondo verde.
 El logotipo va en minúscula (`stockeao`) con "ao" en mostaza, en Nunito Bold.
 
+## Logo oficial y fondos blancos
+
+- **Logo oficial:** la versión con fondo verde (`logo.svg` y `exportados\stockeao-logo-fondo-verde.png`).
+- **Fondos blancos:** si la versión oficial no se lee bien, usar `exportados\stockeao-logo-nombre-transparente.png`, donde la caja superior va en verde `#1F4E45`. Si algún color se pierde sobre blanco, se ajusta usando solo colores de esta paleta.
+
 ## Paleta
 
-| Uso                                 | Color     |
-| ----------------------------------- | --------- |
-| Fondo                               | `#1F4E45` |
-| Caja blanca                         | `#FFFFFF` |
-| Caja mostaza                        | `#F2B33D` |
-| Caja menta                          | `#CFE3DC` |
-| "ao" del logotipo sobre fondo claro | `#D9952A` |
-| "ao" del logotipo sobre fondo verde | `#F2B33D` |
+| Uso                                           | Color     |
+| --------------------------------------------- | --------- |
+| Fondo                                         | `#1F4E45` |
+| Caja blanca                                   | `#FFFFFF` |
+| Caja mostaza                                  | `#F2B33D` |
+| Caja menta                                    | `#CFE3DC` |
+| "ao" del logotipo sobre fondo claro           | `#A86400` |
+| Acento de texto sobre fondo claro (contraste) | `#A86400` |
+| "ao" del logotipo sobre fondo verde           | `#F2B33D` |
 
 ## Archivos fuente (SVG)
 

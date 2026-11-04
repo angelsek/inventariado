@@ -6,7 +6,7 @@ import { colores } from '@/theme/colores';
 export const coloresMarca = {
   fondo: colores.primario,
   mostaza: '#F2B33D',
-  mostazaOscura: '#D9952A',
+  mostazaOscura: '#A86400',
   menta: '#CFE3DC',
   blanco: '#FFFFFF',
 } as const;

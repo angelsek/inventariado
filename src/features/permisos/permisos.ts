@@ -55,6 +55,8 @@ export const PERMISO_POR_RUTA: Record<string, readonly Permiso[]> = {
   '/usuarios': ['usuarios'],
   '/usuario': ['usuarios'],
   '/eliminar-cuenta': ['cuenta_eliminar'],
+  '/locales': ['multi_local'],
+  '/nuevo-local': ['multi_local'],
 };
 
 /** Primer segmento de una ruta, sin lo que venga después ni el `?`: /venta/7 → /venta. */

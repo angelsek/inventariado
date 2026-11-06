@@ -1,6 +1,6 @@
 # Estado actual del proyecto (para retomar)
 
-Última actualización: 24 de octubre de 2026.
+Última actualización: 6 de noviembre de 2026.
 
 ## Qué es
 
@@ -75,7 +75,7 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
 - Logo nuevo "cajas en S" (rama `feat/logo-cajas`): fuentes SVG y reglas en `assets/marca/LEEME.md`;
   los PNG se regeneran con `npm run iconos:generar`. Ya está dentro de la app y la web.
 - Permisos por persona (rama `feat/permisos-por-persona`): el dueño elige con interruptores qué
-  puede hacer cada persona en Más → Usuarios y permisos (15 permisos aplicados en rutas, menús y
+  puede hacer cada persona en Más → Usuarios y permisos (16 permisos aplicados en rutas, menús y
   botones, reglas contra la escalada de permisos, bloqueo del PIN tras intentos fallidos). Reemplaza
   a los roles. Detalle y límites de seguridad en `docs/PERMISOS.md`.
 - Stockeao en grimoriolabs.com (PR #6 de `grimorio-labs-landing`): primera ficha de la portada,
@@ -121,8 +121,19 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
   (`docs/SUPABASE.md`, sección 4). Sirve desde la próxima versión publicada; los APK ya
   instalados siguen mandando al Site URL.
 
+- Varios locales por cuenta (rama `feat/multi-local-dueno`): una cuenta de dueño cambia de local
+  sin cerrar sesión (Más → Cambiar de local), puede agregar locales (sin tope; cada uno con su
+  suscripción) y el dueño asigna a administradores o trabajadores a más de un local con el permiso
+  `multi_local` (perfil y PIN por local). Requiere internet y sin cambios pendientes. Es control de
+  producto, no aislamiento real entre locales. Detalle y límites en `docs/MULTI_LOCAL.md`.
+
 ## Pendiente (en orden)
 
+0. **Antes de publicar el APK o la web con varios locales:** ejecutar
+   `supabase/migrations/20261106000100_multi_local.sql` en el SQL Editor de Supabase
+   (`docs/SUPABASE.md`); sin la columna `persona_id` la sincronización de perfiles falla. Hasta ahora
+   la migración y su prueba SQL no se han ejecutado en una base real. Detalle en
+   `docs/MULTI_LOCAL.md`.
 1. **Antes de fusionar el PR de permisos por persona y de publicar el APK o la web:** ejecutar
    `supabase/migrations/20261021000100_permisos_por_persona.sql` en el SQL Editor de Supabase
    (`docs/SUPABASE.md`); la web se publica sola desde `main`, y si falta la migración la

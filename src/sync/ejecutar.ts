@@ -8,6 +8,7 @@ import { cerrarSesion } from '@/sesion/cuenta';
 import { useSesion } from '@/sesion/store';
 
 import { contarPendientes, sincronizar } from './motor';
+import { registrarEnCurso, sincronizacionPausada } from './pausa';
 import { remotoSupabase } from './remotoSupabase';
 
 let enCurso: Promise<void> | null = null;
@@ -17,9 +18,13 @@ let enCurso: Promise<void> | null = null;
  * Si ya hay una sincronización en curso, espera esa en vez de iniciar otra.
  */
 export function sincronizarAhora(db: BaseLocal): Promise<void> {
+  // Durante un cambio de local no se sincroniza: la base se está reemplazando.
+  if (sincronizacionPausada()) return Promise.resolve();
   enCurso ??= ejecutar(db).finally(() => {
     enCurso = null;
+    registrarEnCurso(null);
   });
+  registrarEnCurso(enCurso);
   return enCurso;
 }
 

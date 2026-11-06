@@ -311,6 +311,12 @@ export const migraciones: string[] = [
        '["vender","ventas_ver","caja","fiado"]')
     WHERE rol <> 'dueno';
    DELETE FROM sync_cursores WHERE tabla = 'perfiles';`,
+
+  // 10: varios locales. persona_id une los perfiles de una misma persona que trabaja en más de
+  // un local (null: solo trabaja en uno). Se borra el cursor de perfiles para volver a bajarlos
+  // con la columna nueva.
+  `ALTER TABLE perfiles ADD COLUMN persona_id TEXT;
+   DELETE FROM sync_cursores WHERE tabla = 'perfiles';`,
 ];
 
 /** Aplica las migraciones pendientes usando PRAGMA user_version. */

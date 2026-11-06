@@ -42,7 +42,7 @@ describe('permisosDePerfil', () => {
     permisosDePerfil(perfil).push('usuarios');
     expect(perfil.permisos).toEqual(['vender']);
     permisosDePerfil({ rol: 'dueno', permisos: [] }).pop();
-    expect(PERMISOS).toHaveLength(15);
+    expect(PERMISOS).toHaveLength(16);
   });
 });
 

@@ -56,12 +56,19 @@ export function puedeEditarPersona(objetivo: Objetivo, editor: Editor): Edicion 
   if (!editor.esDueno && objetivo.permisos.includes('usuarios')) {
     return nada('Solo el dueño puede cambiar a quien administra usuarios.');
   }
+  // Quien trabaja en varios locales tiene un perfil en cada uno: solo el dueño lo toca.
+  if (!editor.esDueno && objetivo.permisos.includes(PERMISO_MULTI_LOCAL)) {
+    return nada('Solo el dueño puede cambiar a quien trabaja en más de un local.');
+  }
   return { nombre: true, pin: true, activo: true, permisos: true };
 }
 
+/** Permiso que solo da el dueño: no se delega, aunque quien edita tenga "usuarios". */
+export const PERMISO_MULTI_LOCAL: Permiso = 'multi_local';
+
 /** ¿El editor puede activar o desactivar este permiso? */
 export const permisoEditable = (permiso: Permiso, editor: Editor) =>
-  editor.esDueno || editor.permisos.includes(permiso);
+  editor.esDueno || (permiso !== PERMISO_MULTI_LOCAL && editor.permisos.includes(permiso));
 
 /** Permisos con que parte una persona nueva: los iniciales que el editor puede dar. */
 export const permisosInicialesPara = (editor: Editor): Permiso[] =>

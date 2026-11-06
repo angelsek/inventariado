@@ -19,6 +19,7 @@ export const PERMISOS = [
   'usuarios',
   'suscripcion',
   'cuenta_eliminar',
+  'multi_local',
 ] as const;
 
 export type Permiso = (typeof PERMISOS)[number];
@@ -111,6 +112,11 @@ export const GRUPOS_PERMISOS: GrupoPermisos[] = [
         clave: 'cuenta_eliminar',
         texto: 'Eliminar cuenta',
         detalle: 'Borra todos los datos. Igual pide la contraseña de la cuenta.',
+      },
+      {
+        clave: 'multi_local',
+        texto: 'Trabajar en más de un local',
+        detalle: 'Cambiar entre los locales donde el dueño la asignó. Solo lo da el dueño.',
       },
     ],
   },

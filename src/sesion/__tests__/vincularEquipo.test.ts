@@ -20,7 +20,7 @@ let db: BaseLocal;
 beforeEach(async () => {
   db = crearBaseEnMemoria();
   await migrarBaseDeDatos(db);
-  respuestasTabla.negocio_usuarios = { data: { negocio_id: NEGOCIO }, error: null };
+  respuestasTabla.negocio_usuarios = { data: [{ negocio_id: NEGOCIO }], error: null };
   delete respuestasRpc.mis_dispositivos;
   supabase.rpc.mockClear();
 });

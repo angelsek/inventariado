@@ -27,6 +27,7 @@ export default function CuentaYEquipo() {
   const esDueno = perfil?.rol === 'dueno';
   const nombreConEtiqueta = useNombreConEtiqueta();
   const puedeEliminar = usePermiso('cuenta_eliminar');
+  const puedeLocales = usePermiso('multi_local');
   const [negocio, setNegocio] = useState('');
   const [esAdmin, setEsAdmin] = useState(false);
 
@@ -74,6 +75,13 @@ export default function CuentaYEquipo() {
             onPress={() => sincronizarAhora(db)}
           />
           <BotonAccion icono="people-outline" texto="Cambiar de usuario" onPress={salir} />
+          {puedeLocales ? (
+            <BotonAccion
+              icono="swap-horizontal-outline"
+              texto="Cambiar de local"
+              onPress={() => router.push('/locales')}
+            />
+          ) : null}
           {esDueno ? (
             <BotonAccion
               icono="log-out-outline"

@@ -5,7 +5,7 @@
 El dueño (o quien tenga el permiso «Usuarios y permisos») elige con interruptores qué puede hacer
 cada persona del negocio. Se hace en **Más → Usuarios y permisos**: tocar una persona (o **Nueva
 persona**) abre su ficha con el nombre (se puede cambiar), el PIN de 4 dígitos, el interruptor
-**Activo** y los 15 permisos agrupados en Caja, Clientes, Inventario, Reportes y Configuración.
+**Activo** y los 16 permisos agrupados en Caja, Clientes, Inventario, Reportes y Configuración.
 Todos los equipos del local entran con la misma cuenta de Supabase y cada persona se identifica con
 su PIN.
 
@@ -15,7 +15,7 @@ también hace inventario.
 El dueño es fijo: siempre tiene todos los permisos y no se puede desactivar ni eliminar. Junto a su
 nombre solo aparece «Dueño». "Cerrar sesión" sigue siendo solo del dueño.
 
-## Los 15 permisos
+## Los 16 permisos
 
 Una persona nueva parte con 7 permisos (`PERMISOS_INICIALES`); el dueño le suma o le quita los que
 quiera.
@@ -37,6 +37,7 @@ quiera.
 | `usuarios`         | Agregar personas y editar sus datos y permisos      |      No       |
 | `suscripcion`      | Pagar el plan y desvincular equipos                 |      No       |
 | `cuenta_eliminar`  | Eliminar la cuenta (igual pide la contraseña)       |      No       |
+| `multi_local`      | Trabajar en más de un local (ver `MULTI_LOCAL.md`)  |      No       |
 
 Ver productos y stock, Inicio y "Cambiar de usuario" no necesitan permiso. Las claves nunca se
 renombran una vez publicadas: solo se agregan nuevas.
@@ -79,6 +80,8 @@ La regla vive en `src/features/suscripcion/planPagado.ts` (`esPlanPagado`, `useP
 - Quien administra usuarios solo puede dar permisos que él mismo tiene.
 - Quien administra usuarios no edita a alguien que tiene permisos que él no tiene.
 - Solo el dueño cambia a otra persona que también administra usuarios.
+- `multi_local` solo lo da el dueño, aunque quien edita administre usuarios y lo tenga; y quien no
+  es dueño no edita a una persona que lo tiene (tiene un perfil en cada local).
 
 ## Cómo se aplica
 
@@ -116,6 +119,10 @@ sincronizar. En los demás campos gana la última escritura.
   (triggers), porque hay una única cuenta de Supabase por negocio.
 - Quien tenga acceso técnico a un equipo podría saltarse los permisos o deducir un PIN de 4
   dígitos desde los datos locales. El PIN es un control de uso, no de seguridad fuerte.
+- Con varios locales, la sesión de Supabase del equipo es la del dueño y da acceso a todos los
+  locales de la cuenta. «Esta persona solo trabaja en el local X» es una regla de producto, no una
+  frontera de seguridad: quien tenga el equipo o su sesión podría llamar a la API de otro local de la
+  cuenta. Aislarlo de verdad exigiría cuentas propias para los trabajadores (ver `MULTI_LOCAL.md`).
 - Las reglas de edición también se aplican en la app: como la cuenta es compartida, quien
   manipule la base local o use un equipo desbloqueado puede saltárselas.
 
@@ -136,7 +143,7 @@ Supabase sin uso: la app ya no los sincroniza. Su limpieza queda para más adela
 
 ## Archivos clave
 
-- `src/features/permisos/catalogo.ts`: catálogo de los 15 permisos y `PERMISOS_INICIALES`.
+- `src/features/permisos/catalogo.ts`: catálogo de los 16 permisos y `PERMISOS_INICIALES`.
 - `src/features/permisos/permisos.ts`: `PERMISO_POR_RUTA` y la lógica de comprobación.
 - `src/features/permisos/edicionPersonas.ts`: reglas de quién puede editar a quién y qué permisos
   puede dar.

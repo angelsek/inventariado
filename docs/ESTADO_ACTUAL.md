@@ -35,7 +35,8 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
 - Publicar versión (solo desde `main`): Actions → **Construir APK** → Run workflow → marcar
   **Publicar**, o subir un tag `vX.Y.Z` que coincida con `expo.version` (`docs/PILOTO.md`). Queda como
   Release de GitHub (el APK pesa ~70 MB; Supabase gratis acepta 50 MB) y las apps muestran
-  "Hay una versión nueva → Actualizar", que descarga e instala con un toque.
+  "Hay una versión nueva → Actualizar", que descarga e instala con un toque. Al publicar, también
+  se sube sola la misma versión a Google Play (ver «Subida automática a Google Play»).
 - El cliente toca "Escribir por WhatsApp", se le dan los datos para transferir en el chat (no van
   en la app) y el pago se registra en Más →
   Administración (1 mes, 3, 6 o 1 año).
@@ -61,7 +62,13 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
   porque la API de Google no puede crearla. Detalle en `docs/PLAY_STORE.md` (paso 6). **Confirmado
   el 24 de octubre de 2026:** la compilación 40126400298 terminó en verde y publicó sola la versión
   1.0.0 (1017) en la pista internal. El error del run 40123992300 era la limitación de la primera
-  versión, no un problema de permisos.
+  versión, no un problema de permisos. Además, publicar el APK lanza esta subida sola (rama
+  `feat/publicar-tambien-en-play`): mismas novedades y mismo commit, a la pista de la variable
+  `PLAY_PISTA` (por defecto internal; production nunca se sube sola). `PLAY_AUTO=no` la desactiva
+  y el casillero `subir_a_play` la salta en una publicación manual. Si Play falla, el APK ya quedó
+  publicado; el resultado se ve en la ejecución de «Construir para Google Play» y se reintenta
+  lanzándola a mano. Aún no se ha probado: no se puede ensayar en un PR, se prueba publicando una
+  vez tras fusionar. Detalle en `docs/PLAY_STORE.md`.
 - Cobro con Google Play Billing programado (en pausa) y **perfil de pagos de Grimorio Labs SpA**
   creado en Play Console (le falta la cuenta bancaria).
 - APK publicado (versión 35) con actualización dentro de la app y página de descarga.

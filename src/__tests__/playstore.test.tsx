@@ -120,7 +120,7 @@ it('el dueño elimina el negocio confirmando con la contraseña', async () => {
     email: 'ana@ejemplo.cl',
     password: 'secreta',
   });
-  expect(await screen.findByText('Tu negocio y todos sus datos fueron eliminados.')).toBeTruthy();
+  expect(await screen.findByText(/Tu negocio y todos sus datos fueron eliminados/)).toBeTruthy();
   expect(await leerAjuste(mockDb, AJUSTE_NEGOCIO)).toBeNull();
 });
 

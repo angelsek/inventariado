@@ -11,7 +11,7 @@ import {
 } from '@/db/ajustes';
 import { registrarDispositivo } from '@/db/dispositivos';
 import { borrarDatosLocales, obtenerNegocio } from '@/db/negocio';
-import { asegurarPersonaId, listarPerfiles, type Perfil } from '@/db/perfiles';
+import { listarPerfiles, type Perfil } from '@/db/perfiles';
 import { obtenerEstadoSuscripcion } from '@/db/suscripcion';
 import type { BaseLocal } from '@/db/tipos';
 import type { Permiso } from '@/features/permisos/catalogo';
@@ -19,8 +19,9 @@ import { PERMISO_MULTI_LOCAL } from '@/features/permisos/edicionPersonas';
 import { permisosDePerfil } from '@/features/permisos/permisos';
 import { URL_CONFIRMACION_CORREO } from '@/lib/enlaces';
 import { hashPin } from '@/lib/pin';
-import { supabase } from '@/lib/supabase';
+import { mensajeDeError, supabase } from '@/lib/supabase';
 import { contarPendientes, sincronizar } from '@/sync/motor';
+import { pausarSincronizacion, reanudarSincronizacion } from '@/sync/pausa';
 import { remotoSupabase } from '@/sync/remotoSupabase';
 
 import { idTelefonoEstable } from './idTelefono';
@@ -214,9 +215,15 @@ const puedeCambiarDeLocal = (perfil: Perfil) =>
 async function exigirTodoSubido(db: BaseLocal, negocioId: string): Promise<void> {
   try {
     await sincronizar(db, remotoSupabase, negocioId);
-  } catch {
-    throw new Error('Necesitas internet para cambiar de local.');
+  } catch (e) {
+    throw new Error(
+      `No se pudo sincronizar antes de cambiar de local (necesitas internet). ${mensajeDeError(e)}`,
+    );
   }
+  await exigirSinPendientes(db);
+}
+
+async function exigirSinPendientes(db: BaseLocal): Promise<void> {
   if ((await contarPendientes(db)) > 0) {
     throw new Error(
       'Hay cambios sin subir. Espera a que termine de sincronizar y vuelve a intentarlo.',
@@ -246,8 +253,31 @@ export async function cambiarDeLocal(db: BaseLocal, destinoId: string): Promise<
     perfilDestinoId = destino.perfil_id ?? null;
   }
 
-  await exigirTodoSubido(db, origenId);
+  // Mientras se reemplaza la base no puede correr la sincronización automática: seguiría bajando
+  // datos del local anterior dentro de la base ya vacía.
+  await pausarSincronizacion();
+  try {
+    await exigirTodoSubido(db, origenId);
+    await moverEquipo(db, { origenId, destinoId, perfil, volviendo });
+  } finally {
+    reanudarSincronizacion();
+  }
 
+  // Al llegar al local, se marca quién debería ser (el dueño o la persona asignada).
+  let sugerido = perfilDestinoId;
+  if (!sugerido && perfil.rol === 'dueno') {
+    sugerido =
+      (await listarPerfiles(db, destinoId, { soloActivos: true })).find((p) => p.rol === 'dueno')
+        ?.id ?? null;
+  }
+  useSesion.getState().fijarPerfilSugerido(sugerido);
+}
+
+async function moverEquipo(
+  db: BaseLocal,
+  datos: { origenId: string; destinoId: string; perfil: Perfil; volviendo: boolean },
+): Promise<void> {
+  const { origenId, destinoId, perfil, volviendo } = datos;
   const idActual = await leerAjuste(db, AJUSTE_DISPOSITIVO);
   if (idActual) await guardarAjuste(db, claveEquipoDeLocal(origenId), idActual);
   const nombreOrigen = (await obtenerNegocio(db, origenId))?.nombre ?? '';
@@ -270,11 +300,29 @@ export async function cambiarDeLocal(db: BaseLocal, destinoId: string): Promise<
   }
   if (error) throw new Error(error.message);
 
+  // Lo último antes de borrar: pudo entrar una venta mientras se registraba el equipo.
+  try {
+    await exigirSinPendientes(db);
+  } catch (e) {
+    await liberarEquipo(equipoDestino);
+    throw e;
+  }
+
   try {
     await vincularTelefono(db, destinoId, undefined, equipoDestino);
   } catch (e) {
-    // Los datos ya se borraron: se intenta volver al local de origen para no dejar el equipo vacío.
-    await vincularTelefono(db, origenId, undefined, idActual ?? undefined).catch(() => {});
+    // Los datos ya se borraron: se libera el cupo del destino y se intenta volver al local de
+    // origen. Si tampoco se puede, el equipo queda sin datos y se pide ingresar de nuevo.
+    await liberarEquipo(equipoDestino);
+    const volvio = await vincularTelefono(db, origenId, undefined, idActual ?? undefined).then(
+      () => true,
+      () => false,
+    );
+    if (!volvio) {
+      const sesion = useSesion.getState();
+      sesion.desvincular();
+      sesion.fijarAvisoSalida('No se pudo completar el cambio de local. Ingresa de nuevo.');
+    }
     throw e;
   }
 
@@ -285,18 +333,19 @@ export async function cambiarDeLocal(db: BaseLocal, destinoId: string): Promise<
   );
   // Libera el cupo del local que se dejó. Si falla, el equipo queda ocupándolo hasta que el
   // dueño lo desvincule en Suscripción.
-  if (idActual && idActual !== equipoDestino) {
-    await supabase.rpc('desvincular_dispositivo', { p_id: idActual }).then(undefined, () => {});
-  }
+  if (idActual && idActual !== equipoDestino) await liberarEquipo(idActual);
+}
 
-  // Al llegar al local, se marca quién debería ser (el dueño o la persona asignada).
-  let sugerido = perfilDestinoId;
-  if (!sugerido && perfil.rol === 'dueno') {
-    sugerido =
-      (await listarPerfiles(db, destinoId, { soloActivos: true })).find((p) => p.rol === 'dueno')
-        ?.id ?? null;
+/** Desvincula un equipo para liberar su cupo; si falla no se interrumpe nada. */
+const liberarEquipo = (id: string) =>
+  supabase.rpc('desvincular_dispositivo', { p_id: id }).then(undefined, () => {});
+
+/** El local se creó en el servidor, pero no se pudo pasar a él (no hay que crearlo otra vez). */
+export class LocalCreadoSinCambio extends Error {
+  constructor(motivo: string) {
+    super(`El local se creó, pero no se pudo cambiar a él: ${motivo} Ábrelo desde «Mis locales».`);
+    this.name = 'LocalCreadoSinCambio';
   }
-  useSesion.getState().fijarPerfilSugerido(sugerido);
 }
 
 /**
@@ -310,13 +359,17 @@ export async function agregarLocal(db: BaseLocal, datos: DatosNegocio): Promise<
   }
   await exigirTodoSubido(db, negocioId);
   const { negocioId: nuevoId } = await crearNegocioEnServidor(db, datos);
-  await cambiarDeLocal(db, nuevoId);
+  try {
+    await cambiarDeLocal(db, nuevoId);
+  } catch (e) {
+    throw new LocalCreadoSinCambio(mensajeDeError(e));
+  }
 }
 
 /**
- * Da acceso a una persona a otro local: crea su perfil allá, unido al de aquí por persona_id, con
- * el PIN que el dueño escribe. Solo el dueño. Requiere internet. El perfil nuevo parte con los
- * permisos indicados más multi-local; después se editan en ese local.
+ * Da acceso a una persona a otro local: el servidor crea su perfil allá, unido al de aquí por
+ * persona_id, con el PIN que el dueño escribe. Solo el dueño. Requiere internet. El perfil nuevo
+ * parte con los permisos indicados más multi-local; después se editan en ese local.
  */
 export async function asignarPersonaALocal(
   db: BaseLocal,
@@ -328,17 +381,23 @@ export async function asignarPersonaALocal(
     permisos: readonly Permiso[];
   },
 ): Promise<void> {
-  const { perfil } = useSesion.getState();
-  if (perfil?.rol !== 'dueno')
+  const { perfil, negocioId } = useSesion.getState();
+  if (perfil?.rol !== 'dueno' || !negocioId) {
     throw new Error('Solo el dueño puede asignar personas a otros locales.');
-  const personaId = await asegurarPersonaId(db, datos.perfilId);
+  }
+  // La persona tiene que estar en el servidor: él arma la unión (persona_id) a partir de su perfil.
+  try {
+    await sincronizar(db, remotoSupabase, negocioId);
+  } catch (e) {
+    throw new Error(`Necesitas internet para asignar a otro local. ${mensajeDeError(e)}`);
+  }
   const nuevoId = randomUUID();
   const { error } = await supabase.rpc('asignar_persona_a_local', {
     p_perfil_id: nuevoId,
     p_negocio_destino: datos.negocioDestino,
     p_nombre: datos.nombre,
     p_pin_hash: await hashPin(nuevoId, datos.pin),
-    p_persona_id: personaId,
+    p_perfil_origen: datos.perfilId,
     p_permisos: [...datos.permisos],
   });
   if (error) {
@@ -347,8 +406,8 @@ export async function asignarPersonaALocal(
     }
     throw new Error(error.message);
   }
-  // Sube el persona_id del perfil de aquí; si no hay internet, se sube en la próxima sincronización.
-  await sincronizar(db, remotoSupabase, useSesion.getState().negocioId ?? '').catch(() => {});
+  // Baja el persona_id que el servidor le puso al perfil de aquí.
+  await sincronizar(db, remotoSupabase, negocioId).catch(() => {});
 }
 
 /** Cierra la sesión y borra los datos del negocio guardados en este teléfono. */
@@ -381,7 +440,11 @@ export async function eliminarNegocio(db: BaseLocal, contrasena: string): Promis
   if (error) throw new Error(error.message);
 
   await cerrarSesion(db);
-  useSesion.getState().fijarAvisoSalida('Tu negocio y todos sus datos fueron eliminados.');
+  useSesion
+    .getState()
+    .fijarAvisoSalida(
+      'Tu negocio y todos sus datos fueron eliminados. Si tienes otros locales, ingresa de nuevo para verlos.',
+    );
 }
 
 /** PC vinculados al negocio (para ofrecer reemplazarlos). Requiere sesión e internet. */

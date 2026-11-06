@@ -46,10 +46,26 @@ begin
 end;
 $$;
 
--- Con el primer local pagado, el tercero recibe 7 días.
+-- Con un local pagado pero otro sin pagar, el tercero tampoco recibe prueba (no se encadenan).
 update inventariado.suscripciones
    set pagado_hasta = now() + interval '30 days'
  where negocio_id = current_setting('t.local1')::uuid;
+select pg_temp.como('00000000-0000-0000-0000-0000000000d1');
+select set_config('t.local_sin', inventariado.crear_negocio(
+  'Local Sin', null, 'Calle 0', gen_random_uuid(), 'Rosa', 'hash-rosa')::text, false);
+reset role;
+do $$
+begin
+  if (select prueba_hasta from inventariado.suscripciones
+       where negocio_id = current_setting('t.local_sin')::uuid) is not null then
+    raise exception 'FALLA: no debería haber prueba mientras otro local está sin pagar';
+  end if;
+end;
+$$;
+
+-- Con todos los locales pagados, el siguiente recibe 7 días.
+update inventariado.suscripciones set pagado_hasta = now() + interval '30 days'
+ where negocio_id in (current_setting('t.local2')::uuid, current_setting('t.local_sin')::uuid);
 
 select pg_temp.como('00000000-0000-0000-0000-0000000000d1');
 select set_config('t.local3', inventariado.crear_negocio(
@@ -80,8 +96,8 @@ reset role;
 
 do $$
 begin
-  if jsonb_array_length(current_setting('t.lista')::jsonb) <> 3 then
-    raise exception 'FALLA: mis_negocios debería listar 3 locales: %', current_setting('t.lista');
+  if jsonb_array_length(current_setting('t.lista')::jsonb) <> 4 then
+    raise exception 'FALLA: mis_negocios debería listar 4 locales: %', current_setting('t.lista');
   end if;
   if jsonb_array_length(current_setting('t.lista_otro')::jsonb) <> 0 then
     raise exception 'FALLA: otra cuenta no debería ver locales ajenos';
@@ -93,25 +109,35 @@ $$;
 -- Persona en más de un local
 -- ---------------------------------------------------------------------------
 
-select set_config('t.persona', gen_random_uuid()::text, false);
 select set_config('t.perfil_a', gen_random_uuid()::text, false);
 select set_config('t.perfil_b', gen_random_uuid()::text, false);
 
--- Su perfil en el local 1 (lo crea la app y lo sube la sincronización).
-insert into inventariado.perfiles (id, negocio_id, nombre, rol, pin_hash, permisos, persona_id)
+-- Su perfil en el local 1 (lo crea la app y lo sube la sincronización), todavía sin persona_id.
+insert into inventariado.perfiles (id, negocio_id, nombre, rol, pin_hash, permisos)
 values (current_setting('t.perfil_a')::uuid, current_setting('t.local1')::uuid, 'Juan',
-        'cajero', 'hash-a', '["vender", "multi_local"]'::jsonb, current_setting('t.persona')::uuid);
+        'cajero', 'hash-a', '["vender", "multi_local"]'::jsonb);
 
 select pg_temp.como('00000000-0000-0000-0000-0000000000d1');
 select inventariado.asignar_persona_a_local(
   current_setting('t.perfil_b')::uuid, current_setting('t.local2')::uuid, 'Juan', 'hash-b',
-  current_setting('t.persona')::uuid, '["vender"]'::jsonb);
+  current_setting('t.perfil_a')::uuid, '["vender"]'::jsonb);
+reset role;
+
+-- El servidor armó la unión: el perfil de origen y el nuevo comparten persona_id.
+select set_config('t.persona',
+  (select persona_id::text from inventariado.perfiles
+    where id = current_setting('t.perfil_a')::uuid), false);
+
+select pg_temp.como('00000000-0000-0000-0000-0000000000d1');
 select set_config('t.lista_persona',
   inventariado.mis_locales_como_persona(current_setting('t.persona')::uuid)::text, false);
 reset role;
 
 do $$
 begin
+  if current_setting('t.persona') = '' then
+    raise exception 'FALLA: el perfil de origen debería quedar con persona_id';
+  end if;
   -- El permiso multi_local se agrega solo en el destino.
   if not exists (select 1 from inventariado.perfiles
                   where id = current_setting('t.perfil_b')::uuid and permisos ? 'multi_local'
@@ -131,7 +157,7 @@ begin
   begin
     perform inventariado.asignar_persona_a_local(
       gen_random_uuid(), current_setting('t.local1')::uuid, 'Intruso', 'hash',
-      current_setting('t.persona')::uuid, '[]'::jsonb);
+      current_setting('t.perfil_a')::uuid, '[]'::jsonb);
     raise exception 'FALLA: se pudo asignar a un local ajeno';
   exception when insufficient_privilege then
     null;
@@ -146,7 +172,7 @@ begin
   begin
     perform inventariado.asignar_persona_a_local(
       current_setting('t.perfil_a')::uuid, current_setting('t.local3')::uuid, 'Juan', 'hash',
-      current_setting('t.persona')::uuid, '[]'::jsonb);
+      current_setting('t.perfil_a')::uuid, '[]'::jsonb);
     raise exception 'FALLA: se reutilizó el id de un perfil de otro local';
   exception when unique_violation then
     null;
@@ -154,16 +180,61 @@ begin
   begin
     perform inventariado.asignar_persona_a_local(
       gen_random_uuid(), current_setting('t.local2')::uuid, 'Juan', 'hash',
-      current_setting('t.persona')::uuid, '[]'::jsonb);
+      current_setting('t.perfil_a')::uuid, '[]'::jsonb);
     raise exception 'FALLA: se asignó dos veces la persona al mismo local';
   exception when unique_violation then
+    null;
+  end;
+  -- Tampoco al local donde ya está.
+  begin
+    perform inventariado.asignar_persona_a_local(
+      gen_random_uuid(), current_setting('t.local1')::uuid, 'Juan', 'hash',
+      current_setting('t.perfil_a')::uuid, '[]'::jsonb);
+    raise exception 'FALLA: se asignó la persona a su propio local';
+  exception when unique_violation then
+    null;
+  end;
+  -- Una persona que no existe, o el perfil del dueño, no sirven de origen.
+  begin
+    perform inventariado.asignar_persona_a_local(
+      gen_random_uuid(), current_setting('t.local3')::uuid, 'Fantasma', 'hash',
+      gen_random_uuid(), '[]'::jsonb);
+    raise exception 'FALLA: se asignó una persona inexistente';
+  exception when sqlstate 'P0002' then
+    null;
+  end;
+  begin
+    perform inventariado.asignar_persona_a_local(
+      gen_random_uuid(), current_setting('t.local3')::uuid, 'Dueño', 'hash',
+      (select id from inventariado.perfiles
+        where negocio_id = current_setting('t.local1')::uuid and rol = 'dueno'),
+      '[]'::jsonb);
+    raise exception 'FALLA: se asignó al dueño a otro local';
+  exception when sqlstate 'P0002' then
+    null;
+  end;
+  -- Datos inválidos.
+  begin
+    perform inventariado.asignar_persona_a_local(
+      gen_random_uuid(), current_setting('t.local3')::uuid, '   ', 'hash',
+      current_setting('t.perfil_a')::uuid, '[]'::jsonb);
+    raise exception 'FALLA: se aceptó un nombre vacío';
+  exception when sqlstate '22023' then
     null;
   end;
 end;
 $$;
 
--- Un perfil desactivado o sin multi_local deja de aparecer; otra persona ve lo suyo.
+-- Sin multi_local, un perfil desactivado o eliminado deja de aparecer; una persona desconocida no ve nada.
 reset role;
+update inventariado.perfiles set permisos = '["vender"]'::jsonb
+ where id = current_setting('t.perfil_a')::uuid;
+select pg_temp.como('00000000-0000-0000-0000-0000000000d1');
+select set_config('t.lista_sin_permiso',
+  inventariado.mis_locales_como_persona(current_setting('t.persona')::uuid)::text, false);
+reset role;
+update inventariado.perfiles set permisos = '["vender", "multi_local"]'::jsonb
+ where id = current_setting('t.perfil_a')::uuid;
 update inventariado.perfiles set activo = false where id = current_setting('t.perfil_b')::uuid;
 select pg_temp.como('00000000-0000-0000-0000-0000000000d1');
 select set_config('t.lista_persona',
@@ -174,6 +245,10 @@ reset role;
 
 do $$
 begin
+  if jsonb_array_length(current_setting('t.lista_sin_permiso')::jsonb) <> 1 then
+    raise exception 'FALLA: un perfil sin multi_local no debería listarse: %',
+      current_setting('t.lista_sin_permiso');
+  end if;
   if jsonb_array_length(current_setting('t.lista_persona')::jsonb) <> 1 then
     raise exception 'FALLA: un perfil desactivado no debería listarse: %',
       current_setting('t.lista_persona');
@@ -188,6 +263,11 @@ $$;
 update inventariado.perfiles set persona_id = null where id = current_setting('t.perfil_a')::uuid;
 update inventariado.perfiles set persona_id = gen_random_uuid()
  where id = current_setting('t.perfil_a')::uuid;
+-- Un upsert de un equipo viejo (sin la columna) tampoco la borra.
+insert into inventariado.perfiles (id, negocio_id, nombre, rol, pin_hash)
+values (current_setting('t.perfil_a')::uuid, current_setting('t.local1')::uuid, 'Juan P.',
+        'cajero', 'hash-a')
+on conflict (id) do update set nombre = excluded.nombre;
 
 do $$
 begin

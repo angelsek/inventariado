@@ -95,21 +95,6 @@ export async function crearPerfil(
 }
 
 /**
- * La llave que une los perfiles de esta persona en varios locales. Se crea la primera vez que
- * se la asigna a otro local; después siempre es la misma.
- */
-export async function asegurarPersonaId(db: BaseLocal, perfilId: string): Promise<string> {
-  const fila = await db.getFirstAsync<{ persona_id: string | null }>(
-    'SELECT persona_id FROM perfiles WHERE id = ?',
-    perfilId,
-  );
-  if (fila?.persona_id) return fila.persona_id;
-  const personaId = randomUUID();
-  await actualizar(db, perfilId, 'persona_id = ?', personaId);
-  return personaId;
-}
-
-/**
  * Cambia los permisos de una persona. permisos_en no se toca: es la versión que se bajó
  * del servidor, y el servidor rechaza la lista si mientras tanto otro equipo la cambió.
  * El dueño siempre tiene todos: no se toca.

@@ -35,6 +35,7 @@ export const TABLAS_SYNC: readonly TablaSync[] = [
       'rol',
       'permisos',
       'permisos_en',
+      'persona_id',
       'pin_hash',
       'activo',
       ...control,

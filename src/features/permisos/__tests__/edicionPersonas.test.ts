@@ -97,6 +97,36 @@ describe('puedeEditarPersona entre quienes administran usuarios', () => {
   });
 });
 
+describe('permiso multi_local (trabajar en más de un local)', () => {
+  it('solo el dueño lo da, aunque quien edita administre usuarios y lo tenga', () => {
+    const gerenteConTodo = gerente([...PERMISOS]);
+    expect(permisoEditable('multi_local', dueno)).toBe(true);
+    expect(permisoEditable('multi_local', gerenteConTodo)).toBe(false);
+    expect(validarPermisos(['vender', 'multi_local'], gerenteConTodo)).toBe(
+      'Solo puedes dar permisos que tú tienes.',
+    );
+    expect(validarPermisos(['vender', 'multi_local'], dueno)).toBeNull();
+  });
+
+  it('quien no es dueño no edita a una persona que trabaja en varios locales', () => {
+    const edicion = puedeEditarPersona(
+      persona('beto', ['vender', 'multi_local']),
+      gerente(['vender', 'multi_local', 'usuarios']),
+    );
+    expect(edicion).toMatchObject({ nombre: false, pin: false, activo: false, permisos: false });
+    expect(edicion.motivo).toBe('Solo el dueño puede cambiar a quien trabaja en más de un local.');
+  });
+
+  it('el dueño sí la edita', () => {
+    expect(puedeEditarPersona(persona('beto', ['multi_local']), dueno).permisos).toBe(true);
+  });
+
+  it('las personas nuevas no parten con él', () => {
+    expect(PERMISOS_INICIALES).not.toContain('multi_local');
+    expect(permisosInicialesPara(dueno)).not.toContain('multi_local');
+  });
+});
+
 describe('permisoEditable', () => {
   it('el dueño puede activar cualquiera', () => {
     for (const p of PERMISOS) expect(permisoEditable(p, dueno)).toBe(true);

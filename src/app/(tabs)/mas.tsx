@@ -30,6 +30,7 @@ export default function MasScreen() {
   const puedeNegocio = usePermiso('negocio');
   const puedeUsuarios = usePermiso('usuarios');
   const puedeEliminar = usePermiso('cuenta_eliminar');
+  const puedeLocales = usePermiso('multi_local');
   const puedeExportar = usePermiso('exportar');
   // Exportar a Excel es del plan pagado: la opción se ve con candado y explica adentro.
   const pagado = usePlanPagado();
@@ -92,6 +93,13 @@ export default function MasScreen() {
       <Text style={estilos.seccion}>Cuenta</Text>
       <View style={estilos.tarjeta}>
         <Opcion icono="people-outline" texto="Cambiar de usuario" onPress={salir} />
+        {puedeLocales ? (
+          <Opcion
+            icono="swap-horizontal-outline"
+            texto="Cambiar de local"
+            onPress={() => router.push('/locales')}
+          />
+        ) : null}
         {puedeNegocio ? (
           <Opcion
             icono="storefront-outline"

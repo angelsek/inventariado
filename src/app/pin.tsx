@@ -28,10 +28,10 @@ import { colores } from '@/theme/colores';
 /** Elegir quién usa la app e ingresar su PIN. */
 export default function PinScreen() {
   const db = useBase();
-  const { negocioId, entrar, versionDatos } = useSesion();
+  const { negocioId, entrar, versionDatos, perfilSugeridoId, fijarPerfilSugerido } = useSesion();
   const [negocio, setNegocio] = useState('');
   const [perfiles, setPerfiles] = useState<Perfil[]>([]);
-  const [elegido, setElegido] = useState<Perfil | null>(null);
+  const [elegidoManual, setElegido] = useState<Perfil | null>(null);
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [recuperando, setRecuperando] = useState(false);
@@ -41,6 +41,9 @@ export default function PinScreen() {
     obtenerNegocio(db, negocioId).then((n) => setNegocio(n?.nombre ?? ''));
     listarPerfiles(db, negocioId, { soloActivos: true }).then(setPerfiles);
   }, [db, negocioId, versionDatos]);
+
+  // Tras cambiar de local, la persona llega con su perfil elegido: solo falta el PIN de ese local.
+  const elegido = elegidoManual ?? perfiles.find((p) => p.id === perfilSugeridoId) ?? null;
 
   // Los intentos se comprueban de a uno: si dos se cruzaran, la lectura de lo guardado
   // del segundo pisaría el fallo recién anotado por el primero y contaría de menos.
@@ -142,6 +145,7 @@ export default function PinScreen() {
             accessibilityRole="button"
             onPress={() => {
               setElegido(null);
+              fijarPerfilSugerido(null);
               setPin('');
               setError(null);
             }}

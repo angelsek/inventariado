@@ -24,6 +24,8 @@ type Sesion = {
   suscripcion: EstadoSuscripcion | null;
   /** Mensaje para mostrar en la bienvenida tras un cierre de sesión forzado. */
   avisoSalida: string | null;
+  /** Al cambiar de local: quién debería ser (la pantalla de PIN lo deja elegido). */
+  perfilSugeridoId: string | null;
 
   cargar(negocioId: string | null): void;
   vincular(negocioId: string): void;
@@ -36,6 +38,7 @@ type Sesion = {
   datosCambiaron(): void;
   fijarSuscripcion(suscripcion: EstadoSuscripcion | null): void;
   fijarAvisoSalida(aviso: string | null): void;
+  fijarPerfilSugerido(perfilId: string | null): void;
 };
 
 const syncInicial: Sesion['sync'] = {
@@ -53,15 +56,17 @@ export const useSesion = create<Sesion>((set) => ({
   versionDatos: 0,
   suscripcion: null,
   avisoSalida: null,
+  perfilSugeridoId: null,
 
   cargar: (negocioId) => set({ cargada: true, negocioId }),
   vincular: (negocioId) => set({ negocioId, perfil: null }),
   desvincular: () => set({ negocioId: null, perfil: null, sync: syncInicial, suscripcion: null }),
-  entrar: (perfil) => set({ perfil }),
+  entrar: (perfil) => set({ perfil, perfilSugeridoId: null }),
   refrescarPerfil: (perfil) => set({ perfil }),
   salir: () => set({ perfil: null }),
   actualizarSync: (cambios) => set((s) => ({ sync: { ...s.sync, ...cambios } })),
   datosCambiaron: () => set((s) => ({ versionDatos: s.versionDatos + 1 })),
   fijarSuscripcion: (suscripcion) => set({ suscripcion }),
   fijarAvisoSalida: (avisoSalida) => set({ avisoSalida }),
+  fijarPerfilSugerido: (perfilSugeridoId) => set({ perfilSugeridoId }),
 }));

@@ -18,6 +18,8 @@ export type Perfil = {
   /** Permisos de la persona. El dueño no usa la lista: tiene todos. */
   permisos: Permiso[];
   activo: boolean;
+  /** Une los perfiles de una misma persona que trabaja en varios locales (null: en uno solo). */
+  persona_id: string | null;
 };
 
 type FilaPerfil = Omit<Perfil, 'activo' | 'permisos'> & { activo: number; permisos: string };
@@ -28,7 +30,7 @@ const aPerfil = (fila: FilaPerfil): Perfil => ({
   activo: fila.activo === 1,
 });
 
-const COLUMNAS = 'id, negocio_id, nombre, rol, permisos, activo';
+const COLUMNAS = 'id, negocio_id, nombre, rol, permisos, activo, persona_id';
 
 export async function listarPerfiles(
   db: BaseLocal,
@@ -81,7 +83,30 @@ export async function crearPerfil(
     ahora,
     ahora,
   );
-  return { id, negocio_id: datos.negocioId, nombre, rol: datos.rol, permisos, activo: true };
+  return {
+    id,
+    negocio_id: datos.negocioId,
+    nombre,
+    rol: datos.rol,
+    permisos,
+    activo: true,
+    persona_id: null,
+  };
+}
+
+/**
+ * La llave que une los perfiles de esta persona en varios locales. Se crea la primera vez que
+ * se la asigna a otro local; después siempre es la misma.
+ */
+export async function asegurarPersonaId(db: BaseLocal, perfilId: string): Promise<string> {
+  const fila = await db.getFirstAsync<{ persona_id: string | null }>(
+    'SELECT persona_id FROM perfiles WHERE id = ?',
+    perfilId,
+  );
+  if (fila?.persona_id) return fila.persona_id;
+  const personaId = randomUUID();
+  await actualizar(db, perfilId, 'persona_id = ?', personaId);
+  return personaId;
 }
 
 /**

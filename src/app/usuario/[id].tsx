@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { Boton } from '@/components/Boton';
 import { Campo } from '@/components/Campo';
 import { Formulario } from '@/components/Formulario';
+import { AsignarALocales } from '@/features/cuenta/AsignarALocales';
 import {
   cambiarActivo,
   cambiarNombre,
@@ -276,6 +277,15 @@ export default function UsuarioScreen() {
             </Text>
           ) : null}
         </>
+      ) : null}
+
+      {editor.esDueno && persona && !esDueno && persona.permisos.includes('multi_local') ? (
+        <AsignarALocales persona={persona} />
+      ) : null}
+      {editor.esDueno && persona && !esDueno && !persona.permisos.includes('multi_local') ? (
+        <Text style={estilos.nota}>
+          Para que trabaje en más de un local, activa «Trabajar en más de un local» y guarda.
+        </Text>
       ) : null}
 
       {puedeGuardar ? (

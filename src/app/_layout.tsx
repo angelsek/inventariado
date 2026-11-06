@@ -138,6 +138,10 @@ function Navegacion() {
           Pantallas con permiso (src/features/permisos/permisos.ts): no se abren aunque
           se escriba la dirección en el PC.
         */}
+          <Stack.Protected guard={puede('/locales')}>
+            <Stack.Screen name="locales" options={conEncabezado('Mis locales')} />
+            <Stack.Screen name="nuevo-local" options={conEncabezado('Agregar local')} />
+          </Stack.Protected>
           <Stack.Protected guard={puede('/usuarios')}>
             <Stack.Screen name="usuarios" options={conEncabezado('Usuarios y permisos')} />
             <Stack.Screen name="usuario/[id]" options={conEncabezado('Persona')} />

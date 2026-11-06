@@ -4,6 +4,10 @@
 \set ON_ERROR_STOP on
 \o /dev/null
 
+-- Las pruebas anteriores vuelven a aplicar sus migraciones (p. ej. la 98 deja la crear_negocio de
+-- esa migración): se reaplica la de varios locales para probar la versión vigente.
+\ir ../migrations/20261106000100_multi_local.sql
+
 create function pg_temp.como(p_usuario uuid) returns void language plpgsql as $$
 begin
   perform set_config('request.jwt.claim.sub', coalesce(p_usuario::text, ''), false);

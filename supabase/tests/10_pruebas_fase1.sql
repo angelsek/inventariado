@@ -30,17 +30,8 @@ reset role;
 select set_config('pruebas.negocio_ana', :'negocio_ana', false);
 select set_config('pruebas.negocio_beto', :'negocio_beto', false);
 
--- Una cuenta no puede crear un segundo negocio.
-select pg_temp.como('00000000-0000-0000-0000-00000000000a');
-do $$
-begin
-  perform inventariado.crear_negocio('Otro', null, null, gen_random_uuid(), 'Ana', 'x');
-  raise exception 'FALLA: se permitió un segundo negocio';
-exception when unique_violation then
-  null;
-end;
-$$;
-reset role;
+-- Una cuenta puede tener varios locales desde la migración 20261106000100_multi_local.sql;
+-- esa prueba vive en 99_pruebas_multi_local.sql (aquí Ana se queda con un solo negocio).
 
 -- Ana solo ve su negocio y sus perfiles.
 select pg_temp.como('00000000-0000-0000-0000-00000000000a');

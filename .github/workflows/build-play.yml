@@ -7,6 +7,10 @@ name: Construir para Google Play
 # Si existe el secreto PLAY_SERVICE_ACCOUNT_JSON, además lo sube a la pista
 # elegida de Play Console (ver docs/PLAY_STORE.md). La primera subida de la app
 # siempre debe hacerse a mano desde Play Console: para esa vez, desmarca "subir".
+#
+# Lo lanza a mano (Actions → Construir para Google Play → Run workflow) o solo el workflow
+# «Construir APK» al terminar de publicar una versión (job `play`; se desactiva con la variable
+# del repositorio PLAY_AUTO=no).
 on:
   workflow_dispatch:
     inputs:
@@ -23,9 +27,12 @@ on:
         description: 'Subir a Play Console (desmárcalo para la primera versión de la app, que Play exige subir a mano)'
         type: boolean
         default: true
+      commit:
+        description: 'Uso interno de «Construir APK»: SHA exacto de main a compilar (vacío = la punta de main)'
+        type: string
+        default: ''
 
-# Solo a mano (Actions → Construir para Google Play → Run workflow), mientras el cobro con Play
-# esté en pausa. Tarda ~20 min.
+# Tarda ~20 min.
 permissions:
   contents: read
 
@@ -40,8 +47,34 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      # Si piden un commit concreto, debe ser de main (la misma regla que el APK) y además la punta
+      # de main o el commit de una Release ya publicada: así este workflow nunca compila ni firma
+      # un commit sin revisar ni uno antiguo cualquiera.
+      - name: Comprobar commit pedido
+        if: inputs.commit != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          if ! [[ "$COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::El commit pedido no es un SHA completo (40 caracteres hexadecimales)."
+            exit 1
+          fi
+          ESTADO=$(gh api "repos/$GITHUB_REPOSITORY/compare/heads/main...$COMMIT" --jq .status)
+          case "$ESTADO" in
+            behind | identical) ;;
+            *) echo "::error::El commit $COMMIT no está en main ($ESTADO): no se compila."; exit 1 ;;
+          esac
+          PUNTA=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)
+          if [ "$COMMIT" != "$PUNTA" ] &&
+            ! gh api "repos/$GITHUB_REPOSITORY/releases?per_page=30" --jq '.[].target_commitish' | grep -Fxq "$COMMIT"; then
+            echo "::error::El commit $COMMIT no es la punta de main ni el de una versión publicada: no se compila."
+            exit 1
+          fi
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ inputs.commit }}
           persist-credentials: false
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -116,8 +149,16 @@ jobs:
           ARCHIVO="stockeao-v${VERSION}-${VERSION_CODE}.aab"
           mv android/app/build/outputs/bundle/release/app-release.aab "$ARCHIVO"
           echo "archivo=$ARCHIVO" >> "$GITHUB_OUTPUT"
+          # Play acepta hasta 500 caracteres de novedades por idioma: se recorta (por caracteres,
+          # no por bytes) y, si queda vacío, no se envía el directorio de novedades.
           mkdir -p notas
-          printf '%s' "$NOTAS" > notas/whatsnew-es-419
+          HAY_NOTAS=$(node -e '
+            const t = Array.from((process.env.NOTAS || "").trim());
+            const n = t.length > 500 ? t.slice(0, 499).join("").trimEnd() + "…" : t.join("");
+            require("fs").writeFileSync("notas/whatsnew-es-419", n);
+            process.stdout.write(n ? "si" : "no");
+          ')
+          echo "notas=$HAY_NOTAS" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -152,4 +193,4 @@ jobs:
           releaseFiles: ${{ steps.nombre.outputs.archivo }}
           track: ${{ inputs.pista || 'internal' }}
           status: ${{ inputs.pista == 'production' && 'draft' || 'completed' }}
-          whatsNewDirectory: ${{ inputs.notas != '' && 'notas' || '' }}
+          whatsNewDirectory: ${{ steps.nombre.outputs.notas == 'si' && 'notas' || '' }}

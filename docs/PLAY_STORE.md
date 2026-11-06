@@ -284,10 +284,35 @@ servicio → subir-stockeao → Administrar claves**, crear una clave nueva, cor
 misma pantalla. La cuenta de servicio sigue siendo la misma, así que los permisos de Play Console
 no se tocan.
 
+### Se sube sola al publicar el APK
+
+Cuando se publica una versión del APK (**Construir APK** con «Publicar», o un tag `vX.Y.Z`), el job
+`play` lanza solo **Construir para Google Play** con `gh workflow run`. Le pasa las mismas novedades
+(recortadas a 500 caracteres, el máximo de Play) y el mismo commit (input `commit`, que debe ser un
+SHA de 40 caracteres hexadecimales, ancestro de `main` y además la punta de `main` o el commit de
+una Release ya publicada; así nadie firma un commit antiguo cualquiera).
+
+- **Pista:** la variable del repo `PLAY_PISTA` (por defecto `internal`; solo `internal`, `alpha` o
+  `beta`). Con `production` u otro valor **no sube** y deja un aviso: producción nunca se sube sola.
+- **Desactivar:** variable `PLAY_AUTO=no`. Para saltarla en un APK puntual, desmarcar
+  **Subir también a Google Play** (`subir_a_play`, marcado por defecto) al lanzar **Construir APK**
+  a mano.
+- **Si Play falla, el APK ya quedó publicado:** el job `play` tiene `continue-on-error` y solo el
+  permiso `actions: write`. El resultado de Play se ve en la ejecución de **Construir para Google
+  Play**, no en la de **Construir APK**.
+- **Reintentar:** lanzar **Construir para Google Play** a mano. No uses «Re-run» del job `play`:
+  subiría otro `versionCode`.
+- Dos publicaciones seguidas: GitHub deja solo una en espera en el grupo `build-play`.
+- El `versionCode` de Play y el del APK siguen siendo independientes.
+
+Esto no se puede ensayar en un PR: se prueba publicando una vez después de fusionar.
+
 ## Cada versión nueva
 
 1. Sube `version` en `app.json` si es un cambio visible (ej. 1.0.0 → 1.1.0); el número interno
    de versión sube solo en cada compilación.
-2. Actions → **Construir para Google Play** → Run workflow, con la pista y las novedades.
+2. Publica el APK (`docs/PILOTO.md`): la versión sube sola a la pista de `PLAY_PISTA`. Para otra
+   pista, o sin publicar el APK: Actions → **Construir para Google Play** → Run workflow, con la
+   pista y las novedades.
 3. Listo: el workflow sube la versión a Play Console solo (paso 6). La subida a mano solo hizo
    falta para la primera versión de la app.

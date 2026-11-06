@@ -9,6 +9,8 @@ name: Construir APK
 #   - Al subir un tag de versión (git tag -a v1.0.1 -m "Novedades…" && git push origin v1.0.1):
 #     compila y publica. El tag debe coincidir con expo.version de app.json; las notas salen
 #     de la anotación del tag.
+#   - Al terminar de publicar, el job `play` lanza «Construir para Google Play» con las mismas
+#     notas y el mismo commit (pista internal por defecto; ver docs/PLAY_STORE.md).
 #   - En PRs que tocan dependencias o configuración nativa: solo compila (sin firma propia
 #     ni publicación) para comprobar que el APK sigue generándose.
 # Ver docs/PILOTO.md.
@@ -34,6 +36,10 @@ on:
         description: 'Actualización obligatoria'
         type: boolean
         default: false
+      subir_a_play:
+        description: 'Al publicar, subir también a Google Play (pista de la variable PLAY_PISTA, internal por defecto)'
+        type: boolean
+        default: true
   push:
     tags: ['v*.*.*']
   pull_request:
@@ -194,6 +200,9 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
+    outputs:
+      # Notas de la versión en base64 (una sola línea), para pasárselas al job `play`.
+      notas_b64: ${{ steps.publicar.outputs.notas_b64 }}
     # Nunca se cancela a mitad: dejaría una Release sin registrar.
     concurrency:
       group: publicar-apk
@@ -204,6 +213,7 @@ jobs:
           name: ${{ needs.apk.outputs.archivo }}
 
       - name: Publicar para los clientes
+        id: publicar
         env:
           GH_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
@@ -244,6 +254,7 @@ jobs:
             OBLIGATORIA="${OBLIGATORIA_MANUAL:-false}"
           fi
           NOTAS="${NOTAS:0:2000}"
+          echo "notas_b64=$(printf '%s' "$NOTAS" | base64 -w0)" >> "$GITHUB_OUTPUT"
 
           # Siempre con el mismo nombre: así el enlace .../releases/latest/download/stockeao.apk
           # descarga la última versión (es el que usa la página de descarga).
@@ -327,3 +338,43 @@ jobs:
           FILA_CREADA=""
           echo "Publicado: $URL_APK"
           echo "Enlace fijo a la última versión: https://github.com/$GITHUB_REPOSITORY/releases/latest/download/stockeao.apk"
+
+  # Sube la misma versión a Google Play lanzando «Construir para Google Play» (build-play.yml).
+  # Va aparte y con continue-on-error: si Play falla, la publicación del APK ya terminó y no se
+  # toca. Solo lanza el otro workflow; el resultado de Play se ve en su propia ejecución.
+  # Sin secretos ni checkout: el único permiso es el de lanzar workflows.
+  # Se desactiva con la variable del repositorio PLAY_AUTO=no, o con el casillero «subir_a_play».
+  play:
+    needs: publicar
+    if: >-
+      lower(vars.PLAY_AUTO) != 'no' &&
+      (github.event_name == 'push' || inputs.subir_a_play)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    permissions:
+      actions: write
+    steps:
+      - name: Lanzar la subida a Google Play
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PISTA: ${{ vars.PLAY_PISTA }}
+          NOTAS_B64: ${{ needs.publicar.outputs.notas_b64 }}
+        run: |
+          # Solo pistas de prueba: production nunca se sube sola (se lanza a mano).
+          PISTA="${PISTA:-internal}"
+          case "$PISTA" in
+            internal | alpha | beta) ;;
+            *)
+              echo "::warning::PLAY_PISTA='$PISTA' no es válida para la subida automática (solo internal, alpha o beta): no se sube a Play."
+              echo "No se subió a Google Play: PLAY_PISTA='$PISTA' no es una pista automática válida." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+              ;;
+          esac
+          NOTAS=$(printf '%s' "$NOTAS_B64" | base64 -d)
+          gh workflow run build-play.yml -R "$GITHUB_REPOSITORY" --ref main \
+            -f pista="$PISTA" -f notas="$NOTAS" -f subir=true -f commit="$GITHUB_SHA"
+          {
+            echo "Subida a Google Play lanzada (pista **$PISTA**, commit \`${GITHUB_SHA:0:7}\`)."
+            echo "Su resultado se ve en [Construir para Google Play](https://github.com/$GITHUB_REPOSITORY/actions/workflows/build-play.yml); si falla, el APK ya quedó publicado igual."
+          } >> "$GITHUB_STEP_SUMMARY"

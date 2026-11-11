@@ -290,7 +290,8 @@ Cuando se publica una versión del APK (**Construir APK** con «Publicar», o un
 `play` lanza solo **Construir para Google Play** con `gh workflow run`. Le pasa las mismas novedades
 (recortadas a 500 caracteres, el máximo de Play) y el mismo commit (input `commit`, que debe ser un
 SHA de 40 caracteres hexadecimales, ancestro de `main` y además la punta de `main` o el commit de
-una Release ya publicada; así nadie firma un commit antiguo cualquiera).
+una de las últimas 30 Releases; así nadie firma un commit antiguo cualquiera). Por eso, para
+reintentar a mano con un commit antiguo, deja el campo `commit` vacío (compila la punta de `main`).
 
 - **Pista:** la variable del repo `PLAY_PISTA` (por defecto `internal`; solo `internal`, `alpha` o
   `beta`). Con `production` u otro valor **no sube** y deja un aviso: producción nunca se sube sola.

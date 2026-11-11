@@ -347,7 +347,7 @@ jobs:
   play:
     needs: publicar
     if: >-
-      lower(vars.PLAY_AUTO) != 'no' &&
+      vars.PLAY_AUTO != 'no' &&
       (github.event_name == 'push' || inputs.subir_a_play)
     runs-on: ubuntu-latest
     timeout-minutes: 5

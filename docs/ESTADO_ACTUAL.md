@@ -1,6 +1,6 @@
 # Estado actual del proyecto (para retomar)
 
-Última actualización: 6 de noviembre de 2026.
+Última actualización: 11 de noviembre de 2026.
 
 ## Qué es
 
@@ -132,15 +132,12 @@ historial de facturación es lo que piden los bancos para abrir la cuenta.
   sin cerrar sesión (Más → Cambiar de local), puede agregar locales (sin tope; cada uno con su
   suscripción) y el dueño asigna a administradores o trabajadores a más de un local con el permiso
   `multi_local` (perfil y PIN por local). Requiere internet y sin cambios pendientes. Es control de
-  producto, no aislamiento real entre locales. Detalle y límites en `docs/MULTI_LOCAL.md`.
+  producto, no aislamiento real entre locales. Detalle y límites en `docs/MULTI_LOCAL.md`. La
+  migración `20261106000100_multi_local.sql` ya está ejecutada en Supabase (verificado el 11 de
+  noviembre de 2026: columna `persona_id` y las cuatro funciones nuevas).
 
 ## Pendiente (en orden)
 
-0. **Antes de publicar el APK o la web con varios locales:** ejecutar
-   `supabase/migrations/20261106000100_multi_local.sql` en el SQL Editor de Supabase
-   (`docs/SUPABASE.md`); sin la columna `persona_id` la sincronización de perfiles falla. Hasta ahora
-   la migración y su prueba SQL no se han ejecutado en una base real. Detalle en
-   `docs/MULTI_LOCAL.md`.
 1. **Antes de fusionar el PR de permisos por persona y de publicar el APK o la web:** ejecutar
    `supabase/migrations/20261021000100_permisos_por_persona.sql` en el SQL Editor de Supabase
    (`docs/SUPABASE.md`); la web se publica sola desde `main`, y si falta la migración la

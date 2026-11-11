@@ -108,6 +108,12 @@ Si el cliente ve:
 
 Las versiones anteriores a la 46 sin hash se instalan sin verificar y la app registra un aviso.
 
+**También sube a Google Play.** Al publicar, un job extra lanza solo «Construir para Google Play»
+con las mismas novedades y el mismo commit, a la pista de la variable `PLAY_PISTA` (por defecto
+`internal`). `PLAY_AUTO=no` lo desactiva y el casillero «Subir también a Google Play» lo salta en
+una publicación manual. Si Play falla, el APK igual queda publicado; el resultado se ve en la
+ejecución de «Construir para Google Play». Detalle en `docs/PLAY_STORE.md` (paso 6).
+
 No lances otra publicación mientras una esté en curso. Y no renombres `build-apk.yml`: el
 número de versión interno (`versionCode`) es el número de ejecución de ese workflow.
 
